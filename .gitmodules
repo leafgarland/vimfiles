@@ -1,0 +1,57 @@
+[submodule "bundle/solarized"]
+	path = bundle/solarized
+	url = git://github.com/altercation/vim-colors-solarized.git
+[submodule "bundle/fugitive"]
+	path = bundle/fugitive
+	url = http://github.com/tpope/vim-fugitive.git
+[submodule "bundle/snipmate"]
+	path = bundle/snipmate
+	url = http://github.com/msanders/snipmate.vim.git
+[submodule "bundle/surround"]
+	path = bundle/surround
+	url = http://github.com/tpope/vim-surround.git
+[submodule "bundle/git"]
+	path = bundle/git
+	url = http://github.com/tpope/vim-git.git
+[submodule "bundle/supertab"]
+	path = bundle/supertab
+	url = http://github.com/ervandew/supertab.git
+[submodule "bundle/minibufexpl"]
+	path = bundle/minibufexpl
+	url = http://github.com/sontek/minibufexpl.vim.git
+[submodule "bundle/command-t"]
+	path = bundle/command-t
+	url = http://github.com/wincent/Command-T.git
+[submodule "pyflakes-pathogen"]
+	path = pyflakes-pathogen
+	url = http://github.com/mitechie/pyflakes-pathogen.git
+[submodule "bundle/ack"]
+	path = bundle/ack
+	url = http://github.com/mileszs/ack.vim.git
+[submodule "bundle/gundo"]
+	path = bundle/gundo
+	url = http://github.com/sjl/gundo.vim.git
+[submodule "bundle/pydoc"]
+	path = bundle/pydoc
+	url = http://github.com/fs111/pydoc.vim.git
+[submodule "bundle/makegreen"]
+	path = bundle/makegreen
+	url = http://github.com/reinh/vim-makegreen
+[submodule "bundle/nerdtree"]
+	path = bundle/nerdtree
+	url = http://github.com/vim-scripts/The-NERD-tree.git
+[submodule "bundle/ropevim"]
+	path = bundle/ropevim
+	url = http://github.com/sontek/rope-vim.git
+[submodule "bundle/tagbar"]
+	path = bundle/tagbar
+	url = git://github.com/majutsushi/tagbar
+[submodule "bundle/sparkup"]
+	path = bundle/sparkup
+	url = http://github.com/bingaman/vim-sparkup.git
+[submodule "bundle/yankring"]
+	path = bundle/yankring
+	url = http://github.com/chrismetcalf/vim-yankring.git
+[submodule "bundle/pathogen"]
+	path = bundle/pathogen
+	url = http://github.com/mitechie/pyflakes-pathogen.git
