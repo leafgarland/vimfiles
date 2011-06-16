@@ -5,7 +5,7 @@ git submodule add http://github.com/tpope/vim-git.git bundle/git
 git submodule add http://github.com/ervandew/supertab.git bundle/supertab
 git submodule add http://github.com/sontek/minibufexpl.vim.git bundle/minibufexpl
 git submodule add http://github.com/wincent/Command-T.git bundle/command-t
-git submodule add http://github.com/mitechie/pyflakes-pathogen.git
+git submodule add http://github.com/mitechie/pyflakes-pathogen.git bundle/pyflakes
 git submodule add http://github.com/mileszs/ack.vim.git bundle/ack
 git submodule add http://github.com/sjl/gundo.vim.git bundle/gundo
 git submodule add http://github.com/fs111/pydoc.vim.git bundle/pydoc
