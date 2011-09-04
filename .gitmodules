@@ -52,3 +52,9 @@
 [submodule "bundle/pathogen"]
 	path = bundle/pathogen
 	url = http://github.com/mitechie/pyflakes-pathogen.git
+[submodule "bundle/coffeescript"]
+	path = bundle/coffeescript
+	url = https://github.com/kchmck/vim-coffee-script.git
+[submodule "bundle/syntastic"]
+	path = bundle/syntastic
+	url = https://github.com/scrooloose/syntastic/
