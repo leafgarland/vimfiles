@@ -77,8 +77,8 @@ au FileType xml setlocal foldmethod=syntax
 
 " Color scheme (terminal)
 syntax on
-"colorscheme solarized
-"set background=dark
+colorscheme solarized
+set background=dark
 
 " NERD Tree
 map <F2> :NERDTreeToggle<cr>
@@ -174,7 +174,7 @@ au FocusLost * :wa
 inoremap # X<BS>#
 
 if has('gui_running')
-"    set guifont=Consolas:h12
+    set guifont=Consolas:h12
     colorscheme solarized
     set background=dark
     set lines=60
