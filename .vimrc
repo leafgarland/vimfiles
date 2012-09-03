@@ -1,4 +1,4 @@
-" vim: set foldmarker={,} foldlevel=0 foldmethod=marker
+ " vim: set foldmarker={,} foldlevel=0 foldmethod=marker :
 
 " Environment {
     " Basics {
@@ -31,6 +31,8 @@
         endif
 
         Bundle 'altercation/vim-colors-solarized'
+        Bundle 'sjl/badwolf'
+
         Bundle 'AutoClose'
         Bundle 'kien/ctrlp.vim'
         Bundle 'vim-scripts/sessionman.vim'
@@ -54,7 +56,8 @@
         Bundle 'spf13/vim-markdown'
         Bundle 'spf13/vim-preview'
         Bundle "PProvost/vim-ps1"
-        Bundle "kana/vim-scratch"
+        " Bundle "kana/vim-scratch"
+        Bundle "vim-scripts/scratch.vim"
         Bundle "kana/vim-textobj-indent"
         Bundle "kchmck/vim-coffee-script"
         Bundle "kongo2002/fsharp-vim"
@@ -64,11 +67,11 @@
         Bundle "tpope/vim-repeat"
         Bundle "tpope/vim-speeddating"
         Bundle "tpope/vim-unimpaired"
-        Bundle "vim-scripts/YankRing.vim"
         Bundle "xolox/vim-easytags"
         Bundle "xolox/vim-lua-ftplugin"
         Bundle "xolox/vim-shell"
         Bundle "zaiste/VimClojure"
+        Bundle "spolu/dwm.vim"
 " }
 
 " General {
@@ -124,28 +127,27 @@
     endif
 
     set backspace=indent,eol,start  " backspace for dummies
-    set linespace=0                 " No extra spaces between rows
-    set number                      " Line numbers on
-    set showmatch                   " show matching brackets/parenthesis
-    set incsearch                   " find as you type search
-    set hlsearch                    " highlight search terms
+    set linespace=0
+    set number
+    set showmatch
+    set incsearch
+    set hlsearch
     set winminheight=0              " windows can be 0 line high
-    set ignorecase                  " case insensitive search
-    set smartcase                   " case sensitive when uc present
-    set wildmenu                    " show list instead of just completing
+    set ignorecase
+    set smartcase
+    set wildmenu
     set wildmode=list:longest,full  " command <Tab> completion, list matches, then longest common part, then all.
     set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
     set scrolljump=5                " lines to scroll when cursor leaves screen
     set scrolloff=3                 " minimum lines to keep above and below cursor
-    set foldenable                  " auto fold code
+    set foldenable
     set list
     set listchars=tab:,.,trail:.,extends:#,nbsp:. " Highlight problematic whitespace
-
 " }
 
 " Formatting {
-    set nowrap                      " wrap long lines
-    set autoindent                  " indent at the same level of the previous line
+    set nowrap
+    set autoindent
     set shiftwidth=4                " use indents of 4 spaces
     set expandtab                   " tabs are spaces, not tabs
     set tabstop=4                   " an indentation every four columns
@@ -220,6 +222,51 @@
             set spell
         endif
     endfunction
+
+    map <leader>ev :e $MYVIMRC<CR>
+
+    nnoremap <c-z> zz
+
+    " System clipboard interaction.  Mostly from:
+    " https://github.com/henrik/dotfiles/blob/master/vim/config/mappings.vim
+    noremap <leader>y "*y
+    noremap <leader>p :set paste<CR>"*p<CR>:set nopaste<CR>
+    noremap <leader>P :set paste<CR>"*P<CR>:set nopaste<CR>
+    vnoremap <leader>y "*ygv
+
+    nnoremap <leader>bb :b#<CR>
+
+    nnoremap vaa ggvGg_
+    nnoremap Vaa ggVG
+    nnoremap vv ^vg_
+    nmap gV `[v`]
+
+    " Create a split on the given side.
+    " From http://technotales.wordpress.com/2010/04/29/vim-splits-a-guide-to-doing-exactly-what-you-want/ via joakimk.
+    nmap <leader>swh   :leftabove  vsp<CR>
+    nmap <leader>swl :rightbelow vsp<CR>
+    nmap <leader>swk     :leftabove  sp<CR>
+    nmap <leader>swj   :rightbelow sp<CR>
+
+    " <alt-j> <alt-k> move line
+    nnoremap <M-j> :m+<CR>
+    nnoremap <M-k> :m-2<CR>
+    inoremap <M-j> <Esc>:m+<CR>
+    inoremap <M-k> <Esc>:m-2<CR>
+    vnoremap <M-j> :m'>+<<CR>gv
+    vnoremap <M-k> :m-2<CR>gv
+
+    " Easier to type, and I never use the default behavior.
+    noremap H ^
+    noremap L $
+    vnoremap L g_
+
+    " Heresy
+    inoremap <c-a> <esc>I
+    inoremap <c-e> <esc>A
+
+    " move to last change
+    nnoremap gI `.
 " }
 
 " Plugins {
@@ -232,7 +279,7 @@
     " Clojure {
         let vimclojure#FuzzyIndent=1
         let vimclojure#HighlightBuiltins=1
-        let vimclojure#HighlightContrib=1
+        let vimclojure#HighlightContrib=0
         let vimclojure#DynamicHighlighting=1
         let vimclojure#ParenRainbow=1
         let vimclojure#WantNailgun = 1
@@ -296,21 +343,9 @@
             \ 'file': '\.exe$\|\.so$\|\.dll$' }
      "}
 
-     " yankring {
-        let g:yankring_replace_n_pkey = '<c-,>'
-        let g:yankring_replace_n_nkey = '<c-.>'
-     " }
-
      " TagBar {
         nnoremap <silent> <leader>tt :TagbarToggle<CR>
      "}
-
-     " PythonMode {
-     " Disable if python support not present
-        if !has('python')
-           let g:pymode = 1
-        endif
-     " }
 
      " Fugitive {
         nnoremap <silent> <leader>gs :Gstatus<CR>
@@ -320,16 +355,27 @@
         nnoremap <silent> <leader>gl :Glog<CR>
         nnoremap <silent> <leader>gp :Git push<CR>
      "}
+
+    " Scratch {
+    command! ScratchToggle call ScratchToggle()
+
+    function! ScratchToggle()
+        if exists("w:is_scratch_window")
+            unlet w:is_scratch_window
+            exec "q"
+        else
+            exec "normal! :Sscratch\<cr>\<C-W>J:resize 13\<cr>"
+            let w:is_scratch_window = 1
+        endif
+    endfunction
+
+    nnoremap <silent> <leader><tab> :ScratchToggle<cr>
+    " }
 " }
 
 " GUI Settings {
     if has('gui_running')
-        set guioptions-=T
-        set guioptions-=L
-        set guioptions-=l
-        set guioptions-=m
-        set guioptions-=R
-        set guioptions-=r
+        set guioptions=egt
         set lines=40
         set columns=120
         set guifont=Consolas:h11,Courier\ New:h14
