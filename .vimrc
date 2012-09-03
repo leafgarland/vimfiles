@@ -226,6 +226,7 @@
     map <leader>ev :e $MYVIMRC<CR>
 
     nnoremap <c-z> zz
+    nnoremap <space> za
 
     " System clipboard interaction.  Mostly from:
     " https://github.com/henrik/dotfiles/blob/master/vim/config/mappings.vim
