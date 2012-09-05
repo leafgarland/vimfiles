@@ -213,15 +213,7 @@
     cnoremap <C-p> <Up>
     cnoremap <C-n> <Down>
 
-    inoremap <silent> <F7> <c-O>:call SpellToggle()<cr>
-    map <silent> <F7> :call SpellToggle()<cr>
-    function SpellToggle()
-        if &spell == 1
-            set nospell
-        else
-            set spell
-        endif
-    endfunction
+    nnoremap <silent> <F7> :set spell!<cr>
 
     map <leader>ev :e $MYVIMRC<CR>
 
