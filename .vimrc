@@ -32,6 +32,7 @@
 
         Bundle 'altercation/vim-colors-solarized'
         Bundle 'sjl/badwolf'
+        Bundle 'chriskempson/base16-vim'
 
         Bundle 'AutoClose'
         Bundle 'kien/ctrlp.vim'
@@ -42,6 +43,7 @@
         Bundle 'godlygeek/tabular'
         Bundle 'corntrace/bufexplorer'
         Bundle 'tpope/vim-fugitive'
+        Bundle 'gregsexton/gitv'
         if executable('ctags')
             Bundle 'majutsushi/tagbar'
         endif
@@ -56,7 +58,6 @@
         Bundle 'spf13/vim-markdown'
         Bundle 'spf13/vim-preview'
         Bundle "PProvost/vim-ps1"
-        " Bundle "kana/vim-scratch"
         Bundle "vim-scripts/scratch.vim"
         Bundle "kana/vim-textobj-indent"
         Bundle "kchmck/vim-coffee-script"
@@ -70,7 +71,8 @@
         Bundle "xolox/vim-easytags"
         Bundle "xolox/vim-lua-ftplugin"
         Bundle "xolox/vim-shell"
-        Bundle "zaiste/VimClojure"
+        " Bundle "zaiste/VimClojure"
+        Bundle 'thinca/vim-ft-clojure'
         Bundle "spolu/dwm.vim"
 " }
 
@@ -83,7 +85,7 @@
     set encoding=utf-8
 
     " always switch to the current file directory.
-    autocmd BufEnter * if bufname("") !~ "^\[A-Za-z0-9\]*://" | lcd %:p:h | endif
+    " autocmd BufEnter * if bufname("") !~ "^\[A-Za-z0-9\]*://" | lcd %:p:h | endif
 
     set shortmess+=filmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
     set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
@@ -102,9 +104,6 @@
 " }
 
 " Vim UI {
-    color solarized
-    let g:solarized_termtrans=1
-
     set showmode
     set cursorline
 
@@ -262,11 +261,11 @@
     nnoremap gI `.
 " }
 
-" Plugins {
+" Plugins { 
 
     " Powerline {
         let g:Powerline_symbols='compatible'
-        let g:Powerline_symbols_override = {'BRANCH': [0x2325]}
+        let g:Powerline_symbols_override = {'BRANCH': [0x25B8]}
     " }
 
     " Clojure {
@@ -368,6 +367,7 @@
 
 " GUI Settings {
     if has('gui_running')
+        colorscheme base16
         set guioptions=egt
         set lines=40
         set columns=120
