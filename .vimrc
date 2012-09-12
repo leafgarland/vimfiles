@@ -1,82 +1,83 @@
- " vim: set foldmarker={,} foldlevel=0 foldmethod=marker :
+ " vim: foldlevel=0 foldmethod=marker :
 
-" Environment {
-    " Basics {
+" Environment {{{
+    " Basics {{{
         set nocompatible
         set background=dark
-    " }
+    " }}}
 
-    " Windows Compatible {
+    " Windows Compatible {{{
         " On Windows, also use '.vim' instead of 'vimfiles'; this makes synchronization
         " across (heterogeneous) systems easier.
         if has('win32') || has('win64')
           set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
         endif
-    " }
-    "
-    " Setup Bundle Support {
+    " }}}
+
+    " Setup Bundle Support {{{
     " The next two lines ensure that the ~/.vim/bundle/ system works
         set rtp+=~/.vim/bundle/vundle
         call vundle#rc()
-    " }
-" }
+    " }}}
+" }}}
 
-" Bundles {
+" Bundles {{{
+        " Base
         Bundle 'gmarik/vundle'
         Bundle 'MarcWeber/vim-addon-mw-utils'
         Bundle 'tomtom/tlib_vim'
+        Bundle "tpope/vim-repeat"
         Bundle "kana/vim-textobj-user"
-        if executable('ack')
-            Bundle 'mileszs/ack.vim'
-        endif
 
+        " Colour schemes
         Bundle 'altercation/vim-colors-solarized'
-        Bundle 'sjl/badwolf'
         Bundle 'chriskempson/base16-vim'
 
+        " Motions and actions
+        Bundle "kana/vim-textobj-indent"
+        Bundle "tpope/vim-commentary"
+        Bundle 'tpope/vim-surround'
+        Bundle "tpope/vim-speeddating"
+        Bundle "tpope/vim-unimpaired"
+        Bundle 'taxilian/vim-web-indent'
+        Bundle 'matchit.zip'
+
+        " Tools
         Bundle 'AutoClose'
         Bundle 'kien/ctrlp.vim'
         Bundle 'vim-scripts/sessionman.vim'
-        Bundle 'matchit.zip'
         Bundle 'Lokaltog/vim-powerline'
         Bundle 'Lokaltog/vim-easymotion'
         Bundle 'godlygeek/tabular'
         Bundle 'corntrace/bufexplorer'
         Bundle 'tpope/vim-fugitive'
         Bundle 'gregsexton/gitv'
+        Bundle "vim-scripts/scratch.vim"
+        Bundle "xolox/vim-shell"
+        Bundle "xolox/vim-easytags"
+        Bundle 'HTML-AutoCloseTag'
         if executable('ctags')
             Bundle 'majutsushi/tagbar'
         endif
+        if executable('ack')
+            Bundle 'mileszs/ack.vim'
+        endif
 
-        Bundle 'leshill/vim-json'
-        Bundle 'groenewege/vim-less'
-        Bundle 'taxilian/vim-web-indent'
-
-        Bundle 'HTML-AutoCloseTag'
+        " Filetypes
         Bundle 'ChrisYip/Better-CSS-Syntax-for-Vim'
-
+        Bundle 'leshill/vim-json'
+        Bundle "kchmck/vim-coffee-script"
         Bundle 'spf13/vim-markdown'
         Bundle 'spf13/vim-preview'
         Bundle "PProvost/vim-ps1"
-        Bundle "vim-scripts/scratch.vim"
-        Bundle "kana/vim-textobj-indent"
-        Bundle "kchmck/vim-coffee-script"
         Bundle "kongo2002/fsharp-vim"
-        Bundle "michaeljsmith/vim-indent-object"
-        Bundle "tpope/vim-commentary"
-        Bundle 'tpope/vim-surround'
-        Bundle "tpope/vim-repeat"
-        Bundle "tpope/vim-speeddating"
-        Bundle "tpope/vim-unimpaired"
-        Bundle "xolox/vim-easytags"
         Bundle "xolox/vim-lua-ftplugin"
-        Bundle "xolox/vim-shell"
         " Bundle "zaiste/VimClojure"
         Bundle 'thinca/vim-ft-clojure'
-        Bundle "spolu/dwm.vim"
-" }
+        Bundle 'chrisbra/csv.vim'
+" }}}
 
-" General {
+" General {{{
     set background=dark
     filetype plugin indent on
     syntax on
@@ -93,17 +94,17 @@
     set history=1000
     set hidden
 
-    " Setting up the directories {
+    " Setting up the directories {{{
         set backup
         if has('persistent_undo')
             set undofile
             set undolevels=1000
             set undoreload=10000
         endif
-    " }
-" }
+    " }}}
+" }}}
 
-" Vim UI {
+" Vim UI {{{
     set showmode
     set cursorline
 
@@ -142,18 +143,18 @@
     set foldenable
     set list
     set listchars=tab:,.,trail:.,extends:#,nbsp:. " Highlight problematic whitespace
-" }
+" }}}
 
-" Formatting {
+" Formatting {{{
     set nowrap
     set autoindent
     set shiftwidth=4                " use indents of 4 spaces
     set expandtab                   " tabs are spaces, not tabs
     set tabstop=4                   " an indentation every four columns
     set softtabstop=4               " let backspace delete indent
-" }
+" }}}
 
-" Key (re)Mappings {
+" Key (re)Mappings {{{
 
     " Easier moving in tabs and windows
     map <C-J> <C-W>j<C-W>_
@@ -259,35 +260,35 @@
 
     " move to last change
     nnoremap gI `.
-" }
+" }}}
 
-" Plugins { 
+" Plugins {{{ 
 
-    " Powerline {
+    " Powerline {{{
         let g:Powerline_symbols='compatible'
         let g:Powerline_symbols_override = {'BRANCH': [0x25B8]}
-    " }
+    " }}}
 
-    " Clojure {
+    " Clojure {{{
         let vimclojure#FuzzyIndent=1
         let vimclojure#HighlightBuiltins=1
         let vimclojure#HighlightContrib=0
         let vimclojure#DynamicHighlighting=1
         let vimclojure#ParenRainbow=1
         let vimclojure#WantNailgun = 1
-    " }
+    " }}}
 
-    " Ctags {
+    " Ctags {{{
         set tags=./tags;/,~/.vimtags
-    " }
+    " }}}
 
-    " AutoCloseTag {
+    " AutoCloseTag {{{
         " Make it so AutoCloseTag works for xml and xhtml files as well
         au FileType xhtml,xml ru ftplugin/html/autoclosetag.vim
         nmap <Leader>ac <Plug>ToggleAutoCloseMappings
-    " }
+    " }}}
 
-    " Tabularize {
+    " Tabularize {{{
         if exists(":Tabularize")
           nmap <Leader>a= :Tabularize /=<CR>
           vmap <Leader>a= :Tabularize /=<CR>
@@ -316,39 +317,39 @@
           endfunction
 
         endif
-     " }
+     " }}}
 
-     " Session List {
+     " Session List {{{
         set sessionoptions=blank,buffers,curdir,folds,tabpages,winsize
         nmap <leader>sl :SessionList<CR>
         nmap <leader>ss :SessionSave<CR>
-     " }
+     " }}}
 
-     " Buffer explorer {
+     " Buffer explorer {{{
         nmap <leader>b :BufExplorer<CR>
-     " }
+     " }}}
 
-     " ctrlp {
+     " ctrlp {{{
         let g:ctrlp_working_path_mode = 2
         let g:ctrlp_custom_ignore = {
             \ 'dir':  '\.git$\|\.hg$\|\.svn$',
             \ 'file': '\.exe$\|\.so$\|\.dll$' }
-     "}
+     "}}}
 
-     " TagBar {
+     " TagBar {{{
         nnoremap <silent> <leader>tt :TagbarToggle<CR>
-     "}
+     "}}}
 
-     " Fugitive {
+     " Fugitive {{{
         nnoremap <silent> <leader>gs :Gstatus<CR>
         nnoremap <silent> <leader>gd :Gdiff<CR>
         nnoremap <silent> <leader>gc :Gcommit<CR>
         nnoremap <silent> <leader>gb :Gblame<CR>
         nnoremap <silent> <leader>gl :Glog<CR>
         nnoremap <silent> <leader>gp :Git push<CR>
-     "}
+     "}}}
 
-    " Scratch {
+    " Scratch {{{
     command! ScratchToggle call ScratchToggle()
 
     function! ScratchToggle()
@@ -362,10 +363,10 @@
     endfunction
 
     nnoremap <silent> <leader><tab> :ScratchToggle<cr>
-    " }
-" }
+    " }}}
+" }}}
 
-" GUI Settings {
+" GUI Settings {{{
     if has('gui_running')
         colorscheme base16
         set guioptions=egt
@@ -373,9 +374,9 @@
         set columns=120
         set guifont=Consolas:h11,Courier\ New:h14
     endif
-" }
+" }}}
 
- " Functions {
+ " Functions {{{
 
 function! InitializeDirectories()
     let separator = "."
@@ -408,4 +409,4 @@ function! InitializeDirectories()
 endfunction
 call InitializeDirectories()
 
-" }
+" }}}
