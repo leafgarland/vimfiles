@@ -56,6 +56,9 @@
         Bundle "xolox/vim-shell"
         Bundle "xolox/vim-easytags"
         Bundle 'HTML-AutoCloseTag'
+        if has('ruby')
+            Bundle 'spf13/vim-preview'
+        endif
         if executable('ctags')
             Bundle 'majutsushi/tagbar'
         endif
@@ -68,7 +71,6 @@
         Bundle 'leshill/vim-json'
         Bundle "kchmck/vim-coffee-script"
         Bundle 'spf13/vim-markdown'
-        Bundle 'spf13/vim-preview'
         Bundle "PProvost/vim-ps1"
         Bundle "kongo2002/fsharp-vim"
         Bundle "xolox/vim-lua-ftplugin"
