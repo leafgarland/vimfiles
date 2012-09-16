@@ -54,7 +54,6 @@
         Bundle 'gregsexton/gitv'
         Bundle "vim-scripts/scratch.vim"
         Bundle "xolox/vim-shell"
-        Bundle "xolox/vim-easytags"
         Bundle 'HTML-AutoCloseTag'
         if has('ruby')
             Bundle 'spf13/vim-preview'
@@ -90,7 +89,7 @@
     " always switch to the current file directory.
     " autocmd BufEnter * if bufname("") !~ "^\[A-Za-z0-9\]*://" | lcd %:p:h | endif
 
-    set shortmess+=filmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
+    set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
     set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
     set virtualedit=onemore         " allow for cursor beyond last character
     set history=1000
@@ -138,13 +137,13 @@
     set ignorecase
     set smartcase
     set wildmenu
-    set wildmode=list:longest,full  " command <Tab> completion, list matches, then longest common part, then all.
+    set wildmode=list:longest,full  " completion, list matches, then longest common part, then all.
     set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
     set scrolljump=5                " lines to scroll when cursor leaves screen
     set scrolloff=3                 " minimum lines to keep above and below cursor
     set foldenable
     set list
-    set listchars=tab:,.,trail:.,extends:#,nbsp:. " Highlight problematic whitespace
+    set listchars=tab:▸»,trail:.,extends:#,nbsp:. " Highlight problematic whitespace
 " }}}
 
 " Formatting {{{
@@ -159,17 +158,14 @@
 " Key (re)Mappings {{{
 
     " Easier moving in tabs and windows
-    map <C-J> <C-W>j<C-W>_
-    map <C-K> <C-W>k<C-W>_
-    map <C-L> <C-W>l<C-W>_
-    map <C-H> <C-W>h<C-W>_
+    map <C-J> <C-W>j
+    map <C-K> <C-W>k
+    map <C-L> <C-W>l
+    map <C-H> <C-W>h
 
     " Wrapped lines goes down/up to next row, rather than next line in file.
     nnoremap j gj
     nnoremap k gk
-
-    " Yank from the cursor to the end of the line, to be consistent with C and D.
-    nnoremap Y y$
 
     """ Code folding options
     nmap <leader>f0 :set foldlevel=0<CR>
@@ -193,9 +189,6 @@
     " visual shifting (does not exit Visual mode)
     vnoremap < <gv
     vnoremap > >gv
-
-    " For when you forget to sudo.. Really Write the file.
-    cmap w!! w !sudo tee % >/dev/null
 
     " Some helpers to edit mode
     " http://vimcasts.org/e/14
@@ -222,11 +215,14 @@
     nnoremap <c-z> zz
     nnoremap <space> za
 
+    " Yank from the cursor to the end of the line, to be consistent with C and D.
+    nnoremap Y y$
+
     " System clipboard interaction.  Mostly from:
     " https://github.com/henrik/dotfiles/blob/master/vim/config/mappings.vim
     noremap <leader>y "*y
-    noremap <leader>p :set paste<CR>"*p<CR>:set nopaste<CR>
-    noremap <leader>P :set paste<CR>"*P<CR>:set nopaste<CR>
+    noremap <leader>p :set paste<CR>"*p:set nopaste<CR>
+    noremap <leader>P :set paste<CR>"*P:set nopaste<CR>
     vnoremap <leader>y "*ygv
 
     nnoremap <leader>bb :b#<CR>
@@ -325,10 +321,6 @@
         set sessionoptions=blank,buffers,curdir,folds,tabpages,winsize
         nmap <leader>sl :SessionList<CR>
         nmap <leader>ss :SessionSave<CR>
-     " }}}
-
-     " Buffer explorer {{{
-        nmap <leader>b :BufExplorer<CR>
      " }}}
 
      " ctrlp {{{
