@@ -143,7 +143,7 @@
     set scrolloff=3                 " minimum lines to keep above and below cursor
     set foldenable
     set list
-    set listchars=tab:▸»,trail:.,extends:#,nbsp:. " Highlight problematic whitespace
+    set listchars=tab:▸\ ,trail:˽,extends:→,precedes:←,nbsp:˽
 " }}}
 
 " Formatting {{{
