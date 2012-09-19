@@ -16,7 +16,7 @@
 
     " Setup Bundle Support {{{
     " The next two lines ensure that the ~/.vim/bundle/ system works
-        set rtp+=~/.vim/bundle/vundle
+        set runtimepath+=~/.vim/bundle/vundle
         call vundle#rc()
     " }}}
 " }}}
@@ -26,19 +26,19 @@
         Bundle 'gmarik/vundle'
         Bundle 'MarcWeber/vim-addon-mw-utils'
         Bundle 'tomtom/tlib_vim'
-        Bundle "tpope/vim-repeat"
-        Bundle "kana/vim-textobj-user"
+        Bundle 'tpope/vim-repeat'
+        Bundle 'kana/vim-textobj-user'
 
         " Colour schemes
         Bundle 'altercation/vim-colors-solarized'
         Bundle 'chriskempson/base16-vim'
 
         " Motions and actions
-        Bundle "kana/vim-textobj-indent"
-        Bundle "tpope/vim-commentary"
+        Bundle 'kana/vim-textobj-indent'
+        Bundle 'tpope/vim-commentary'
         Bundle 'tpope/vim-surround'
-        Bundle "tpope/vim-speeddating"
-        Bundle "tpope/vim-unimpaired"
+        Bundle 'tpope/vim-speeddating'
+        Bundle 'tpope/vim-unimpaired'
         Bundle 'taxilian/vim-web-indent'
         Bundle 'matchit.zip'
 
@@ -52,8 +52,8 @@
         Bundle 'corntrace/bufexplorer'
         Bundle 'tpope/vim-fugitive'
         Bundle 'gregsexton/gitv'
-        Bundle "vim-scripts/scratch.vim"
-        Bundle "xolox/vim-shell"
+        Bundle 'vim-scripts/scratch.vim'
+        Bundle 'xolox/vim-shell'
         Bundle 'HTML-AutoCloseTag'
         if has('ruby')
             Bundle 'spf13/vim-preview'
@@ -68,12 +68,12 @@
         " Filetypes
         Bundle 'ChrisYip/Better-CSS-Syntax-for-Vim'
         Bundle 'leshill/vim-json'
-        Bundle "kchmck/vim-coffee-script"
+        Bundle 'kchmck/vim-coffee-script'
         Bundle 'spf13/vim-markdown'
-        Bundle "PProvost/vim-ps1"
-        Bundle "kongo2002/fsharp-vim"
-        Bundle "xolox/vim-lua-ftplugin"
-        " Bundle "zaiste/VimClojure"
+        Bundle 'PProvost/vim-ps1'
+        Bundle 'kongo2002/fsharp-vim'
+        Bundle 'xolox/vim-lua-ftplugin'
+        " Bundle 'zaiste/VimClojure'
         Bundle 'thinca/vim-ft-clojure'
         Bundle 'chrisbra/csv.vim'
 " }}}
@@ -158,33 +158,37 @@
 " Key (re)Mappings {{{
 
     " Easier moving in tabs and windows
-    map <C-J> <C-W>j
-    map <C-K> <C-W>k
-    map <C-L> <C-W>l
-    map <C-H> <C-W>h
+    nnoremap <C-J> <C-W>j
+    nnoremap <C-K> <C-W>k
+    nnoremap <C-L> <C-W>l
+    nnoremap <C-H> <C-W>h
 
     " Wrapped lines goes down/up to next row, rather than next line in file.
     nnoremap j gj
     nnoremap k gk
 
-    """ Code folding options
-    nmap <leader>f0 :set foldlevel=0<CR>
-    nmap <leader>f1 :set foldlevel=1<CR>
-    nmap <leader>f2 :set foldlevel=2<CR>
-    nmap <leader>f3 :set foldlevel=3<CR>
-    nmap <leader>f5 :set foldlevel=5<CR>
-    nmap <leader>f6 :set foldlevel=6<CR>
-    nmap <leader>f7 :set foldlevel=7<CR>
-    nmap <leader>f8 :set foldlevel=8<CR>
-    nmap <leader>f9 :set foldlevel=9<CR>
+    " get out of insert quickly
+    inoremap kj <esc>
+    inoremap jk <esc>
+
+    " Code folding options
+    nnoremap <leader>f0 :set foldlevel=0<CR>
+    nnoremap <leader>f1 :set foldlevel=1<CR>
+    nnoremap <leader>f2 :set foldlevel=2<CR>
+    nnoremap <leader>f3 :set foldlevel=3<CR>
+    nnoremap <leader>f5 :set foldlevel=5<CR>
+    nnoremap <leader>f6 :set foldlevel=6<CR>
+    nnoremap <leader>f7 :set foldlevel=7<CR>
+    nnoremap <leader>f8 :set foldlevel=8<CR>
+    nnoremap <leader>f9 :set foldlevel=9<CR>
 
     "clearing highlighted search
-    nmap <silent> <leader>/ :nohlsearch<CR>
+    nnoremap <silent> <leader>/ :nohlsearch<CR>
 
     " Shortcuts
     " Change Working Directory to that of the current file
-    cmap cwd lcd %:p:h
-    cmap cd. lcd %:p:h
+    cnoremap cwd lcd %:p:h
+    cnoremap cd. lcd %:p:h
 
     " visual shifting (does not exit Visual mode)
     vnoremap < <gv
@@ -193,24 +197,24 @@
     " Some helpers to edit mode
     " http://vimcasts.org/e/14
     cnoremap %% <C-R>=expand('%:h').'/'<cr>
-    map <leader>ew :e %%
-    map <leader>es :sp %%
-    map <leader>ev :vsp %%
-    map <leader>et :tabe %%
+    noremap <leader>ew :e %%
+    noremap <leader>es :sp %%
+    noremap <leader>ev :vsp %%
+    noremap <leader>et :tabe %%
 
     " Adjust viewports to the same size
-    map <Leader>= <C-w>=
+    noremap <Leader>= <C-w>=
 
     " Easier horizontal scrolling
-    map zl zL
-    map zh zH
+    noremap zl zL
+    noremap zh zH
 
     cnoremap <C-p> <Up>
     cnoremap <C-n> <Down>
 
     nnoremap <silent> <F7> :set spell!<cr>
 
-    map <leader>ev :e $MYVIMRC<CR>
+    noremap <leader>ev :e $MYVIMRC<CR>
 
     nnoremap <c-z> zz
     nnoremap <space> za
@@ -220,9 +224,9 @@
 
     " System clipboard interaction.  Mostly from:
     " https://github.com/henrik/dotfiles/blob/master/vim/config/mappings.vim
-    noremap <leader>y "*y
-    noremap <leader>p :set paste<CR>"*p:set nopaste<CR>
-    noremap <leader>P :set paste<CR>"*P:set nopaste<CR>
+    nnoremap <leader>y "*y
+    nnoremap <leader>p :set paste<CR>"*p:set nopaste<CR>
+    nnoremap <leader>P :set paste<CR>"*P:set nopaste<CR>
     vnoremap <leader>y "*ygv
 
     nnoremap <leader>bb :b#<CR>
@@ -230,14 +234,14 @@
     nnoremap vaa ggvGg_
     nnoremap Vaa ggVG
     nnoremap vv ^vg_
-    nmap gV `[v`]
+    nnoremap gV `[v`]
 
     " Create a split on the given side.
     " From http://technotales.wordpress.com/2010/04/29/vim-splits-a-guide-to-doing-exactly-what-you-want/ via joakimk.
-    nmap <leader>swh   :leftabove  vsp<CR>
-    nmap <leader>swl :rightbelow vsp<CR>
-    nmap <leader>swk     :leftabove  sp<CR>
-    nmap <leader>swj   :rightbelow sp<CR>
+    nnoremap <leader>swh   :leftabove  vsp<CR>
+    nnoremap <leader>swl :rightbelow vsp<CR>
+    nnoremap <leader>swk     :leftabove  sp<CR>
+    nnoremap <leader>swj   :rightbelow sp<CR>
 
     " <alt-j> <alt-k> move line
     nnoremap <M-j> :m+<CR>
@@ -248,8 +252,8 @@
     vnoremap <M-k> :m-2<CR>gv
 
     " Easier to type, and I never use the default behavior.
-    noremap H ^
-    noremap L $
+    nnoremap H ^
+    nnoremap L $
     vnoremap L g_
 
     " Heresy
@@ -282,22 +286,22 @@
 
     " AutoCloseTag {{{
         " Make it so AutoCloseTag works for xml and xhtml files as well
-        au FileType xhtml,xml ru ftplugin/html/autoclosetag.vim
-        nmap <Leader>ac <Plug>ToggleAutoCloseMappings
+        autocmd FileType xhtml,xml ru ftplugin/html/autoclosetag.vim
+        nnoremap <Leader>ac <Plug>ToggleAutoCloseMappings
     " }}}
 
     " Tabularize {{{
         if exists(":Tabularize")
-          nmap <Leader>a= :Tabularize /=<CR>
-          vmap <Leader>a= :Tabularize /=<CR>
-          nmap <Leader>a: :Tabularize /:<CR>
-          vmap <Leader>a: :Tabularize /:<CR>
-          nmap <Leader>a:: :Tabularize /:\zs<CR>
-          vmap <Leader>a:: :Tabularize /:\zs<CR>
-          nmap <Leader>a, :Tabularize /,<CR>
-          vmap <Leader>a, :Tabularize /,<CR>
-          nmap <Leader>a<Bar> :Tabularize /<Bar><CR>
-          vmap <Leader>a<Bar> :Tabularize /<Bar><CR>
+          nnoremap <Leader>a= :Tabularize /=<CR>
+          vnoremap <Leader>a= :Tabularize /=<CR>
+          nnoremap <Leader>a: :Tabularize /:<CR>
+          vnoremap <Leader>a: :Tabularize /:<CR>
+          nnoremap <Leader>a:: :Tabularize /:\zs<CR>
+          vnoremap <Leader>a:: :Tabularize /:\zs<CR>
+          nnoremap <Leader>a, :Tabularize /,<CR>
+          vnoremap <Leader>a, :Tabularize /,<CR>
+          nnoremap <Leader>a<Bar> :Tabularize /<Bar><CR>
+          vnoremap <Leader>a<Bar> :Tabularize /<Bar><CR>
 
           " The following function automatically aligns when typing a
           " supported character
@@ -319,8 +323,8 @@
 
      " Session List {{{
         set sessionoptions=blank,buffers,curdir,folds,tabpages,winsize
-        nmap <leader>sl :SessionList<CR>
-        nmap <leader>ss :SessionSave<CR>
+        nnoremap <leader>sl :SessionList<CR>
+        nnoremap <leader>ss :SessionSave<CR>
      " }}}
 
      " ctrlp {{{
@@ -362,7 +366,7 @@
 
 " GUI Settings {{{
     if has('gui_running')
-        colorscheme base16
+        colorscheme base16-default
         set guioptions=egt
         set lines=40
         set columns=120
@@ -403,4 +407,51 @@ function! InitializeDirectories()
 endfunction
 call InitializeDirectories()
 
+    " Evaluate Vim code regions {{{
+    " taken from kana/VimScratch
+
+    function! VimEvaluate_linewise(line1, line2, adjust_cursorp)
+      let bufnr = bufnr('')
+      call VimEvaluate([bufnr, a:line1, 1, 0],
+         \                  [bufnr, a:line2, len(getline(a:line2)), 0],
+         \                  a:adjust_cursorp)
+    endfunction
+
+    function! VimEvaluate(range_head, range_tail, adjust_cursorp)
+      " Yank the script.
+      let original_pos = getpos('.')
+      let original_reg_a = @a
+        call setpos('.', a:range_head)
+        normal! v
+        call setpos('.', a:range_tail)
+        silent normal! "ay
+        let script = @a
+      let @a = original_reg_a
+
+      " Evaluate it.
+      execute substitute(script, '\n\s*\\', '', 'g')
+
+      if a:adjust_cursorp
+        " Move to the next line of the script (add new line if necessary).
+        call setpos('.', a:range_tail)
+        if line('.') == line('$')
+          put =''
+        else
+          normal! +
+        endif
+      else
+        call setpos('.', original_pos)
+      endif
+    endfunction
+
+    command! -bang -bar -nargs=0 -range VimEvaluate
+          \ call VimEvaluate_linewise(<line1>, <line2>, '<bang>' != '!')
+
+    augroup vim_evaluate
+        autocmd!
+        autocmd FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
+            \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
+    augroup end
+
+    " }}}
 " }}}
