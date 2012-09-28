@@ -1,4 +1,4 @@
-" vim: foldlevel=0 foldmethod=marker :
+" vim: foldlevel=0 foldmethod=marker shiftwidth=2 :
 
 " Environment {{{
   " Basics {{{
@@ -40,6 +40,7 @@
   Bundle 'tpope/vim-speeddating'
   Bundle 'tpope/vim-unimpaired'
   Bundle 'taxilian/vim-web-indent'
+  " Bundle 'dahu/vim-fanfingtastic'
   Bundle 'matchit.zip'
 
   " Tools
@@ -155,6 +156,11 @@
   set softtabstop=4               " let backspace delete indent
 "}}}
 
+" Filetypes {{{
+  let g:xml_syntax_folding=1
+  autocmd FileType xml set foldmethod=syntax
+"}}}
+
 " Key (re)Mappings {{{
 
   " Easier moving in tabs and windows
@@ -268,7 +274,8 @@
 
   " Powerline {{{
     let g:Powerline_symbols='compatible'
-    let g:Powerline_symbols_override = {'BRANCH': [0x25B8]}
+    let g:Powerline_symbols_override = {'BRANCH': [0x00BB], 'LINE': [0x007C]}
+    let g:Powerline_dividers_override = ['',[0x2022], '',[0x2022]]
   "}}}
 
   " Clojure {{{
@@ -370,7 +377,7 @@
     set guioptions=egt
     set lines=40
     set columns=120
-    set guifont=Monaco:h16,Consolas:h11,Courier\ New:h14
+    set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
 "}}}
 
@@ -409,8 +416,8 @@
   "}}}
 
   " Evaluate Vim code regions {{{
-
     " taken from kana/VimScratch
+
     function! VimEvaluate_linewise(line1, line2, adjust_cursorp)
       let bufnr = bufnr('')
       call VimEvaluate([bufnr, a:line1, 1, 0],
