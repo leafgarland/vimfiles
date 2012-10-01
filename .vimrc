@@ -156,12 +156,7 @@
   set softtabstop=4               " let backspace delete indent
 "}}}
 
-" Filetypes {{{
-  let g:xml_syntax_folding=1
-  autocmd FileType xml set foldmethod=syntax
-"}}}
-
-" Key (re)Mappings {{{
+" Key Mappings {{{
 
   " Easier moving in tabs and windows
   nnoremap <C-J> <C-W>j
@@ -262,12 +257,28 @@
   nnoremap L $
   vnoremap L g_
 
+  " Split line
+  nnoremap K i<CR><Esc>
+
   " Heresy
   inoremap <c-a> <esc>I
   inoremap <c-e> <esc>A
 
   " move to last change
   nnoremap gI `.
+"}}}
+
+" Filetypes {{{
+  augroup FileTypeStuff
+    autocmd!
+  " json {{{
+    autocmd FileType json map <leader>jq :%!python -m json.tool<CR>
+  " }}}
+  " xml {{{
+    let g:xml_syntax_folding=1
+    autocmd FileType xml set foldmethod=syntax
+  " }}}
+  augroup end
 "}}}
 
 " Plugins {{{
