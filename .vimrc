@@ -44,6 +44,7 @@
   Bundle 'matchit.zip'
 
   " Tools
+  Bundle 'Soares/butane.vim'
   Bundle 'AutoClose'
   Bundle 'kien/ctrlp.vim'
   Bundle 'vim-scripts/sessionman.vim'
@@ -77,6 +78,7 @@
   " Bundle 'zaiste/VimClojure'
   Bundle 'thinca/vim-ft-clojure'
   Bundle 'chrisbra/csv.vim'
+  Bundle 'leafgarland/typescript-vim'
 "}}}
 
 " General {{{
@@ -145,6 +147,10 @@
   set foldenable
   set list
   set listchars=tab:>\ ,trail:_
+
+  " Opens quick fix window when there are items, close it when empty
+  autocmd QuickFixCmdPost [^l]* nested cwindow
+  autocmd QuickFixCmdPost    l* nested lwindow
 "}}}
 
 " Formatting {{{
@@ -230,7 +236,9 @@
   nnoremap <leader>P :set paste<CR>"*P:set nopaste<CR>
   vnoremap <leader>y "*ygv
 
-  nnoremap <leader>bb :b#<CR>
+  nnoremap <leader>bb :b#<CR>         " toggle buffer
+  nnoremap <leader>bn :bn<CR>          " Next buffer.
+  nnoremap <leader>bp :bp<CR>          " Previous buffer.
 
   nnoremap vaa ggvGg_
   nnoremap Vaa ggVG
@@ -282,6 +290,11 @@
 "}}}
 
 " Plugins {{{
+
+  " Butane {{{
+    noremap <leader>bd :Bclose<CR>      " Close the buffer.
+    noremap <leader>bD :Bclose!<CR>     " Close the buffer & discard changes.
+  "}}}
 
   " Powerline {{{
     let g:Powerline_symbols='compatible'
