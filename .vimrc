@@ -297,9 +297,9 @@
   "}}}
 
   " Powerline {{{
-    let g:Powerline_symbols='compatible'
-    let g:Powerline_symbols_override = {'BRANCH': [0x00BB], 'LINE': [0x007C]}
-    let g:Powerline_dividers_override = ['',[0x2022], '',[0x2022]]
+    let g:Powerline_symbols='fancy'
+    " let g:Powerline_symbols_override = {'BRANCH': [0x00BB], 'LINE': [0x007C]}
+    " let g:Powerline_dividers_override = ['',[0x2022], '',[0x2022]]
   "}}}
 
   " Clojure {{{
@@ -359,6 +359,7 @@
   "}}}
 
   " ctrlp {{{
+    nnoremap <C-m> :CtrlPMRUFiles<CR>
     let g:ctrlp_working_path_mode = 2
     let g:ctrlp_custom_ignore = {
           \ 'dir':  '\.git$\|\.hg$\|\.svn$',
@@ -401,7 +402,7 @@
     set guioptions=egt
     set lines=40
     set columns=120
-    set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
+    set guifont=Droid_Sans_Mono_for_Powerline:h12,Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
 "}}}
 
