@@ -28,6 +28,7 @@
   Bundle 'tomtom/tlib_vim'
   Bundle 'tpope/vim-repeat'
   Bundle 'kana/vim-textobj-user'
+  " Bundle 'Shougo/vimproc'
 
   " Colour schemes
   Bundle 'altercation/vim-colors-solarized'
@@ -40,23 +41,23 @@
   Bundle 'tpope/vim-speeddating'
   Bundle 'tpope/vim-unimpaired'
   Bundle 'taxilian/vim-web-indent'
-  " Bundle 'dahu/vim-fanfingtastic'
+  Bundle 'dahu/vim-fanfingtastic'
   Bundle 'matchit.zip'
+  Bundle 'maxbrunsfeld/vim-yankstack'
 
   " Tools
   Bundle 'Soares/butane.vim'
-  Bundle 'AutoClose'
+  " Bundle 'AutoClose'
   Bundle 'kien/ctrlp.vim'
   Bundle 'vim-scripts/sessionman.vim'
   Bundle 'Lokaltog/vim-powerline'
-  Bundle 'Lokaltog/vim-easymotion'
+  " Bundle 'Lokaltog/vim-easymotion'
   Bundle 'godlygeek/tabular'
   Bundle 'corntrace/bufexplorer'
   Bundle 'tpope/vim-fugitive'
   Bundle 'gregsexton/gitv'
   Bundle 'vim-scripts/scratch.vim'
-  Bundle 'xolox/vim-shell'
-  Bundle 'HTML-AutoCloseTag'
+  " Bundle 'HTML-AutoCloseTag'
   if has('ruby')
     Bundle 'spf13/vim-preview'
   endif
@@ -77,7 +78,6 @@
   Bundle 'xolox/vim-lua-ftplugin'
   " Bundle 'zaiste/VimClojure'
   Bundle 'thinca/vim-ft-clojure'
-  Bundle 'chrisbra/csv.vim'
   Bundle 'leafgarland/typescript-vim'
 "}}}
 
@@ -163,6 +163,8 @@
 "}}}
 
 " Key Mappings {{{
+  " duplicate visual selection
+  vmap D y'>p
 
   " Easier moving in tabs and windows
   nnoremap <C-J> <C-W>j
@@ -267,10 +269,6 @@
 
   " Split line
   nnoremap K i<CR><Esc>
-
-  " Heresy
-  inoremap <c-a> <esc>I
-  inoremap <c-e> <esc>A
 
   " move to last change
   nnoremap gI `.
