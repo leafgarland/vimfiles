@@ -24,11 +24,11 @@
 " Bundles {{{
   " Base
   Bundle 'gmarik/vundle'
+  Bundle 'tpope/vim-sensible'
   Bundle 'MarcWeber/vim-addon-mw-utils'
   Bundle 'tomtom/tlib_vim'
   Bundle 'tpope/vim-repeat'
   Bundle 'kana/vim-textobj-user'
-  " Bundle 'Shougo/vimproc'
 
   " Colour schemes
   Bundle 'altercation/vim-colors-solarized'
@@ -48,19 +48,15 @@
   " Tools
   Bundle 'Soares/butane.vim'
   " Bundle 'AutoClose'
+  " Bundle 'HTML-AutoCloseTag'
   Bundle 'kien/ctrlp.vim'
   Bundle 'vim-scripts/sessionman.vim'
   Bundle 'Lokaltog/vim-powerline'
-  " Bundle 'Lokaltog/vim-easymotion'
   Bundle 'godlygeek/tabular'
   Bundle 'corntrace/bufexplorer'
   Bundle 'tpope/vim-fugitive'
   Bundle 'gregsexton/gitv'
   Bundle 'vim-scripts/scratch.vim'
-  " Bundle 'HTML-AutoCloseTag'
-  if has('ruby')
-    Bundle 'spf13/vim-preview'
-  endif
   if executable('ctags')
     Bundle 'majutsushi/tagbar'
   endif
@@ -76,18 +72,15 @@
   Bundle 'PProvost/vim-ps1'
   Bundle 'kongo2002/fsharp-vim'
   Bundle 'xolox/vim-lua-ftplugin'
-  " Bundle 'zaiste/VimClojure'
-  Bundle 'thinca/vim-ft-clojure'
   Bundle 'leafgarland/typescript-vim'
 "}}}
 
 " General {{{
-  set background=dark
-  filetype plugin indent on
-  syntax on
+  " sensible.vim has decent defaults
+  " so run those first and override later
+  runtime! plugin/sensible.vim
+
   set mouse=a
-  scriptencoding utf-8
-  set encoding=utf-8
 
   " always switch to the current file directory.
   " autocmd BufEnter * if bufname("") !~ "^\[A-Za-z0-9\]*://" | lcd %:p:h | endif
@@ -98,13 +91,7 @@
   set history=1000
   set hidden
 
-  " Setting up the directories {{{
-    set backup
-    if has('persistent_undo')
-      set undofile
-      set undolevels=1000
-      set undoreload=10000
-    endif
+  let g:netrw_menu = 0
   "}}}
 "}}}
 
@@ -113,13 +100,10 @@
   set cursorline
 
   if has('cmdline_info')
-    set ruler
     set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%) " a ruler on steroids
-    set showcmd                 " show partial commands in status line and
   endif
 
   if has('statusline')
-    set laststatus=2
 
     " Broken down into easily includeable segments
     set statusline=%<%f\    " Filename
@@ -130,23 +114,15 @@
     set statusline+=%=%-14.(%l,%c%V%)\ %p%%  " Right aligned file nav info
   endif
 
-  set backspace=indent,eol,start  " backspace for dummies
   set linespace=0
   set number
-  set showmatch
-  set incsearch
   set hlsearch
   set winminheight=0              " windows can be 0 line high
   set ignorecase
-  set smartcase
-  set wildmenu
   set wildmode=list:longest,full  " completion, list matches, then longest common part, then all.
   set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
-  set scrolljump=5                " lines to scroll when cursor leaves screen
-  set scrolloff=3                 " minimum lines to keep above and below cursor
   set foldenable
   set list
-  set listchars=tab:>\ ,trail:_
 
   " Opens quick fix window when there are items, close it when empty
   autocmd QuickFixCmdPost [^l]* nested cwindow
@@ -228,9 +204,6 @@
   nnoremap <c-z> zz
   nnoremap <space> za
 
-  " Yank from the cursor to the end of the line, to be consistent with C and D.
-  nnoremap Y y$
-
   " System clipboard interaction.  Mostly from:
   " https://github.com/henrik/dotfiles/blob/master/vim/config/mappings.vim
   nnoremap <leader>y "*y
@@ -295,9 +268,9 @@
   "}}}
 
   " Powerline {{{
-    let g:Powerline_symbols='fancy'
-    " let g:Powerline_symbols_override = {'BRANCH': [0x00BB], 'LINE': [0x007C]}
-    " let g:Powerline_dividers_override = ['',[0x2022], '',[0x2022]]
+    let g:Powerline_symbols='compatible'
+    let g:Powerline_symbols_override = {'BRANCH': [0x00BB], 'LINE': [0x007C]}
+    let g:Powerline_dividers_override = ['',[0x2022], '',[0x2022]]
   "}}}
 
   " Clojure {{{
@@ -357,7 +330,6 @@
   "}}}
 
   " ctrlp {{{
-    nnoremap <C-m> :CtrlPMRUFiles<CR>
     let g:ctrlp_working_path_mode = 2
     let g:ctrlp_custom_ignore = {
           \ 'dir':  '\.git$\|\.hg$\|\.svn$',
@@ -395,8 +367,8 @@
 "}}}
 
 " GUI Settings {{{
+  colorscheme base16-default
   if has('gui_running')
-    colorscheme base16-default
     set guioptions=egt
     set lines=40
     set columns=120
@@ -405,39 +377,6 @@
 "}}}
 
 " Functions {{{
-  " Initialize vim data directories {{{
-    function! InitializeDirectories()
-      let separator = "."
-      let parent = $HOME
-      let prefix = '.vim'
-      let dir_list = {
-            \ 'backup': 'backupdir',
-            \ 'views': 'viewdir',
-            \ 'swap': 'directory' }
-
-      if has('persistent_undo')
-        let dir_list['undo'] = 'undodir'
-      endif
-
-      for [dirname, settingname] in items(dir_list)
-        let directory = parent . '/' . prefix . dirname . "/"
-        if exists("*mkdir")
-          if !isdirectory(directory)
-            call mkdir(directory)
-          endif
-        endif
-        if !isdirectory(directory)
-          echo "Warning: Unable to create backup directory: " . directory
-          echo "Try: mkdir -p " . directory
-        else
-          let directory = substitute(directory, " ", "\\\\ ", "g")
-          exec "set " . settingname . "=" . directory
-        endif
-      endfor
-    endfunction
-    call InitializeDirectories()
-  "}}}
-
   " Evaluate Vim code regions {{{
     " taken from kana/VimScratch
 
