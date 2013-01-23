@@ -72,6 +72,7 @@
   Bundle 'spf13/vim-markdown'
   Bundle 'PProvost/vim-ps1'
   Bundle 'kongo2002/fsharp-vim'
+  Bundle 'guns/vim-clojure-static'
   Bundle 'xolox/vim-lua-ftplugin'
   Bundle 'leafgarland/typescript-vim'
   if has('mac')
@@ -276,15 +277,6 @@
     let g:Powerline_symbols='compatible'
     let g:Powerline_symbols_override = {'BRANCH': [0x00BB], 'LINE': [0x007C]}
     let g:Powerline_dividers_override = ['',[0x2022], '',[0x2022]]
-  "}}}
-
-  " Clojure {{{
-    let vimclojure#FuzzyIndent=1
-    let vimclojure#HighlightBuiltins=1
-    let vimclojure#HighlightContrib=0
-    let vimclojure#DynamicHighlighting=1
-    let vimclojure#ParenRainbow=1
-    let vimclojure#WantNailgun = 1
   "}}}
 
   " Ctags {{{
