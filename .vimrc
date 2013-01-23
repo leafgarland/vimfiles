@@ -44,6 +44,7 @@
   Bundle 'dahu/vim-fanfingtastic'
   Bundle 'matchit.zip'
   Bundle 'maxbrunsfeld/vim-yankstack'
+  Bundle 'camelcasemotion'
 
   " Tools
   Bundle 'Soares/butane.vim'
@@ -73,6 +74,10 @@
   Bundle 'kongo2002/fsharp-vim'
   Bundle 'xolox/vim-lua-ftplugin'
   Bundle 'leafgarland/typescript-vim'
+  if has('mac')
+    Bundle 'Rip-Rip/clang_complete'
+    Bundle 'jszakmeister/vim-togglecursor'
+  endif
 "}}}
 
 " General {{{
