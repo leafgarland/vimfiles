@@ -25,14 +25,17 @@
   " Base
   Bundle 'gmarik/vundle'
   Bundle 'tpope/vim-sensible'
+  Bundle 'tpope/vim-dispatch'
   Bundle 'MarcWeber/vim-addon-mw-utils'
   Bundle 'tomtom/tlib_vim'
   Bundle 'tpope/vim-repeat'
   Bundle 'kana/vim-textobj-user'
+  Bundle 'Shougo/vimproc'
 
-  " Colour schemes
+  " Colour schemes and pretty things
   Bundle 'altercation/vim-colors-solarized'
   Bundle 'chriskempson/base16-vim'
+  Bundle 'bling/vim-airline'
 
   " Motions and actions
   Bundle 'kana/vim-textobj-indent'
@@ -47,16 +50,17 @@
   Bundle 'camelcasemotion'
 
   " Tools
+  Bundle 'Shougo/unite.vim'
   Bundle 'Soares/butane.vim'
   Bundle 'Raimondi/delimitMate'
   Bundle 'kien/ctrlp.vim'
   Bundle 'vim-scripts/sessionman.vim'
-  Bundle 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
   Bundle 'godlygeek/tabular'
   Bundle 'corntrace/bufexplorer'
   Bundle 'tpope/vim-fugitive'
-  Bundle 'gregsexton/gitv'
+  Bundle 'airblade/vim-gitgutter'
   Bundle 'vim-scripts/scratch.vim'
+  Bundle 'ZoomWin'
   if executable('ctags')
     Bundle 'majutsushi/tagbar'
   endif
@@ -70,14 +74,15 @@
   Bundle 'kchmck/vim-coffee-script'
   Bundle 'spf13/vim-markdown'
   Bundle 'PProvost/vim-ps1'
+  Bundle 'kongo2002/fsharp-vim'
   Bundle 'xolox/vim-lua-ftplugin'
-  Bundle 'timrobinson/fsharp-vim'
   Bundle 'leafgarland/typescript-vim'
   Bundle 'tpope/vim-foreplay'
   Bundle 'guns/vim-clojure-static'
   if has('mac')
     Bundle 'Valloric/YouCompleteMe'
     Bundle 'jszakmeister/vim-togglecursor'
+    Bundle 'wlangstroth/vim-racket'
   endif
 "}}}
 
@@ -98,7 +103,6 @@
   set hidden
 
   let g:netrw_menu = 0
-  "}}}
 "}}}
 
 " Vim UI {{{
@@ -130,6 +134,8 @@
   set foldenable
   set list
 
+  set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
+
   " Opens quick fix window when there are items, close it when empty
   autocmd QuickFixCmdPost [^l]* nested cwindow
   autocmd QuickFixCmdPost    l* nested lwindow
@@ -145,9 +151,7 @@
 "}}}
 
 " Key Mappings {{{
-  " leader
   let mapleader = "\<space>"
-
   " duplicate visual selection
   vmap D y'>p
 
@@ -162,8 +166,7 @@
   nnoremap k gk
 
   " get out of insert quickly
-  inoremap kj <esc>
-  inoremap jk <esc>
+  inoremap ii <esc>
 
   " Code folding options
   nnoremap <leader>f0 :set foldlevel=0<CR>
@@ -175,7 +178,6 @@
   nnoremap <leader>f7 :set foldlevel=7<CR>
   nnoremap <leader>f8 :set foldlevel=8<CR>
   nnoremap <leader>f9 :set foldlevel=9<CR>
-  nnoremap <leader>ff za
 
   "clearing highlighted search
   nnoremap <silent> <leader>/ :nohlsearch<CR>
@@ -209,7 +211,7 @@
 
   nnoremap <silent> <F7> :set spell!<cr>
 
-  noremap <leader>ev :e $MYVIMRC<CR>
+  noremap <leader>ee :e $MYVIMRC<CR>
 
   nnoremap <c-z> zz
 
@@ -265,30 +267,40 @@
   " xml {{{
     let g:xml_syntax_folding=1
     autocmd FileType xml set foldmethod=syntax
+    autocmd FileType xml map <leader>jq :%!python -c "import sys;import xml.dom.minidom;s=sys.stdin.read();print xml.dom.minidom.parseString(s).toprettyxml()"<CR>
   " }}}
   augroup end
 "}}}
 
 " Plugins {{{
+  " Unite {{{
+    let g:unite_source_history_yank_enable = 1
+    call unite#filters#matcher_default#use(['matcher_fuzzy'])
+
+    nnoremap <leader>ut :<C-u>Unite -no-split -buffer-name=files  -start-insert file_rec/async:!<cr>
+    nnoremap <leader>uf :<C-u>Unite -no-split -buffer-name=files   -start-insert file<cr>
+    nnoremap <leader>uo :<C-u>UniteWithBufferDir -no-split -buffer-name=files   -start-insert file<cr>
+    nnoremap <leader>ur :<C-u>Unite -hide-source-names -no-split -buffer-name=mru     -start-insert file_mru bookmark <cr>
+    nnoremap <leader>uy :<C-u>Unite -no-split -buffer-name=yank    history/yank<cr>
+    nnoremap <leader>ue :<C-u>Unite -no-split -buffer-name=buffer  buffer<cr>
+
+    " Custom mappings for the unite buffer
+    autocmd FileType unite call s:unite_settings()
+    function! s:unite_settings()
+      " Enable navigation with control-j and control-k in insert mode
+      imap <buffer> <C-j>   <Plug>(unite_select_next_line)
+      imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
+    endfunction
+  "}}}
 
   " Butane {{{
     noremap <leader>bd :Bclose<CR>      " Close the buffer.
     noremap <leader>bD :Bclose!<CR>     " Close the buffer & discard changes.
   "}}}
 
-  " Powerline {{{
-    let g:Powerline_symbols='compatible'
-    let g:Powerline_symbols_override = {'BRANCH': [0x00BB], 'LINE': [0x007C]}
-    let g:Powerline_dividers_override = ['',[0x2022], '',[0x2022]]
-  "}}}
-
-  " Clojure {{{
-    let vimclojure#FuzzyIndent=1
-    let vimclojure#HighlightBuiltins=1
-    let vimclojure#HighlightContrib=0
-    let vimclojure#DynamicHighlighting=1
-    let vimclojure#ParenRainbow=1
-    let vimclojure#WantNailgun = 1
+  " Airline {{{
+    let g:airline_left_sep = '►'
+    let g:airline_right_sep = '◄'
   "}}}
 
   " Ctags {{{
@@ -381,7 +393,7 @@
     set guioptions=egt
     set lines=40
     set columns=120
-    set guifont=Droid_Sans_Mono_for_Powerline:h12,Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
+    set guifont=Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
 "}}}
 
