@@ -87,7 +87,6 @@
   set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
   set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
   set virtualedit=onemore         " allow for cursor beyond last character
-  set history=1000
   set hidden
 
   set cryptmethod=blowfish
@@ -125,7 +124,6 @@
 
 " Formatting {{{
   set nowrap
-  set autoindent
   set shiftwidth=4                " use indents of 4 spaces
   set expandtab                   " tabs are spaces, not tabs
   set tabstop=4                   " an indentation every four columns
@@ -266,7 +264,7 @@
   " Unite {{{
     " Use ag for search
     if executable('ag')
-   @  set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow
+      set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow
       set grepformat=%f:%l:%c:%m
       let g:unite_source_grep_command = 'ag'
       let g:unite_source_grep_default_opts = '--nogroup --nocolor -S -C4'
@@ -306,16 +304,6 @@
 
   " Ctags {{{
     set tags=./tags;/,~/.vimtags
-  "}}}
-
-  " AutoCloseTag {{{
-  " Make it so AutoCloseTag works for xml and xhtml files as well
-    autocmd FileType xhtml,xml ru ftplugin/html/autoclosetag.vim
-    nnoremap <Leader>ac <Plug>ToggleAutoCloseMappings
-  "}}}
-
-  " TagBar {{{
-    nnoremap <silent> <leader>tt :TagbarToggle<CR>
   "}}}
 
   " Fugitive {{{
