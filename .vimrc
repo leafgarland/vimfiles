@@ -26,46 +26,33 @@
   Bundle 'gmarik/vundle'
   Bundle 'tpope/vim-sensible'
   Bundle 'tpope/vim-dispatch'
-  Bundle 'MarcWeber/vim-addon-mw-utils'
-  Bundle 'tomtom/tlib_vim'
   Bundle 'tpope/vim-repeat'
-  Bundle 'kana/vim-textobj-user'
   Bundle 'Shougo/vimproc'
 
   " Colour schemes and pretty things
-  Bundle 'altercation/vim-colors-solarized'
   Bundle 'chriskempson/base16-vim'
   Bundle 'bling/vim-airline'
 
   " Motions and actions
+  Bundle 'kana/vim-textobj-user'
   Bundle 'kana/vim-textobj-indent'
   Bundle 'tpope/vim-commentary'
   Bundle 'tpope/vim-surround'
   Bundle 'tpope/vim-speeddating'
   Bundle 'tpope/vim-unimpaired'
+  Bundle 'tpope/vim-abolish'
   Bundle 'taxilian/vim-web-indent'
-  Bundle 'dahu/vim-fanfingtastic'
-  Bundle 'matchit.zip'
-  Bundle 'maxbrunsfeld/vim-yankstack'
-  Bundle 'camelcasemotion'
+  Bundle 'justinmk/vim-sneak'
 
   " Tools
   Bundle 'Shougo/unite.vim'
   Bundle 'Soares/butane.vim'
   Bundle 'Raimondi/delimitMate'
-  Bundle 'kien/ctrlp.vim'
-  Bundle 'vim-scripts/sessionman.vim'
-  Bundle 'godlygeek/tabular'
-  Bundle 'corntrace/bufexplorer'
   Bundle 'tpope/vim-fugitive'
-  Bundle 'airblade/vim-gitgutter'
   Bundle 'vim-scripts/scratch.vim'
-  Bundle 'ZoomWin'
+  Bundle 'jgdavey/tslime.vim'
   if executable('ctags')
     Bundle 'majutsushi/tagbar'
-  endif
-  if executable('ack')
-    Bundle 'mileszs/ack.vim'
   endif
 
   " Filetypes
@@ -75,10 +62,14 @@
   Bundle 'spf13/vim-markdown'
   Bundle 'PProvost/vim-ps1'
   Bundle 'kongo2002/fsharp-vim'
+  Bundle 'xolox/vim-misc'
   Bundle 'xolox/vim-lua-ftplugin'
+  Bundle 'clausreinke/typescript-tools'
   Bundle 'leafgarland/typescript-vim'
-  Bundle 'tpope/vim-foreplay'
+  Bundle 'tpope/vim-fireplace'
   Bundle 'guns/vim-clojure-static'
+  Bundle 'guns/vim-sexp'
+  Bundle 'Blackrush/vim-gocode'
   if has('mac')
     Bundle 'Valloric/YouCompleteMe'
     Bundle 'jszakmeister/vim-togglecursor'
@@ -99,8 +90,11 @@
   set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
   set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
   set virtualedit=onemore         " allow for cursor beyond last character
-  set history=1000
   set hidden
+
+  set cryptmethod=blowfish
+  " disables swaps, backups and history etc for encrypted files
+  autocmd BufReadPost * if &key != "" | setl noswapfile nowritebackup viminfo= nobackup noshelltemp secure | endif
 
   let g:netrw_menu = 0
 "}}}
@@ -113,17 +107,6 @@
     set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%) " a ruler on steroids
   endif
 
-  if has('statusline')
-
-    " Broken down into easily includeable segments
-    set statusline=%<%f\    " Filename
-    set statusline+=%w%h%m%r " Options
-    set statusline+=%{fugitive#statusline()} "  Git Hotness
-    set statusline+=\ [%{&ff}/%Y]            " filetype
-    set statusline+=\ [%{getcwd()}]          " current dir
-    set statusline+=%=%-14.(%l,%c%V%)\ %p%%  " Right aligned file nav info
-  endif
-
   set linespace=0
   set number
   set hlsearch
@@ -132,6 +115,8 @@
   set wildmode=list:longest,full  " completion, list matches, then longest common part, then all.
   set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
   set foldenable
+  set foldmethod=syntax
+  set foldlevelstart=1
   set list
 
   set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
@@ -152,6 +137,8 @@
 
 " Key Mappings {{{
   let mapleader = "\<space>"
+  nnoremap <leader><leader> :
+
   " duplicate visual selection
   vmap D y'>p
 
@@ -178,6 +165,7 @@
   nnoremap <leader>f7 :set foldlevel=7<CR>
   nnoremap <leader>f8 :set foldlevel=8<CR>
   nnoremap <leader>f9 :set foldlevel=9<CR>
+  nnoremap <leader>ff za
 
   "clearing highlighted search
   nnoremap <silent> <leader>/ :nohlsearch<CR>
@@ -261,14 +249,32 @@
 " Filetypes {{{
   augroup FileTypeStuff
     autocmd!
+
   " json {{{
     autocmd FileType json map <leader>jq :%!python -m json.tool<CR>
   " }}}
+
   " xml {{{
     let g:xml_syntax_folding=1
     autocmd FileType xml set foldmethod=syntax
     autocmd FileType xml map <leader>jq :%!python -c "import sys;import xml.dom.minidom;s=sys.stdin.read();print xml.dom.minidom.parseString(s).toprettyxml()"<CR>
   " }}}
+
+  " go {{{
+    au BufRead,BufNewFile *.go set noet ts=4 sw=4
+  " }}}
+
+  " fsharp {{{
+    if has('conceal')
+      autocmd Syntax fsharp syn match Operator '<>' conceal cchar=≠
+      autocmd Syntax * syn keyword Operator lambda conceal cchar=λ
+      autocmd Syntax ruby syn match rubyKeyword "->" conceal cchar=λ
+      autocmd Syntax haskell syn match hsKeyword "\\" conceal cchar=λ
+      hi! link Conceal Operator
+      set conceallevel=2
+    endif
+  " }}}
+
   augroup end
 "}}}
 
@@ -299,8 +305,10 @@
   "}}}
 
   " Airline {{{
-    let g:airline_left_sep = '►'
-    let g:airline_right_sep = '◄'
+    let g:airline_left_sep = ''
+    let g:airline_right_sep = ''
+    let g:airline_theme = 'base16'
+    let g:airline#extensions#whitespace#enabled = 0
   "}}}
 
   " Ctags {{{
@@ -311,50 +319,6 @@
   " Make it so AutoCloseTag works for xml and xhtml files as well
     autocmd FileType xhtml,xml ru ftplugin/html/autoclosetag.vim
     nnoremap <Leader>ac <Plug>ToggleAutoCloseMappings
-  "}}}
-
-  " Tabularize {{{
-    if exists(":Tabularize")
-      nnoremap <Leader>a= :Tabularize /=<CR>
-      vnoremap <Leader>a= :Tabularize /=<CR>
-      nnoremap <Leader>a: :Tabularize /:<CR>
-      vnoremap <Leader>a: :Tabularize /:<CR>
-      nnoremap <Leader>a:: :Tabularize /:\zs<CR>
-      vnoremap <Leader>a:: :Tabularize /:\zs<CR>
-      nnoremap <Leader>a, :Tabularize /,<CR>
-      vnoremap <Leader>a, :Tabularize /,<CR>
-      nnoremap <Leader>a<Bar> :Tabularize /<Bar><CR>
-      vnoremap <Leader>a<Bar> :Tabularize /<Bar><CR>
-
-      " The following function automatically aligns when typing a
-      " supported character
-      inoremap <silent> <Bar>   <Bar><Esc>:call <SID>align()<CR>a
-
-      function! s:align()
-        let p = '^\s*|\s.*\s|\s*$'
-        if exists(':Tabularize') && getline('.') =~# '^\s*|' && (getline(line('.')-1) =~# p || getline(line('.')+1) =~# p)
-          let column = strlen(substitute(getline('.')[0:col('.')],'[^|]','','g'))
-          let position = strlen(matchstr(getline('.')[0:col('.')],'.*|\s*\zs.*'))
-          Tabularize/|/l1
-          normal! 0
-          call search(repeat('[^|]*|',column).'\s\{-\}'.repeat('.',position),'ce',line('.'))
-        endif
-      endfunction
-
-    endif
-  "}}}
-
-  " Session List {{{
-    set sessionoptions=blank,buffers,curdir,folds,tabpages,winsize
-    nnoremap <leader>sl :SessionList<CR>
-    nnoremap <leader>ss :SessionSave<CR>
-  "}}}
-
-  " ctrlp {{{
-    let g:ctrlp_working_path_mode = 2
-    let g:ctrlp_custom_ignore = {
-          \ 'dir':  '\.git$\|\.hg$\|\.svn$',
-          \ 'file': '\.exe$\|\.so$\|\.dll$' }
   "}}}
 
   " TagBar {{{
@@ -385,9 +349,28 @@
 
     nnoremap <silent> <leader><tab> :ScratchToggle<cr>
   "}}}
+
+  " sexp {{{
+        let g:sexp_mappings = {
+            \ 'sexp_move_to_prev_element_head': 'b',
+            \ 'sexp_move_to_next_element_head': 'w',
+            \ 'sexp_move_to_prev_element_tail': 'ge',
+            \ 'sexp_move_to_next_element_tail': 'e',
+            \ 'sexp_swap_list_backward':        'k',
+            \ 'sexp_swap_list_forward':         'j',
+            \ 'sexp_swap_element_backward':     'h',
+            \ 'sexp_swap_element_forward':      'l',
+            \ 'sexp_emit_head_element':         'J',
+            \ 'sexp_emit_tail_element':         'K',
+            \ 'sexp_capture_prev_element':      'H',
+            \ 'sexp_capture_next_element':      'L',
+            \ }
+  "}}}
 "}}}
 
 " GUI Settings {{{
+  let t_Co=256
+  let base16colorspace=256
   colorscheme base16-default
   if has('gui_running')
     set guioptions=egt
@@ -395,6 +378,7 @@
     set columns=120
     set guifont=Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
+
 "}}}
 
 " Functions {{{
