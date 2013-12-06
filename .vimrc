@@ -31,6 +31,7 @@
 
   " Colour schemes and pretty things
   Bundle 'chriskempson/base16-vim'
+  Bundle 'Pychimp/vim-luna'
   Bundle 'bling/vim-airline'
 
   " Motions and actions
@@ -41,19 +42,15 @@
   Bundle 'tpope/vim-speeddating'
   Bundle 'tpope/vim-unimpaired'
   Bundle 'tpope/vim-abolish'
-  Bundle 'taxilian/vim-web-indent'
   Bundle 'justinmk/vim-sneak'
+  Bundle 'matchit.zip'
 
   " Tools
   Bundle 'Shougo/unite.vim'
   Bundle 'Soares/butane.vim'
   Bundle 'Raimondi/delimitMate'
   Bundle 'tpope/vim-fugitive'
-  Bundle 'vim-scripts/scratch.vim'
-  Bundle 'jgdavey/tslime.vim'
-  if executable('ctags')
-    Bundle 'majutsushi/tagbar'
-  endif
+  Bundle 'tpope/vim-ragtag'
 
   " Filetypes
   Bundle 'ChrisYip/Better-CSS-Syntax-for-Vim'
@@ -90,6 +87,7 @@
   set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
   set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
   set virtualedit=onemore         " allow for cursor beyond last character
+  set history=1000
   set hidden
 
   set cryptmethod=blowfish
@@ -101,7 +99,6 @@
 
 " Vim UI {{{
   set showmode
-  set cursorline
 
   if has('cmdline_info')
     set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%) " a ruler on steroids
@@ -136,8 +133,9 @@
 "}}}
 
 " Key Mappings {{{
+  " the button is sooo big, i must hit it lots
   let mapleader = "\<space>"
-  nnoremap <leader><leader> :
+  nmap <leader><leader> :
 
   " duplicate visual selection
   vmap D y'>p
@@ -210,9 +208,9 @@
   nnoremap <leader>P :set paste<CR>"*P:set nopaste<CR>
   vnoremap <leader>y "*ygv
 
-  nnoremap <leader>bb :b#<CR>         " toggle buffer
-  nnoremap <leader>bn :bn<CR>          " Next buffer.
-  nnoremap <leader>bp :bp<CR>          " Previous buffer.
+  nnoremap <leader>bb :b#<CR>
+  nnoremap <leader>bn :bn<CR>
+  nnoremap <leader>bp :bp<CR>
 
   nnoremap vaa ggvGg_
   nnoremap Vaa ggVG
@@ -255,40 +253,35 @@
   " }}}
 
   " xml {{{
+    autocmd BufNewFile,BufRead *.config setfiletype xml
+    autocmd BufNewFile,BufRead *.*proj setfiletype xml
     let g:xml_syntax_folding=1
     autocmd FileType xml set foldmethod=syntax
     autocmd FileType xml map <leader>jq :%!python -c "import sys;import xml.dom.minidom;s=sys.stdin.read();print xml.dom.minidom.parseString(s).toprettyxml()"<CR>
   " }}}
-
-  " go {{{
-    au BufRead,BufNewFile *.go set noet ts=4 sw=4
-  " }}}
-
-  " fsharp {{{
-    if has('conceal')
-      autocmd Syntax fsharp syn match Operator '<>' conceal cchar=≠
-      autocmd Syntax * syn keyword Operator lambda conceal cchar=λ
-      autocmd Syntax ruby syn match rubyKeyword "->" conceal cchar=λ
-      autocmd Syntax haskell syn match hsKeyword "\\" conceal cchar=λ
-      hi! link Conceal Operator
-      set conceallevel=2
-    endif
-  " }}}
-
   augroup end
 "}}}
 
 " Plugins {{{
   " Unite {{{
+    " Use ag for search
+    if executable('ag')
+   @  set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow
+      set grepformat=%f:%l:%c:%m
+      let g:unite_source_grep_command = 'ag'
+      let g:unite_source_grep_default_opts = '--nogroup --nocolor -S -C4'
+      let g:unite_source_grep_recursive_opt = ''
+    endif
+
     let g:unite_source_history_yank_enable = 1
     call unite#filters#matcher_default#use(['matcher_fuzzy'])
 
-    nnoremap <leader>ut :<C-u>Unite -no-split -buffer-name=files  -start-insert file_rec/async:!<cr>
-    nnoremap <leader>uf :<C-u>Unite -no-split -buffer-name=files   -start-insert file<cr>
-    nnoremap <leader>uo :<C-u>UniteWithBufferDir -no-split -buffer-name=files   -start-insert file<cr>
-    nnoremap <leader>ur :<C-u>Unite -hide-source-names -no-split -buffer-name=mru     -start-insert file_mru bookmark <cr>
-    nnoremap <leader>uy :<C-u>Unite -no-split -buffer-name=yank    history/yank<cr>
-    nnoremap <leader>ue :<C-u>Unite -no-split -buffer-name=buffer  buffer<cr>
+    nnoremap <leader>uf :<C-u>Unite -no-split -buffer-name=files -start-insert file_rec/async:!<cr>
+    nnoremap <leader>ut :<C-u>Unite -no-split -buffer-name=files -start-insert file<cr>
+    nnoremap <leader>uo :<C-u>UniteWithBufferDir -no-split -buffer-name=files -start-insert file_rec/async:!<cr>
+    nnoremap <leader>ur :<C-u>Unite -hide-source-names -no-split -buffer-name=mru -start-insert file_mru<cr>
+    nnoremap <leader>uy :<C-u>Unite -no-split -buffer-name=yank history/yank<cr>
+    nnoremap <leader>ue :<C-u>Unite -no-split -buffer-name=buffer buffer<cr>
 
     " Custom mappings for the unite buffer
     autocmd FileType unite call s:unite_settings()
@@ -373,10 +366,13 @@
   let base16colorspace=256
   colorscheme base16-default
   if has('gui_running')
+    colorscheme base16-monokai
+    let g:airline_theme = 'base16'
+    set cursorline
     set guioptions=egt
     set lines=40
     set columns=120
-    set guifont=Monaco:h16,Consolas:h11,Courier\ New:h14
+    set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
 
 "}}}
