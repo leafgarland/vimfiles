@@ -51,6 +51,7 @@
   Bundle 'Raimondi/delimitMate'
   Bundle 'tpope/vim-fugitive'
   Bundle 'tpope/vim-ragtag'
+  Bundle 'tpope/vim-vinegar'
 
   " Filetypes
   Bundle 'ChrisYip/Better-CSS-Syntax-for-Vim'
@@ -66,6 +67,7 @@
   Bundle 'tpope/vim-fireplace'
   Bundle 'guns/vim-clojure-static'
   Bundle 'guns/vim-sexp'
+  Bundle 'tpope/vim-sexp-mappings-for-regular-people'
   Bundle 'Blackrush/vim-gocode'
   if has('mac')
     Bundle 'Valloric/YouCompleteMe'
