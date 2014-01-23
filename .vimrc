@@ -27,15 +27,16 @@
   Bundle 'tpope/vim-sensible'
   Bundle 'tpope/vim-dispatch'
   Bundle 'tpope/vim-repeat'
+  Bundle 'kana/vim-textobj-user'
   Bundle 'Shougo/vimproc'
 
   " Colour schemes and pretty things
   Bundle 'chriskempson/base16-vim'
   Bundle 'Pychimp/vim-luna'
   Bundle 'bling/vim-airline'
+  Bundle 'w0ng/vim-hybrid'
 
   " Motions and actions
-  Bundle 'kana/vim-textobj-user'
   Bundle 'kana/vim-textobj-indent'
   Bundle 'tpope/vim-commentary'
   Bundle 'tpope/vim-surround'
@@ -43,12 +44,12 @@
   Bundle 'tpope/vim-unimpaired'
   Bundle 'tpope/vim-abolish'
   Bundle 'justinmk/vim-sneak'
+  Bundle 'tommcdo/vim-exchange'
   Bundle 'matchit.zip'
 
   " Tools
   Bundle 'Shougo/unite.vim'
   Bundle 'Soares/butane.vim'
-  Bundle 'Raimondi/delimitMate'
   Bundle 'tpope/vim-fugitive'
   Bundle 'tpope/vim-ragtag'
   Bundle 'tpope/vim-vinegar'
@@ -60,15 +61,14 @@
   Bundle 'spf13/vim-markdown'
   Bundle 'PProvost/vim-ps1'
   Bundle 'kongo2002/fsharp-vim'
-  Bundle 'xolox/vim-misc'
-  Bundle 'xolox/vim-lua-ftplugin'
-  Bundle 'clausreinke/typescript-tools'
-  Bundle 'leafgarland/typescript-vim'
   Bundle 'tpope/vim-fireplace'
   Bundle 'guns/vim-clojure-static'
   Bundle 'guns/vim-sexp'
   Bundle 'tpope/vim-sexp-mappings-for-regular-people'
+  Bundle 'leafgarland/typescript-vim'
+  Bundle 'jb55/Vim-Roy'
   Bundle 'Blackrush/vim-gocode'
+  Bundle 'derekwyatt/vim-scala'
   if has('mac')
     Bundle 'Valloric/YouCompleteMe'
     Bundle 'jszakmeister/vim-togglecursor'
@@ -89,8 +89,14 @@
   set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
   set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
   set virtualedit=onemore         " allow for cursor beyond last character
+  set history=1000
   set hidden
 
+  set backup
+  set backupdir=~/.vim/backup//
+  set directory=~/.vim/swap//
+  set undodir=~/.vim/undo//
+  
   set cryptmethod=blowfish
   " disables swaps, backups and history etc for encrypted files
   autocmd BufReadPost * if &key != "" | setl noswapfile nowritebackup viminfo= nobackup noshelltemp secure | endif
@@ -112,9 +118,12 @@
   set ignorecase
   set wildmode=list:longest,full  " completion, list matches, then longest common part, then all.
   set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
+
   set foldenable
   set foldmethod=syntax
-  set foldlevelstart=1
+  set foldlevelstart=2
+  set foldnestmax=10
+
   set list
 
   set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
@@ -126,6 +135,7 @@
 
 " Formatting {{{
   set nowrap
+  set autoindent
   set shiftwidth=4                " use indents of 4 spaces
   set expandtab                   " tabs are spaces, not tabs
   set tabstop=4                   " an indentation every four columns
@@ -249,15 +259,17 @@
     autocmd!
 
   " json {{{
-    autocmd FileType json map <leader>jq :%!python -m json.tool<CR>
+    autocmd FileType json set equalprg=python\ -m\ json.tool
   " }}}
-
   " xml {{{
     autocmd BufNewFile,BufRead *.config setfiletype xml
     autocmd BufNewFile,BufRead *.*proj setfiletype xml
     let g:xml_syntax_folding=1
     autocmd FileType xml set foldmethod=syntax
-    autocmd FileType xml map <leader>jq :%!python -c "import sys;import xml.dom.minidom;s=sys.stdin.read();print xml.dom.minidom.parseString(s).toprettyxml()"<CR>
+    autocmd FileType xml set equalprg=xmllint\ --format\ -
+  " }}}
+  " fsharp {{{
+    autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
   " }}}
   augroup end
 "}}}
@@ -333,21 +345,10 @@
     nnoremap <silent> <leader><tab> :ScratchToggle<cr>
   "}}}
 
-  " sexp {{{
-        let g:sexp_mappings = {
-            \ 'sexp_move_to_prev_element_head': 'b',
-            \ 'sexp_move_to_next_element_head': 'w',
-            \ 'sexp_move_to_prev_element_tail': 'ge',
-            \ 'sexp_move_to_next_element_tail': 'e',
-            \ 'sexp_swap_list_backward':        'k',
-            \ 'sexp_swap_list_forward':         'j',
-            \ 'sexp_swap_element_backward':     'h',
-            \ 'sexp_swap_element_forward':      'l',
-            \ 'sexp_emit_head_element':         'J',
-            \ 'sexp_emit_tail_element':         'K',
-            \ 'sexp_capture_prev_element':      'H',
-            \ 'sexp_capture_next_element':      'L',
-            \ }
+  "{{{ Sneak
+    " let g:sneak#streak = 1
+    " hi link SneakPluginTarget ErrorMsg
+    " hi link SneakPluginScope  Comment
   "}}}
 "}}}
 
