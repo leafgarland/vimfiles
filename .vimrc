@@ -2,6 +2,9 @@
 
 " Environment {{{
   " Basics {{{
+    if &shell =~# 'fish$'
+      set shell=zsh
+    endif
     set nocompatible
     set background=dark
   "}}}
@@ -32,9 +35,7 @@
 
   " Colour schemes and pretty things
   Bundle 'chriskempson/base16-vim'
-  Bundle 'Pychimp/vim-luna'
   Bundle 'bling/vim-airline'
-  Bundle 'w0ng/vim-hybrid'
 
   " Motions and actions
   Bundle 'kana/vim-textobj-indent'
@@ -46,17 +47,21 @@
   Bundle 'justinmk/vim-sneak'
   Bundle 'tommcdo/vim-exchange'
   Bundle 'matchit.zip'
+  Bundle 'wellle/targets.vim'
 
   " Tools
   Bundle 'Shougo/unite.vim'
+  Bundle 'Shougo/neomru.vim'
   Bundle 'Soares/butane.vim'
   Bundle 'tpope/vim-fugitive'
   Bundle 'tpope/vim-ragtag'
   Bundle 'tpope/vim-vinegar'
+  Bundle 'terryma/vim-expand-region'
 
   " Filetypes
   Bundle 'ChrisYip/Better-CSS-Syntax-for-Vim'
   Bundle 'leshill/vim-json'
+  Bundle 'tpope/vim-jdaddy'
   Bundle 'kchmck/vim-coffee-script'
   Bundle 'spf13/vim-markdown'
   Bundle 'PProvost/vim-ps1'
@@ -64,15 +69,22 @@
   Bundle 'tpope/vim-fireplace'
   Bundle 'guns/vim-clojure-static'
   Bundle 'guns/vim-sexp'
+  Bundle 'guns/vim-clojure-highlight'
   Bundle 'tpope/vim-sexp-mappings-for-regular-people'
   Bundle 'leafgarland/typescript-vim'
   Bundle 'jb55/Vim-Roy'
   Bundle 'Blackrush/vim-gocode'
-  Bundle 'derekwyatt/vim-scala'
+  Bundle 'pangloss/vim-javascript'
+  Bundle 'mxw/vim-jsx'
   if has('mac')
     Bundle 'Valloric/YouCompleteMe'
     Bundle 'jszakmeister/vim-togglecursor'
     Bundle 'wlangstroth/vim-racket'
+    Bundle 'jimenezrick/vimerl'
+    Bundle 'sophacles/vim-processing'
+    Bundle 'lambdatoast/elm.vim'
+    Bundle 'epeli/slimux'
+    Bundle 'dag/vim-fish'
   endif
 "}}}
 
@@ -96,7 +108,7 @@
   set backupdir=~/.vim/backup//
   set directory=~/.vim/swap//
   set undodir=~/.vim/undo//
-  
+
   set cryptmethod=blowfish
   " disables swaps, backups and history etc for encrypted files
   autocmd BufReadPost * if &key != "" | setl noswapfile nowritebackup viminfo= nobackup noshelltemp secure | endif
@@ -114,6 +126,7 @@
   set linespace=0
   set number
   set hlsearch
+  set cursorline
   set winminheight=0              " windows can be 0 line high
   set ignorecase
   set wildmode=list:longest,full  " completion, list matches, then longest common part, then all.
@@ -121,7 +134,7 @@
 
   set foldenable
   set foldmethod=syntax
-  set foldlevelstart=2
+  set foldlevelstart=9
   set foldnestmax=10
 
   set list
@@ -147,8 +160,8 @@
   let mapleader = "\<space>"
   nmap <leader><leader> :
 
-  " duplicate visual selection
-  vmap D y'>p
+  nnoremap <leader>w :w<CR>
+  nnoremap <CR> G
 
   " Easier moving in tabs and windows
   nnoremap <C-J> <C-W>j
@@ -161,7 +174,7 @@
   nnoremap k gk
 
   " get out of insert quickly
-  inoremap ii <esc>
+  inoremap jk <esc>
 
   " Code folding options
   nnoremap <leader>f0 :set foldlevel=0<CR>
@@ -178,25 +191,18 @@
   "clearing highlighted search
   nnoremap <silent> <leader>/ :nohlsearch<CR>
 
-  " Shortcuts
   " Change Working Directory to that of the current file
-  cnoremap cwd lcd %:p:h
   cnoremap cd. lcd %:p:h
 
   " visual shifting (does not exit Visual mode)
   vnoremap < <gv
   vnoremap > >gv
 
-  " Some helpers to edit mode
-  " http://vimcasts.org/e/14
   cnoremap %% <C-R>=expand('%:h').'/'<cr>
-  noremap <leader>ew :e %%
-  noremap <leader>es :sp %%
-  noremap <leader>ev :vsp %%
-  noremap <leader>et :tabe %%
+  noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
 
-  " Adjust viewports to the same size
-  noremap <Leader>= <C-w>=
+  " close all preview windows and quickfix|location lists
+  nnoremap <silent> <C-W>z :wincmd z<Bar>cclose<Bar>lclose<CR>
 
   " Easier horizontal scrolling
   noremap zl zL
@@ -205,18 +211,21 @@
   cnoremap <C-p> <Up>
   cnoremap <C-n> <Down>
 
-  nnoremap <silent> <F7> :set spell!<cr>
-
   noremap <leader>ee :e $MYVIMRC<CR>
-
-  nnoremap <c-z> zz
 
   " System clipboard interaction.  Mostly from:
   " https://github.com/henrik/dotfiles/blob/master/vim/config/mappings.vim
   nnoremap <leader>y "*y
-  nnoremap <leader>p :set paste<CR>"*p:set nopaste<CR>
-  nnoremap <leader>P :set paste<CR>"*P:set nopaste<CR>
+  nnoremap <leader>p :set paste<CR>"*]p:set nopaste<CR>
+  nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
   vnoremap <leader>y "*ygv
+
+  vnoremap <silent> y y`]
+  vnoremap <silent> p p`]
+  nnoremap <silent> p p`]
+
+  " duplicate visual selection
+  vmap D y'>p
 
   nnoremap <leader>bb :b#<CR>
   nnoremap <leader>bn :bn<CR>
@@ -224,7 +233,7 @@
 
   nnoremap vaa ggvGg_
   nnoremap Vaa ggVG
-  nnoremap vv ^vg_
+  nnoremap va ^vg_
   nnoremap gV `[v`]
 
   " Create a split on the given side.
@@ -260,6 +269,7 @@
 
   " json {{{
     autocmd FileType json set equalprg=python\ -m\ json.tool
+    set shiftwidth=2
   " }}}
   " xml {{{
     autocmd BufNewFile,BufRead *.config setfiletype xml
@@ -267,9 +277,11 @@
     let g:xml_syntax_folding=1
     autocmd FileType xml set foldmethod=syntax
     autocmd FileType xml set equalprg=xmllint\ --format\ -
+    set shiftwidth=2
   " }}}
   " fsharp {{{
     autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
+    set shiftwidth=2
   " }}}
   augroup end
 "}}}
@@ -329,36 +341,32 @@
     nnoremap <silent> <leader>gp :Git push<CR>
   "}}}
 
-  " Scratch {{{
-    command! ScratchToggle call ScratchToggle()
-
-    function! ScratchToggle()
-      if exists("w:is_scratch_window")
-        unlet w:is_scratch_window
-        exec "q"
-      else
-        exec "normal! :Sscratch\<cr>\<C-W>J:resize 13\<cr>"
-        let w:is_scratch_window = 1
-      endif
-    endfunction
-
-    nnoremap <silent> <leader><tab> :ScratchToggle<cr>
-  "}}}
-
   "{{{ Sneak
     " let g:sneak#streak = 1
     " hi link SneakPluginTarget ErrorMsg
     " hi link SneakPluginScope  Comment
+  "}}}
+
+  "{{{ Expand-Region
+    vmap v <Plug>(expand_region_expand)
+    vmap <C-v> <Plug>(expand_region_shrink)
+  "}}}
+
+  "{{{ Slimux
+    map <C-c><C-c> :SlimuxREPLSendLine<CR>
+    vmap <C-c><C-c> :SlimuxREPLSendSelection<CR>
+    map <Leader>a :SlimuxShellLast<CR>
+    map <Leader>k :SlimuxSendKeysLast<CR>
+    let g:slimux_scheme_keybindings=2
   "}}}
 "}}}
 
 " GUI Settings {{{
   let t_Co=256
   let base16colorspace=256
-  colorscheme base16-default
+  colorscheme base16-monokai
+  let g:airline_theme = 'powerlineish'
   if has('gui_running')
-    colorscheme base16-monokai
-    let g:airline_theme = 'base16'
     set cursorline
     set guioptions=egt
     set lines=40
@@ -369,6 +377,19 @@
 "}}}
 
 " Functions {{{
+" vp doesn't replace paste buffer {{{
+
+function! RestoreRegister()
+  let @" = s:restore_reg
+  return ''
+endfunction
+function! s:Repl()
+  let s:restore_reg = @"
+  return "p@=RestoreRegister()\<cr>"
+endfunction
+vmap <silent> <expr> p <sid>Repl()
+
+" }}}
   " Evaluate Vim code regions {{{
     " taken from kana/VimScratch
 
