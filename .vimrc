@@ -16,76 +16,77 @@
       set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
     endif
   "}}}
-
-  " Setup Bundle Support {{{
-  " The next two lines ensure that the ~/.vim/bundle/ system works
-      set runtimepath+=~/.vim/bundle/vundle
-      call vundle#rc()
-  "}}}
 "}}}
 
-" Bundles {{{
+" Plugins {{{
   " Base
-  Bundle 'gmarik/vundle'
-  Bundle 'tpope/vim-sensible'
-  Bundle 'tpope/vim-dispatch'
-  Bundle 'tpope/vim-repeat'
-  Bundle 'kana/vim-textobj-user'
-  Bundle 'Shougo/vimproc'
+  call plug#begin('~/.vim/bundle')
+
+  Plug 'tpope/vim-sensible'
+  Plug 'tpope/vim-dispatch'
+  Plug 'tpope/vim-repeat'
+  Plug 'kana/vim-textobj-user'
+  Plug 'Shougo/vimproc'
 
   " Colour schemes and pretty things
-  Bundle 'chriskempson/base16-vim'
-  Bundle 'bling/vim-airline'
+  Plug 'chriskempson/base16-vim'
+  Plug 'bling/vim-airline'
 
   " Motions and actions
-  Bundle 'kana/vim-textobj-indent'
-  Bundle 'tpope/vim-commentary'
-  Bundle 'tpope/vim-surround'
-  Bundle 'tpope/vim-speeddating'
-  Bundle 'tpope/vim-unimpaired'
-  Bundle 'tpope/vim-abolish'
-  Bundle 'justinmk/vim-sneak'
-  Bundle 'tommcdo/vim-exchange'
-  Bundle 'matchit.zip'
-  Bundle 'wellle/targets.vim'
+  Plug 'kana/vim-textobj-indent'
+  Plug 'tpope/vim-commentary'
+  Plug 'tpope/vim-surround'
+  Plug 'tpope/vim-speeddating'
+  Plug 'tpope/vim-unimpaired'
+  Plug 'tpope/vim-abolish'
+  Plug 'justinmk/vim-sneak'
+  Plug 'tommcdo/vim-exchange'
+  Plug 'matchit.zip'
+  Plug 'wellle/targets.vim'
 
   " Tools
-  Bundle 'Shougo/unite.vim'
-  Bundle 'Shougo/neomru.vim'
-  Bundle 'Soares/butane.vim'
-  Bundle 'tpope/vim-fugitive'
-  Bundle 'tpope/vim-ragtag'
-  Bundle 'tpope/vim-vinegar'
-  Bundle 'terryma/vim-expand-region'
+  Plug 'Shougo/unite.vim'
+  Plug 'Shougo/neomru.vim'
+  Plug 'Soares/butane.vim'
+  Plug 'tpope/vim-fugitive'
+  Plug 'tpope/vim-ragtag'
+  Plug 'tpope/vim-vinegar'
+  Plug 'tpope/vim-projectionist'
+  Plug 'terryma/vim-expand-region'
 
   " Filetypes
-  Bundle 'ChrisYip/Better-CSS-Syntax-for-Vim'
-  Bundle 'leshill/vim-json'
-  Bundle 'tpope/vim-jdaddy'
-  Bundle 'kchmck/vim-coffee-script'
-  Bundle 'spf13/vim-markdown'
-  Bundle 'PProvost/vim-ps1'
-  Bundle 'kongo2002/fsharp-vim'
-  Bundle 'tpope/vim-fireplace'
-  Bundle 'guns/vim-clojure-static'
-  Bundle 'guns/vim-sexp'
-  Bundle 'guns/vim-clojure-highlight'
-  Bundle 'tpope/vim-sexp-mappings-for-regular-people'
-  Bundle 'leafgarland/typescript-vim'
-  Bundle 'jb55/Vim-Roy'
-  Bundle 'Blackrush/vim-gocode'
-  Bundle 'pangloss/vim-javascript'
-  Bundle 'mxw/vim-jsx'
+  Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
+  Plug 'leshill/vim-json', {'for': 'json'}
+  Plug 'tpope/vim-jdaddy', {'for': 'json'}
+  Plug 'spf13/vim-markdown', {'for': 'markdown'}
+  Plug 'PProvost/vim-ps1', {'for': 'ps1'}
+  Plug 'kongo2002/fsharp-vim', {'for': 'fsharp'}
+  Plug 'tpope/vim-fireplace', {'for': 'clojure'}
+  Plug 'guns/vim-clojure-static', {'for': 'clojure'}
+  Plug 'guns/vim-sexp', {'for': 'clojure'}
+  Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
+  Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': 'clojure'}
+  Plug 'jimenezrick/vimerl', {'for': 'erlang'}
+  Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
+  Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
+  Plug 'pangloss/vim-javascript', {'for': 'javascript'}
+  Plug 'mxw/vim-jsx', {'for': 'javascript'}
+  Plug 'leafgarland/typescript-vim', {'for': 'javascript'}
+  Plug 'jb55/Vim-Roy', {'for': 'roy'}
+  Plug 'Blackrush/vim-gocode', {'for': 'roy'}
+
   if has('mac')
-    Bundle 'Valloric/YouCompleteMe'
-    Bundle 'jszakmeister/vim-togglecursor'
-    Bundle 'wlangstroth/vim-racket'
-    Bundle 'jimenezrick/vimerl'
-    Bundle 'sophacles/vim-processing'
-    Bundle 'lambdatoast/elm.vim'
-    Bundle 'epeli/slimux'
-    Bundle 'dag/vim-fish'
+    Plug 'Valloric/YouCompleteMe'
+    Plug 'jszakmeister/vim-togglecursor'
+    Plug 'sophacles/vim-processing'
+    Plug 'epeli/slimux'
+    Plug 'christoomey/vim-tmux-navigator'
+    Plug 'lambdatoast/elm.vim', {'for': 'elm'}
+    Plug 'wlangstroth/vim-racket', {'for': 'racket'}
+    Plug 'dag/vim-fish', {'for': 'fish'}
   endif
+
+  call plug#end()
 "}}}
 
 " General {{{
@@ -122,6 +123,10 @@
   if has('cmdline_info')
     set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%) " a ruler on steroids
   endif
+
+  set sidescroll=1
+  set sidescrolloff=5
+  set scrolloff=5
 
   set linespace=0
   set number
