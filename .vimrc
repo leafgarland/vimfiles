@@ -39,7 +39,6 @@
   Plug 'tpope/vim-speeddating'
   Plug 'tpope/vim-unimpaired'
   Plug 'tpope/vim-abolish'
-  Plug 'justinmk/vim-sneak'
   Plug 'tommcdo/vim-exchange'
   Plug 'matchit.zip'
   Plug 'wellle/targets.vim'
@@ -52,7 +51,6 @@
   Plug 'tpope/vim-ragtag'
   Plug 'tpope/vim-vinegar'
   Plug 'tpope/vim-projectionist'
-  Plug 'terryma/vim-expand-region'
 
   " Filetypes
   Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -71,9 +69,9 @@
   Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
   Plug 'pangloss/vim-javascript', {'for': 'javascript'}
   Plug 'mxw/vim-jsx', {'for': 'javascript'}
-  Plug 'leafgarland/typescript-vim', {'for': 'javascript'}
+  Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
   Plug 'jb55/Vim-Roy', {'for': 'roy'}
-  Plug 'Blackrush/vim-gocode', {'for': 'roy'}
+  Plug 'Blackrush/vim-gocode', {'for': 'go'}
 
   if has('mac')
     Plug 'Valloric/YouCompleteMe'
@@ -95,9 +93,6 @@
   runtime! plugin/sensible.vim
 
   set mouse=a
-
-  " always switch to the current file directory.
-  " autocmd BufEnter * if bufname("") !~ "^\[A-Za-z0-9\]*://" | lcd %:p:h | endif
 
   set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
   set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
@@ -218,8 +213,6 @@
 
   noremap <leader>ee :e $MYVIMRC<CR>
 
-  " System clipboard interaction.  Mostly from:
-  " https://github.com/henrik/dotfiles/blob/master/vim/config/mappings.vim
   nnoremap <leader>y "*y
   nnoremap <leader>p :set paste<CR>"*]p:set nopaste<CR>
   nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
@@ -238,7 +231,7 @@
 
   nnoremap vaa ggvGg_
   nnoremap Vaa ggVG
-  nnoremap va ^vg_
+  nnoremap vv ^vg_
   nnoremap gV `[v`]
 
   " Create a split on the given side.
@@ -262,7 +255,7 @@
   vnoremap L g_
 
   " Split line
-  nnoremap K i<CR><Esc>
+  nnoremap U i<CR><Esc>
 
   " move to last change
   nnoremap gI `.
@@ -298,7 +291,7 @@
       set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow
       set grepformat=%f:%l:%c:%m
       let g:unite_source_grep_command = 'ag'
-      let g:unite_source_grep_default_opts = '--nogroup --nocolor -S -C4'
+      let g:unite_source_grep_default_opts = '--nogroup --nocolor -S -C0'
       let g:unite_source_grep_recursive_opt = ''
     endif
 
@@ -329,7 +322,7 @@
   " Airline {{{
     let g:airline_left_sep = ''
     let g:airline_right_sep = ''
-    let g:airline_theme = 'base16'
+    let g:airline_theme = 'powerlineish'
     let g:airline#extensions#whitespace#enabled = 0
   "}}}
 
@@ -346,17 +339,6 @@
     nnoremap <silent> <leader>gp :Git push<CR>
   "}}}
 
-  "{{{ Sneak
-    " let g:sneak#streak = 1
-    " hi link SneakPluginTarget ErrorMsg
-    " hi link SneakPluginScope  Comment
-  "}}}
-
-  "{{{ Expand-Region
-    vmap v <Plug>(expand_region_expand)
-    vmap <C-v> <Plug>(expand_region_shrink)
-  "}}}
-
   "{{{ Slimux
     map <C-c><C-c> :SlimuxREPLSendLine<CR>
     vmap <C-c><C-c> :SlimuxREPLSendSelection<CR>
@@ -370,7 +352,6 @@
   let t_Co=256
   let base16colorspace=256
   colorscheme base16-monokai
-  let g:airline_theme = 'powerlineish'
   if has('gui_running')
     set cursorline
     set guioptions=egt
