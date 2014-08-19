@@ -90,7 +90,7 @@
 " General {{{
   " sensible.vim has decent defaults
   " so run those first and override later
-  runtime! plugin/sensible.vim
+  " runtime! plugin/sensible.vim
 
   set mouse=a
 
