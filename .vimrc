@@ -19,9 +19,9 @@
 "}}}
 
 " Plugins {{{
-  " Base
   call plug#begin('~/.vim/bundle')
 
+  " Base
   Plug 'tpope/vim-sensible'
   Plug 'tpope/vim-dispatch'
   Plug 'tpope/vim-repeat'
@@ -42,6 +42,7 @@
   Plug 'tommcdo/vim-exchange'
   Plug 'matchit.zip'
   Plug 'wellle/targets.vim'
+  Plug 'haya14busa/incsearch.vim'
 
   " Tools
   Plug 'Shougo/unite.vim'
@@ -56,9 +57,10 @@
   Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
   Plug 'leshill/vim-json', {'for': 'json'}
   Plug 'tpope/vim-jdaddy', {'for': 'json'}
-  Plug 'spf13/vim-markdown', {'for': 'markdown'}
+  Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
+  Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
   Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-  Plug 'kongo2002/fsharp-vim', {'for': 'fsharp'}
+  Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim'}
   Plug 'tpope/vim-fireplace', {'for': 'clojure'}
   Plug 'guns/vim-clojure-static', {'for': 'clojure'}
   Plug 'guns/vim-sexp', {'for': 'clojure'}
@@ -161,7 +163,6 @@
   nmap <leader><leader> :
 
   nnoremap <leader>w :w<CR>
-  nnoremap <CR> G
 
   " Easier moving in tabs and windows
   nnoremap <C-J> <C-W>j
@@ -218,9 +219,9 @@
   nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
   vnoremap <leader>y "*ygv
 
-  vnoremap <silent> y y`]
-  vnoremap <silent> p p`]
-  nnoremap <silent> p p`]
+  vnoremap y y`]
+  vnoremap p p`]
+  nnoremap p p`]
 
   " duplicate visual selection
   vmap D y'>p
@@ -272,6 +273,7 @@
   " xml {{{
     autocmd BufNewFile,BufRead *.config setfiletype xml
     autocmd BufNewFile,BufRead *.*proj setfiletype xml
+    autocmd BufNewFile,BufRead *.xaml setfiletype xml
     let g:xml_syntax_folding=1
     autocmd FileType xml set foldmethod=syntax
     autocmd FileType xml set equalprg=xmllint\ --format\ -
@@ -285,14 +287,44 @@
 "}}}
 
 " Plugins {{{
+  " IncSearch {{{
+    let g:incsearch#magic = '\v' " very magic
+    let g:incsearch#do_not_save_error_message_history = 1
+    let g:incsearch#auto_nohlsearch = 1
+    map n  <Plug>(incsearch-nohl-n)
+    map N  <Plug>(incsearch-nohl-N)
+    map *  <Plug>(incsearch-nohl-*)
+    map #  <Plug>(incsearch-nohl-#)
+    map g* <Plug>(incsearch-nohl-g*)
+    map g# <Plug>(incsearch-nohl-g#)
+    map /  <Plug>(incsearch-forward)
+    map ?  <Plug>(incsearch-backward)
+    map g/ <Plug>(incsearch-stay)
+    augroup incsearch-keymap
+      autocmd!
+      autocmd VimEnter call s:incsearch_keymap()
+    augroup END
+    function! s:incsearch_keymap()
+      IncSearchNoreMap <C-n> <Over>(buffer-complete)
+    endfunction
+  " }}}
+
   " Unite {{{
     " Use ag for search
     if executable('ag')
-      set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow
+      set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ -C0
       set grepformat=%f:%l:%c:%m
       let g:unite_source_grep_command = 'ag'
-      let g:unite_source_grep_default_opts = '--nogroup --nocolor -S -C0'
+      let g:unite_source_grep_default_opts = '--line-numbers --nogroup --nocolor --smart-case --follow -C0'
       let g:unite_source_grep_recursive_opt = ''
+      let g:unite_source_rec_async_command = 'ag --follow --nocolor --nogroup --hidden -g ""'
+    elseif executable('pt')
+      set grepprg=pt\ /nogroup\ /nocolor\ /smart-case\ /follow
+      set grepformat=%f:%l:%m
+      let g:unite_source_grep_command = 'pt'
+      let g:unite_source_grep_default_opts = '/nogroup /nocolor /smart-case /follow /C0'
+      let g:unite_source_grep_recursive_opt = ''
+      let g:unite_source_rec_async_command = 'pt /nocolor /nogroup -g .'
     endif
 
     let g:unite_source_history_yank_enable = 1
@@ -355,7 +387,7 @@
   if has('gui_running')
     set cursorline
     set guioptions=egt
-    set lines=40
+    set lines=50
     set columns=120
     set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
