@@ -443,7 +443,9 @@
   else
     let t_Co=256
     let base16colorspace=256
-    colorscheme base16-monokai
+    let g:gruvbox_italic=0
+    colorscheme gruvbox
+    let g:airline_theme='gruvbox'
   endif
 
 "}}}
