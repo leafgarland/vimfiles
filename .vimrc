@@ -1,4 +1,4 @@
-" vim: foldlevel=0 foldmethod=marker shiftwidth=2
+" vim: foldlevel=0 foldmethod=marker shiftwidth=2 :
 
 " Environment {{{
   " Basics {{{
@@ -10,18 +10,24 @@
   "}}}
 
   " Windows Compatible {{{
-  " On Windows, also use '.vim' instead of 'vimfiles'; this makes synchronization
-  " across (heterogeneous) systems easier.
     if has('win32') || has('win64')
+      " On Windows, also use '.vim' instead of 'vimfiles'; this makes synchronization
+      " across (heterogeneous) systems easier.
       set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
+      " On windows, if gvim.exe is executed from cygwin bash shell, the shell
+      " needs to be changed to the shell most plugins expect on windows.
+      " This does not change &shell inside cygwin or msys vim.
+      if &shell =~# 'bash$'
+        set shell=$COMSPEC
+      endif
     endif
   "}}}
 "}}}
 
 " Plugins {{{
-  " Base
   call plug#begin('~/.vim/bundle')
 
+  " Base
   Plug 'tpope/vim-sensible'
   Plug 'tpope/vim-dispatch'
   Plug 'tpope/vim-repeat'
@@ -30,11 +36,10 @@
 
   " Colour schemes and pretty things
   Plug 'chriskempson/base16-vim'
-  Plug 'morhetz/gruvbox'
   Plug 'bling/vim-airline'
+  Plug 'morhetz/gruvbox/'
 
   " Motions and actions
-  "
   Plug 'kana/vim-textobj-indent'
   Plug 'tpope/vim-commentary'
   Plug 'tpope/vim-surround'
@@ -44,29 +49,32 @@
   Plug 'tommcdo/vim-exchange'
   Plug 'matchit.zip'
   Plug 'wellle/targets.vim'
+  Plug 'haya14busa/incsearch.vim'
 
   " Tools
   Plug 'Shougo/unite.vim'
   Plug 'Shougo/neomru.vim'
+  Plug 'Shougo/neocomplete.vim'
   Plug 'Soares/butane.vim'
   Plug 'tpope/vim-fugitive'
   Plug 'tpope/vim-ragtag'
   Plug 'tpope/vim-vinegar'
   Plug 'tpope/vim-projectionist'
-  Plug 'scrooloose/syntastic'
 
   " Filetypes
   Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
   Plug 'leshill/vim-json', {'for': 'json'}
   Plug 'tpope/vim-jdaddy', {'for': 'json'}
-  Plug 'spf13/vim-markdown', {'for': 'markdown'}
+  Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
+  Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
   Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-  Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim', 'do': 'make'}
+  Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim'}
+  Plug 'OmniSharp/omnisharp-vim'
   Plug 'tpope/vim-fireplace', {'for': 'clojure'}
   Plug 'guns/vim-clojure-static', {'for': 'clojure'}
+  Plug 'guns/vim-sexp', {'for': 'clojure'}
   Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
-  Plug 'guns/vim-sexp', {'for': ['clojure','scheme']}
-  Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure','scheme']}
+  Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': 'clojure'}
   Plug 'jimenezrick/vimerl', {'for': 'erlang'}
   Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
   Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
@@ -91,10 +99,6 @@
 "}}}
 
 " General {{{
-  " sensible.vim has decent defaults
-  " so run those first and override later
-  " runtime! plugin/sensible.vim
-
   set mouse=a
 
   set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
@@ -164,7 +168,6 @@
   nmap <leader><leader> :
 
   nnoremap <leader>w :w<CR>
-  nnoremap <CR> G
 
   " Easier moving in tabs and windows
   nnoremap <C-J> <C-W>j
@@ -178,6 +181,9 @@
 
   " get out of insert quickly
   inoremap jk <esc>
+
+  " split line
+  nnoremap <leader>j i<CR><Esc>
 
   " Code folding options
   nnoremap <leader>f0 :set foldlevel=0<CR>
@@ -196,12 +202,14 @@
 
   " Change Working Directory to that of the current file
   cnoremap cd. lcd %:p:h
+  cnoremap %% <C-R>=expand('%:h').'/'<cr>
+  cnoremap <C-p> <Up>
+  cnoremap <C-n> <Down>
 
   " visual shifting (does not exit Visual mode)
   vnoremap < <gv
   vnoremap > >gv
 
-  cnoremap %% <C-R>=expand('%:h').'/'<cr>
   noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
 
   " close all preview windows and quickfix|location lists
@@ -211,9 +219,6 @@
   noremap zl zL
   noremap zh zH
 
-  cnoremap <C-p> <Up>
-  cnoremap <C-n> <Down>
-
   noremap <leader>ee :e $MYVIMRC<CR>
 
   nnoremap <leader>y "*y
@@ -221,9 +226,9 @@
   nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
   vnoremap <leader>y "*ygv
 
-  vnoremap <silent> y y`]
-  vnoremap <silent> p p`]
-  nnoremap <silent> p p`]
+  vnoremap y y`]
+  vnoremap p p`]
+  nnoremap p p`]
 
   " duplicate visual selection
   vmap D y'>p
@@ -252,13 +257,10 @@
   vnoremap <M-j> :m'>+<<CR>gv
   vnoremap <M-k> :m-2<CR>gv
 
-  " Easier to type, and I never use the default behavior.
+  " Move to start/end of text in line
   nnoremap H ^
   nnoremap L $
   vnoremap L g_
-
-  " Split line
-  nnoremap U i<CR><Esc>
 
   " move to last change
   nnoremap gI `.
@@ -275,6 +277,7 @@
   " xml {{{
     autocmd BufNewFile,BufRead *.config setfiletype xml
     autocmd BufNewFile,BufRead *.*proj setfiletype xml
+    autocmd BufNewFile,BufRead *.xaml setfiletype xml
     let g:xml_syntax_folding=1
     autocmd FileType xml set foldmethod=syntax
     autocmd FileType xml set equalprg=xmllint\ --format\ -
@@ -288,14 +291,89 @@
 "}}}
 
 " Plugins {{{
+  " Omnisharp {{{
+    augroup omnisharp-neocomplete
+      autocmd!
+      autocmd FileType cs call s:omnisharp_neocomplete_cs()
+    augroup END
+    function! s:omnisharp_neocomplete_cs()
+      let g:neocomplete#sources#omni#input_patterns.cs = '.*[^=\);]'
+      let g:neocomplete#sources.cs = ['omni']
+      setlocal omnifunc=OmniSharp#Complete
+    endfunction
+  " }}}
+
+    " Neocomplete {{{
+    let g:neocomplete#enable_at_startup = 1
+    let g:neocomplete#enable_smart_case = 1
+    let g:neocomplete#sources#syntax#min_keyword_length = 3
+
+    " Plugin key-mappings.
+    inoremap <expr><C-g>     neocomplete#undo_completion()
+    inoremap <expr><C-l>     neocomplete#complete_common_string()
+
+    " Recommended key-mappings.
+    " <CR>: close popup and save indent.
+    inoremap <silent> <CR> <C-r>=<SID>my_cr_function()<CR>
+    function! s:my_cr_function()
+      return neocomplete#close_popup() . "\<CR>"
+      " For no inserting <CR> key.
+      "return pumvisible() ? neocomplete#close_popup() : "\<CR>"
+    endfunction
+
+    " <TAB>: completion.
+    inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+
+    " <C-h>, <BS>: close popup and delete backword char.
+    " inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+    " inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+
+    " Enable omni completion.
+    autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
+    autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+    autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
+    autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
+    autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+    " }}}
+
+    " IncSearch {{{
+      let g:incsearch#magic = '\v' " very magic
+      let g:incsearch#do_not_save_error_message_history = 1
+      let g:incsearch#auto_nohlsearch = 1
+      map n  <Plug>(incsearch-nohl-n)
+      map N  <Plug>(incsearch-nohl-N)
+      map *  <Plug>(incsearch-nohl-*)
+      map #  <Plug>(incsearch-nohl-#)
+      map g* <Plug>(incsearch-nohl-g*)
+      map g# <Plug>(incsearch-nohl-g#)
+      map /  <Plug>(incsearch-forward)
+      map ?  <Plug>(incsearch-backward)
+      map g/ <Plug>(incsearch-stay)
+      augroup incsearch-keymap
+        autocmd!
+        autocmd VimEnter call s:incsearch_keymap()
+      augroup END
+      function! s:incsearch_keymap()
+        IncSearchNoreMap <C-n> <Over>(buffer-complete)
+      endfunction
+  " }}}
+
   " Unite {{{
     " Use ag for search
     if executable('ag')
-      set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow
+      set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ -C0
       set grepformat=%f:%l:%c:%m
       let g:unite_source_grep_command = 'ag'
-      let g:unite_source_grep_default_opts = '--nogroup --nocolor -S -C0'
+      let g:unite_source_grep_default_opts = '--line-numbers --nogroup --nocolor --smart-case --follow -C0'
       let g:unite_source_grep_recursive_opt = ''
+      let g:unite_source_rec_async_command = 'ag --follow --nocolor --nogroup --hidden -g ""'
+    elseif executable('pt')
+      set grepprg=pt\ /nogroup\ /nocolor\ /smart-case\ /follow
+      set grepformat=%f:%l:%m
+      let g:unite_source_grep_command = 'pt'
+      let g:unite_source_grep_default_opts = '/nogroup /nocolor /smart-case /follow /C0'
+      let g:unite_source_grep_recursive_opt = ''
+      let g:unite_source_rec_async_command = 'pt /nocolor /nogroup -g .'
     endif
 
     let g:unite_source_history_yank_enable = 1
@@ -349,109 +427,87 @@
     map <Leader>k :SlimuxSendKeysLast<CR>
     let g:slimux_scheme_keybindings=2
   "}}}
-
-  "{{{ FSharp
-    nnoremap <C-c><C-c> :<C-u>call fsharpbinding#python#FsiSendLine()<cr>
-    vnoremap <C-c><C-c> :<C-u>call fsharpbinding#python#FsiSendSel()<cr>
-    nnoremap <C-c>c :<C-u>call fsharpbinding#python#FsiSendLineSilent()<cr>
-    vnoremap <C-c>c :<C-u>call fsharpbinding#python#FsiSendSelSilent()<cr>
-  "}}}
 "}}}
 
 " GUI Settings {{{
   if has('gui_running')
+    let g:gruvbox_invert_selection=0
+    let g:gruvbox_contrast_dark='hard'
+    colorscheme gruvbox
+    let g:airline_theme='gruvbox'
     set cursorline
     set guioptions=egt
-    set lines=40
+    set lines=50
     set columns=120
     set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
-    colorscheme gruvbox
   else
     let t_Co=256
-    " let base16colorspace=256
-    " colorscheme base16-monokai
-    let g:gruvbox_italic=0
-    let g:gruvbox_invert_selection=0
-    colorscheme gruvbox
-    let g:airline_theme = 'gruvbox'
+    let base16colorspace=256
+    colorscheme base16-monokai
   endif
 
 "}}}
 
 " Functions {{{
-" vp doesn't replace paste buffer {{{
+  " vp doesn't replace paste buffer {{{
 
-function! RestoreRegister()
-  let @" = s:restore_reg
-  return ''
-endfunction
-function! s:Repl()
-  let s:restore_reg = @"
-  return "p@=RestoreRegister()\<cr>"
-endfunction
-vmap <silent> <expr> p <sid>Repl()
+  function! RestoreRegister()
+    let @" = s:restore_reg
+    return ''
+  endfunction
 
-" }}}
-  " Evaluate Vim code regions {{{
-    " taken from kana/VimScratch
+  function! s:Repl()
+    let s:restore_reg = @"
+    return "p@=RestoreRegister()\<cr>"
+  endfunction
 
-    function! VimEvaluate_linewise(line1, line2, adjust_cursorp)
-      let bufnr = bufnr('')
-      call VimEvaluate([bufnr, a:line1, 1, 0],
-            \                  [bufnr, a:line2, len(getline(a:line2)), 0],
-            \                  a:adjust_cursorp)
-    endfunction
+  vmap <silent> <expr> p <sid>Repl()
 
-    function! VimEvaluate(range_head, range_tail, adjust_cursorp)
-      " Yank the script.
-      let original_pos = getpos('.')
-      let original_reg_a = @a
-      call setpos('.', a:range_head)
-      normal! v
-      call setpos('.', a:range_tail)
-      silent normal! "ay
-      let script = @a
-      let @a = original_reg_a
-
-      " Evaluate it.
-      execute substitute(script, '\n\s*\\', '', 'g')
-
-      if a:adjust_cursorp
-        " Move to the next line of the script (add new line if necessary).
-        call setpos('.', a:range_tail)
-        if line('.') == line('$')
-          put =''
-        else
-          normal! +
-        endif
-      else
-        call setpos('.', original_pos)
-      endif
-    endfunction
-
-    command! -bang -bar -nargs=0 -range VimEvaluate
-          \ call VimEvaluate_linewise(<line1>, <line2>, '<bang>' != '!')
-
-    augroup vim_evaluate
-      autocmd!
-      autocmd FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
-            \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
-    augroup end
-  "}}}
-  " {{{ Sort selection http://vimrcfu.com/snippet/98
-    function! SortLines(type, ...)
-      let visual_mode = a:0
-      let cmd = ""
-      if visual_mode
-        let cmd .= "'<,'>"
-      else
-        let cmd .= "'[,']"
-      endif
-      let cmd .= "sort " . get(g:, 'sort_lines_default_args', '')
-      exe cmd
-    endfunction
-
-    nnoremap <silent> <leader>s :set opfunc=SortLines<CR>g@
-    vnoremap <silent> <leader>s :<C-U>call SortLines(visualmode(), 1)<CR>
   " }}}
+  " Evaluate Vim code regions {{{
+  " taken from kana/VimScratch
+
+  function! VimEvaluate_linewise(line1, line2, adjust_cursorp)
+    let bufnr = bufnr('')
+    call VimEvaluate([bufnr, a:line1, 1, 0],
+          \                  [bufnr, a:line2, len(getline(a:line2)), 0],
+          \                  a:adjust_cursorp)
+  endfunction
+
+  function! VimEvaluate(range_head, range_tail, adjust_cursorp)
+    " Yank the script.
+    let original_pos = getpos('.')
+    let original_reg_a = @a
+    call setpos('.', a:range_head)
+    normal! v
+    call setpos('.', a:range_tail)
+    silent normal! "ay
+    let script = @a
+    let @a = original_reg_a
+
+    " Evaluate it.
+    execute substitute(script, '\n\s*\\', '', 'g')
+
+    if a:adjust_cursorp
+      " Move to the next line of the script (add new line if necessary).
+      call setpos('.', a:range_tail)
+      if line('.') == line('$')
+        put =''
+      else
+        normal! +
+      endif
+    else
+      call setpos('.', original_pos)
+    endif
+  endfunction
+
+  command! -bang -bar -nargs=0 -range VimEvaluate
+        \ call VimEvaluate_linewise(<line1>, <line2>, '<bang>' != '!')
+
+  augroup vim_evaluate
+    autocmd!
+    autocmd FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
+          \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
+  augroup end
+  "}}}
 "}}}
