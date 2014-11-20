@@ -1,4 +1,4 @@
-" vim: foldlevel=0 foldmethod=marker shiftwidth=2 :
+" vim: foldlevel=0 foldmethod=marker shiftwidth=2
 
 " Environment {{{
   " Basics {{{
@@ -30,9 +30,11 @@
 
   " Colour schemes and pretty things
   Plug 'chriskempson/base16-vim'
+  Plug 'morhetz/gruvbox'
   Plug 'bling/vim-airline'
 
   " Motions and actions
+  "
   Plug 'kana/vim-textobj-indent'
   Plug 'tpope/vim-commentary'
   Plug 'tpope/vim-surround'
@@ -51,6 +53,7 @@
   Plug 'tpope/vim-ragtag'
   Plug 'tpope/vim-vinegar'
   Plug 'tpope/vim-projectionist'
+  Plug 'scrooloose/syntastic'
 
   " Filetypes
   Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -58,12 +61,12 @@
   Plug 'tpope/vim-jdaddy', {'for': 'json'}
   Plug 'spf13/vim-markdown', {'for': 'markdown'}
   Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-  Plug 'kongo2002/fsharp-vim', {'for': 'fsharp'}
+  Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim', 'do': 'make'}
   Plug 'tpope/vim-fireplace', {'for': 'clojure'}
   Plug 'guns/vim-clojure-static', {'for': 'clojure'}
-  Plug 'guns/vim-sexp', {'for': 'clojure'}
   Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
-  Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': 'clojure'}
+  Plug 'guns/vim-sexp', {'for': ['clojure','scheme']}
+  Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure','scheme']}
   Plug 'jimenezrick/vimerl', {'for': 'erlang'}
   Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
   Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
@@ -346,18 +349,31 @@
     map <Leader>k :SlimuxSendKeysLast<CR>
     let g:slimux_scheme_keybindings=2
   "}}}
+
+  "{{{ FSharp
+    nnoremap <C-c><C-c> :<C-u>call fsharpbinding#python#FsiSendLine()<cr>
+    vnoremap <C-c><C-c> :<C-u>call fsharpbinding#python#FsiSendSel()<cr>
+    nnoremap <C-c>c :<C-u>call fsharpbinding#python#FsiSendLineSilent()<cr>
+    vnoremap <C-c>c :<C-u>call fsharpbinding#python#FsiSendSelSilent()<cr>
+  "}}}
 "}}}
 
 " GUI Settings {{{
-  let t_Co=256
-  let base16colorspace=256
-  colorscheme base16-monokai
   if has('gui_running')
     set cursorline
     set guioptions=egt
     set lines=40
     set columns=120
     set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
+    colorscheme gruvbox
+  else
+    let t_Co=256
+    " let base16colorspace=256
+    " colorscheme base16-monokai
+    let g:gruvbox_italic=0
+    let g:gruvbox_invert_selection=0
+    colorscheme gruvbox
+    let g:airline_theme = 'gruvbox'
   endif
 
 "}}}
@@ -422,4 +438,20 @@ vmap <silent> <expr> p <sid>Repl()
             \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
     augroup end
   "}}}
+  " {{{ Sort selection http://vimrcfu.com/snippet/98
+    function! SortLines(type, ...)
+      let visual_mode = a:0
+      let cmd = ""
+      if visual_mode
+        let cmd .= "'<,'>"
+      else
+        let cmd .= "'[,']"
+      endif
+      let cmd .= "sort " . get(g:, 'sort_lines_default_args', '')
+      exe cmd
+    endfunction
+
+    nnoremap <silent> <leader>s :set opfunc=SortLines<CR>g@
+    vnoremap <silent> <leader>s :<C-U>call SortLines(visualmode(), 1)<CR>
+  " }}}
 "}}}
