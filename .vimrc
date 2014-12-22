@@ -68,7 +68,7 @@
   Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
   Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
   Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-  Plug 'fsharp/fsharpbinding', {'rtp': 'vim'}
+  Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim'}
   Plug 'OmniSharp/omnisharp-vim'
   Plug 'tpope/vim-fireplace', {'for': 'clojure'}
   Plug 'guns/vim-clojure-static', {'for': 'clojure'}
@@ -83,7 +83,6 @@
   Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
   Plug 'jb55/Vim-Roy', {'for': 'roy'}
   Plug 'Blackrush/vim-gocode', {'for': 'go'}
-  Plug 'findango/vim-mdx'
   Plug 'lambdatoast/elm.vim', {'for': 'elm'}
 
   if has('mac')
@@ -541,6 +540,41 @@
   vmap <silent> <expr> p <sid>Repl()
 
   " }}}
+
+" Zoom font size {{{
+let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
+function ! s:ChangeZoom(zoomInc)
+  let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
+  let &gfn=substitute(&gfn, ':h\d\+', ':h' . s:zoom_level, '')
+  if s:maximised
+    let &lines=999
+    let &columns=999
+  endif
+endfunction
+
+nnoremap coz :<C-U>call <sid>ChangeZoom(-2)<CR>
+nnoremap coZ :<C-U>call <sid>ChangeZoom(2)<CR>
+
+let s:maximised=0
+let s:restoreLines=0
+let s:restoreCols=0
+function! s:ToggleMaximise()
+  if s:maximised
+    let s:maximised=0
+    let &lines=s:restoreLines
+    let &columns=s:restoreCols
+  else
+    let s:maximised=1
+    let s:restoreLines=&lines
+    let s:restoreCols=&columns
+    let &lines=999
+    let &columns=999
+  endif
+endfunction
+
+nnoremap com :<C-U>call <sid>ToggleMaximise()<CR>
+" }}}
+
   " Evaluate Vim code regions {{{
   " taken from kana/VimScratch
 
