@@ -10,7 +10,8 @@
   "}}}
 
   " Windows Compatible {{{
-    if has('win32') || has('win64')
+    let s:is_win = has('win32') || has('win64')
+    if s:is_win
       " On Windows, also use '.vim' instead of 'vimfiles'; this makes synchronization
       " across (heterogeneous) systems easier.
       set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
@@ -54,7 +55,6 @@
   " Tools
   Plug 'Shougo/unite.vim'
   Plug 'Shougo/neomru.vim'
-  Plug 'Shougo/neocomplete.vim'
   Plug 'Soares/butane.vim'
   Plug 'tpope/vim-fugitive'
   Plug 'tpope/vim-ragtag'
@@ -68,7 +68,7 @@
   Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
   Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
   Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-  Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim'}
+  Plug 'fsharp/fsharpbinding', {'rtp': 'vim'}
   Plug 'OmniSharp/omnisharp-vim'
   Plug 'tpope/vim-fireplace', {'for': 'clojure'}
   Plug 'guns/vim-clojure-static', {'for': 'clojure'}
@@ -83,16 +83,27 @@
   Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
   Plug 'jb55/Vim-Roy', {'for': 'roy'}
   Plug 'Blackrush/vim-gocode', {'for': 'go'}
+  Plug 'findango/vim-mdx'
+  Plug 'lambdatoast/elm.vim', {'for': 'elm'}
 
   if has('mac')
-    Plug 'Valloric/YouCompleteMe'
     Plug 'jszakmeister/vim-togglecursor'
     Plug 'sophacles/vim-processing'
     Plug 'epeli/slimux'
     Plug 'christoomey/vim-tmux-navigator'
-    Plug 'lambdatoast/elm.vim', {'for': 'elm'}
     Plug 'wlangstroth/vim-racket', {'for': 'racket'}
     Plug 'dag/vim-fish', {'for': 'fish'}
+  endif
+
+  let s:use_ycm=1
+  if s:use_ycm
+    if s:is_win
+      Plug '~/.vim/win-bundle/ycm'
+    else
+      Plug 'Valloric/YouCompleteMe'
+    endif
+  else
+    Plug 'Shougo/neocomplete.vim'
   endif
 
   call plug#end()
@@ -163,9 +174,16 @@
 "}}}
 
 " Key Mappings {{{
+
+  " Show syntax groups under cursor
+  map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<'
+  \ . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
+  \ . synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"<CR>
+
   " the button is sooo big, i must hit it lots
   let mapleader = "\<space>"
   nmap <leader><leader> :
+  vmap <leader><leader> :
 
   nnoremap <leader>w :w<CR>
 
@@ -292,18 +310,52 @@
 
 " Plugins {{{
   " Omnisharp {{{
-    augroup omnisharp-neocomplete
+    if s:use_ycm
+    else
+      augroup omnisharp-neocomplete
+        autocmd!
+        autocmd FileType cs call s:omnisharp_neocomplete_cs()
+      augroup END
+      function! s:omnisharp_neocomplete_cs()
+        let g:neocomplete#sources#omni#input_patterns.cs = '.*[^=\);]'
+        let g:neocomplete#sources.cs = ['omni']
+        setlocal omnifunc=OmniSharp#Complete
+      endfunction
+    endif
+  " }}}
+
+  " FSharp {{{
+    augroup fsharp-settings
       autocmd!
-      autocmd FileType cs call s:omnisharp_neocomplete_cs()
+      autocmd FileType fsharp call s:fsharp_settings()
     augroup END
-    function! s:omnisharp_neocomplete_cs()
-      let g:neocomplete#sources#omni#input_patterns.cs = '.*[^=\);]'
-      let g:neocomplete#sources.cs = ['omni']
-      setlocal omnifunc=OmniSharp#Complete
+    function! s:fsharp_settings()
+      " let g:neocomplete#sources#omni#input_patterns.fsharp = '.*[^=\);]'
+      " let g:neocomplete#sources.fsharp = ['omni']
+
+      nmap <leader>i :call fsharpbinding#python#FsiSendLine() <CR>
+      vmap <leader>i :<C-U>call fsharpbinding#python#FsiSendSel() <CR>
     endfunction
   " }}}
 
     " Neocomplete {{{
+
+    if s:use_ycm
+      let g:ycm_semantic_triggers =  {
+        \   'c' : ['->', '.'],
+        \   'objc' : ['->', '.'],
+        \   'ocaml' : ['.', '#'],
+        \   'cpp,objcpp' : ['->', '.', '::'],
+        \   'perl' : ['->'],
+        \   'php' : ['->', '::'],
+        \   'cs,java,javascript,d,vim,python,perl6,scala,vb,elixir,go' : ['.'],
+        \   'ruby' : ['.', '::'],
+        \   'lua' : ['.', ':'],
+        \   'erlang' : [':'],
+        \   'fsharp' : ['.'],
+        \ }
+    else
+
     let g:neocomplete#enable_at_startup = 1
     let g:neocomplete#enable_smart_case = 1
     let g:neocomplete#sources#syntax#min_keyword_length = 3
@@ -334,6 +386,27 @@
     autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
     autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
     autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+
+    " call neocomplete#util#set_default_dictionary(
+    "   \ 'g:neocomplete#delimiter_patterns',
+    "   \ 'fsharp',
+    "   \ ['.'])
+
+    if !exists('g:neocomplete#sources')
+    let g:neocomplete#sources = {}
+    endif
+    let g:neocomplete#sources.fsharp = ['buffer', 'omni', 'file']
+
+    " Enable heavy omni completion.
+    if !exists('g:neocomplete#sources#omni#input_patterns')
+      let g:neocomplete#sources#omni#input_patterns = {}
+    endif
+    let g:neocomplete#sources#omni#input_patterns.fsharp = '.*[^=\);]'
+    "let g:neocomplete#sources#omni#input_patterns.php = '[^. \t]->\h\w*\|\h\w*::'
+    " et g:neocomplete#sources#omni#input_patterns.c = '[^.[:digit:] *\t]\%(\.\|->\)'
+    "let g:neocomplete#sources#omni#input_patterns.cpp = '[^.[:digit:] *\t]\%(\.\|->\)\|\h\w*::'
+
+    endif
     " }}}
 
     " IncSearch {{{
@@ -379,12 +452,12 @@
     let g:unite_source_history_yank_enable = 1
     call unite#filters#matcher_default#use(['matcher_fuzzy'])
 
-    nnoremap <leader>uf :<C-u>Unite -no-split -buffer-name=files -start-insert file_rec/async:!<cr>
-    nnoremap <leader>ut :<C-u>Unite -no-split -buffer-name=files -start-insert file<cr>
-    nnoremap <leader>uo :<C-u>UniteWithBufferDir -no-split -buffer-name=files -start-insert file_rec/async:!<cr>
-    nnoremap <leader>ur :<C-u>Unite -hide-source-names -no-split -buffer-name=mru -start-insert file_mru<cr>
-    nnoremap <leader>uy :<C-u>Unite -no-split -buffer-name=yank history/yank<cr>
-    nnoremap <leader>ue :<C-u>Unite -no-split -buffer-name=buffer buffer<cr>
+    nnoremap <silent> <leader>uf :<C-u>Unite -cursor-line-highlight=CursorLine -no-split -start-insert file_rec/async<cr>
+    nnoremap <silent> <leader>ut :<C-u>Unite -cursor-line-highlight=CursorLine -no-split -start-insert file<cr>
+    nnoremap <silent> <leader>uo :<C-u>UniteWithBufferDir -cursor-line-highlight=CursorLine -no-split -start-insert file_rec/async<cr>
+    nnoremap <silent> <leader>ur :<C-u>Unite -cursor-line-highlight=CursorLine -hide-source-names -no-split -start-insert file_mru<cr>
+    nnoremap <silent> <leader>uy :<C-u>Unite -cursor-line-highlight=CursorLine -no-split history/yank<cr>
+    nnoremap <silent> <leader>ue :<C-u>Unite -cursor-line-highlight=CursorLine -no-split buffer<cr>
 
     " Custom mappings for the unite buffer
     autocmd FileType unite call s:unite_settings()
@@ -396,8 +469,10 @@
   "}}}
 
   " Butane {{{
-    noremap <leader>bd :Bclose<CR>      " Close the buffer.
-    noremap <leader>bD :Bclose!<CR>     " Close the buffer & discard changes.
+    noremap <leader>bd :Bclose<CR>
+    noremap <leader>bD :Bclose!<CR>
+    noremap <leader>br :Breset<CR>
+    noremap <leader>bR :Breset!<CR>
   "}}}
 
   " Airline {{{
