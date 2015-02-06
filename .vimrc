@@ -39,6 +39,7 @@
   Plug 'chriskempson/base16-vim'
   Plug 'bling/vim-airline'
   Plug 'morhetz/gruvbox/'
+  Plug 'junegunn/seoul256.vim'
 
   " Motions and actions
   Plug 'kana/vim-textobj-indent'
@@ -69,7 +70,6 @@
   Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
   Plug 'PProvost/vim-ps1', {'for': 'ps1'}
   Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim'}
-  Plug 'OmniSharp/omnisharp-vim'
   Plug 'tpope/vim-fireplace', {'for': 'clojure'}
   Plug 'guns/vim-clojure-static', {'for': 'clojure'}
   Plug 'guns/vim-sexp', {'for': 'clojure'}
@@ -102,7 +102,9 @@
       Plug 'Valloric/YouCompleteMe'
     endif
   else
-    Plug 'Shougo/neocomplete.vim'
+    Plug 'ajh17/VimCompletesMe'
+    " Plug 'Shougo/neocomplete.vim'
+    Plug 'OmniSharp/omnisharp-vim'
   endif
 
   call plug#end()
@@ -233,8 +235,8 @@
   nnoremap <silent> <C-W>z :wincmd z<Bar>cclose<Bar>lclose<CR>
 
   " Easier horizontal scrolling
-  noremap zl zL
-  noremap zh zH
+  noremap zl 20zl
+  noremap zh 20zh
 
   noremap <leader>ee :e $MYVIMRC<CR>
 
@@ -451,12 +453,12 @@
     let g:unite_source_history_yank_enable = 1
     call unite#filters#matcher_default#use(['matcher_fuzzy'])
 
-    nnoremap <silent> <leader>uf :<C-u>Unite -cursor-line-highlight=CursorLine -no-split -start-insert file_rec/async<cr>
-    nnoremap <silent> <leader>ut :<C-u>Unite -cursor-line-highlight=CursorLine -no-split -start-insert file<cr>
-    nnoremap <silent> <leader>uo :<C-u>UniteWithBufferDir -cursor-line-highlight=CursorLine -no-split -start-insert file_rec/async<cr>
-    nnoremap <silent> <leader>ur :<C-u>Unite -cursor-line-highlight=CursorLine -hide-source-names -no-split -start-insert file_mru<cr>
-    nnoremap <silent> <leader>uy :<C-u>Unite -cursor-line-highlight=CursorLine -no-split history/yank<cr>
-    nnoremap <silent> <leader>ue :<C-u>Unite -cursor-line-highlight=CursorLine -no-split buffer<cr>
+    nnoremap <silent> <leader>uf :<C-u>Unite -no-split -start-insert file_rec/async<cr>
+    nnoremap <silent> <leader>ut :<C-u>Unite -no-split -start-insert file<cr>
+    nnoremap <silent> <leader>uo :<C-u>UniteWithBufferDir -no-split -start-insert file_rec/async<cr>
+    nnoremap <silent> <leader>ur :<C-u>Unite -hide-source-names -no-split -start-insert file_mru<cr>
+    nnoremap <silent> <leader>uy :<C-u>Unite -no-split history/yank<cr>
+    nnoremap <silent> <leader>ue :<C-u>Unite -no-split buffer<cr>
 
     " Custom mappings for the unite buffer
     autocmd FileType unite call s:unite_settings()
@@ -506,7 +508,8 @@
 " GUI Settings {{{
   if has('gui_running')
     let g:gruvbox_invert_selection=0
-    let g:gruvbox_contrast_dark='hard'
+    let g:gruvbox_italic=0
+    let g:gruvbox_contrast_dark='medium'
     colorscheme gruvbox
     let g:airline_theme='gruvbox'
     set cursorline
@@ -555,7 +558,7 @@
   
 " Zoom font size {{{
 let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
-function ! s:ChangeZoom(zoomInc)
+function! s:ChangeZoom(zoomInc)
   let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
   let &gfn=substitute(&gfn, ':h\d\+', ':h' . s:zoom_level, '')
   if s:maximised
