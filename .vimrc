@@ -361,6 +361,7 @@ if s:has_plug('fsharpbinding')
     autocmd!
     autocmd FileType fsharp call s:fsharp_settings()
   augroup END
+
   function! s:fsharp_settings()
     if s:has_plug('neocomplete-vim')
       let g:neocomplete#sources#omni#input_patterns.fsharp = '.*[^=\);]'
@@ -593,37 +594,39 @@ xnoremap # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R>=@/<CR><CR>
 "}}}
 
 " Zoom font size {{{
-let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
-function! s:ChangeZoom(zoomInc)
-  let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
-  let &gfn=substitute(&gfn, ':h\d\+', ':h' . s:zoom_level, '')
-  if s:maximised
-    let &lines=999
-    let &columns=999
-  endif
-endfunction
+if has('gui')
+  let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
+  function! s:ChangeZoom(zoomInc)
+    let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
+    let &gfn=substitute(&gfn, ':h\d\+', ':h' . s:zoom_level, '')
+    if s:maximised
+      let &lines=999
+      let &columns=999
+    endif
+  endfunction
 
-nnoremap coz :<C-U>call <sid>ChangeZoom(-2)<CR>
-nnoremap coZ :<C-U>call <sid>ChangeZoom(2)<CR>
+  nnoremap coz :<C-U>call <sid>ChangeZoom(-2)<CR>
+  nnoremap coZ :<C-U>call <sid>ChangeZoom(2)<CR>
 
-let s:maximised=0
-let s:restoreLines=0
-let s:restoreCols=0
-function! s:ToggleMaximise()
-  if s:maximised
-    let s:maximised=0
-    let &lines=s:restoreLines
-    let &columns=s:restoreCols
-  else
-    let s:maximised=1
-    let s:restoreLines=&lines
-    let s:restoreCols=&columns
-    let &lines=999
-    let &columns=999
-  endif
-endfunction
+  let s:maximised=0
+  let s:restoreLines=0
+  let s:restoreCols=0
+  function! s:ToggleMaximise()
+    if s:maximised
+      let s:maximised=0
+      let &lines=s:restoreLines
+      let &columns=s:restoreCols
+    else
+      let s:maximised=1
+      let s:restoreLines=&lines
+      let s:restoreCols=&columns
+      let &lines=999
+      let &columns=999
+    endif
+  endfunction
 
-nnoremap com :<C-U>call <sid>ToggleMaximise()<CR>
+  nnoremap com :<C-U>call <sid>ToggleMaximise()<CR>
+endif
 " }}}
 
 " Evaluate Vim code regions {{{
