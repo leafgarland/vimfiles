@@ -57,6 +57,7 @@ Plug 'haya14busa/incsearch.vim'
 " Tools
 Plug 'Shougo/unite.vim'
 Plug 'Shougo/neomru.vim'
+Plug 'Shougo/vimfiler.vim'
 Plug 'Soares/butane.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
@@ -162,7 +163,7 @@ set foldmethod=syntax
 set foldlevelstart=9
 set foldnestmax=10
 
-set list
+set linebreak
 
 set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
@@ -331,13 +332,15 @@ augroup FileTypeStuff
   " }}}
 
   " fsharp {{{
+  if executable('fantomas')
   autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
+  endif
   set shiftwidth=2
   " }}}
 augroup end
 "}}}
 
-" Plugins {{{
+" Plugins config {{{
 
 " Omnisharp {{{
 if s:has_plug('omnisharp-vim')
@@ -357,12 +360,11 @@ endif
 
 " FSharp {{{
 if s:has_plug('fsharpbinding')
-  augroup fsharp-settings
+  augroup fsharpbinding-settings
     autocmd!
-    autocmd FileType fsharp call s:fsharp_settings()
+    autocmd FileType fsharp call s:fsharpbinding_settings()
   augroup END
-
-  function! s:fsharp_settings()
+  function! s:fsharpbinding_settings()
     if s:has_plug('neocomplete-vim')
       let g:neocomplete#sources#omni#input_patterns.fsharp = '.*[^=\);]'
       let g:neocomplete#sources.fsharp = ['omni']
@@ -471,6 +473,11 @@ if s:has_plug('incsearch.vim')
 endif
 " }}}
 
+" VimFiler {{{
+if s:has_plug('vimfiler.vim')
+  nnoremap <leader>uv :VimFilerBufferDir<CR>
+endif
+" }}}
 " Unite {{{
 if s:has_plug('unite.vim')
   " Use ag for search
