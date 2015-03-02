@@ -136,13 +136,21 @@ set cryptmethod=blowfish
 autocmd BufReadPost * if &key != "" | setl noswapfile nowritebackup viminfo= nobackup noshelltemp secure | endif
 
 let g:netrw_menu = 0
+
+if executable('ag')
+  set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ -C0
+  set grepformat=%f:%l:%c:%m
+elseif executable('pt')
+  set grepprg=pt\ /nogroup\ /nocolor\ /smart-case\ /follow
+  set grepformat=%f:%l:%m
+endif
 "}}}
 
 " Vim UI {{{
 set showmode
 
 if has('cmdline_info')
-  set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%) " a ruler on steroids
+  set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%)
 endif
 
 set sidescroll=1
@@ -313,7 +321,7 @@ vnoremap <leader>V :g//d<CR>
 "}}}
 
 " Filetypes {{{
-augroup FileTypeStuff
+augroup vimrc_filetypes
   autocmd!
 
   " json {{{
@@ -333,10 +341,18 @@ augroup FileTypeStuff
 
   " fsharp {{{
   if executable('fantomas')
-  autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
+    autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
   endif
   set shiftwidth=2
   " }}}
+
+  " help {{{
+  autocmd FileType help call s:help_filetype_settings()
+  function! s:help_filetype_settings()
+    nnoremap <buffer> q :wincmd c<CR>
+  endfunction
+  " }}}
+
 augroup end
 "}}}
 
@@ -345,7 +361,7 @@ augroup end
 " Omnisharp {{{
 if s:has_plug('omnisharp-vim')
   if s:has_plug('neocomplete-vim')
-    augroup omnisharp-neocomplete
+    augroup vimrc_omnisharp_neocomplete
       autocmd!
       autocmd FileType cs call s:omnisharp_neocomplete_cs()
     augroup END
@@ -360,7 +376,7 @@ endif
 
 " FSharp {{{
 if s:has_plug('fsharpbinding')
-  augroup fsharpbinding-settings
+  augroup vimrc_fsharpbinding_settings
     autocmd!
     autocmd FileType fsharp call s:fsharpbinding_settings()
   augroup END
@@ -397,55 +413,6 @@ endif
 " Neocomplete {{{
 if s:has_plug('neocomplete-vim')
   let g:neocomplete#enable_at_startup = 1
-  " " let g:neocomplete#enable_smart_case = 1
-  " let g:neocomplete#sources#syntax#min_keyword_length = 3
-
-  " " Plugin key-mappings.
-  " inoremap <expr><C-g>     neocomplete#undo_completion()
-  " inoremap <expr><C-l>     neocomplete#complete_common_string()
-
-  " Recommended key-mappings.
-  " <CR>: close popup and save indent.
-
-  " inoremap <silent> <CR> <C-r>=<SID>my_cr_function()<CR>
-  " function! s:my_cr_function()
-  "   return neocomplete#close_popup() . "\<CR>"
-  "   " For no inserting <CR> key.
-  "   "return pumvisible() ? neocomplete#close_popup() : "\<CR>"
-  " endfunction
-
-  " <TAB>: completion.
-  " inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
-
-  " " <C-h>, <BS>: close popup and delete backword char.
-  " " inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
-  " " inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
-
-  " " Enable omni completion.
-  " autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
-  " autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
-  " autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
-  " autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
-  " autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
-
-  " " call neocomplete#util#set_default_dictionary(
-  " "   \ 'g:neocomplete#delimiter_patterns',
-  " "   \ 'fsharp',
-  " "   \ ['.'])
-
-  " if !exists('g:neocomplete#sources')
-  " let g:neocomplete#sources = {}
-  " endif
-  " let g:neocomplete#sources.fsharp = ['buffer', 'omni', 'file']
-
-  " " Enable heavy omni completion.
-  " if !exists('g:neocomplete#sources#omni#input_patterns')
-  "   let g:neocomplete#sources#omni#input_patterns = {}
-  " endif
-  " let g:neocomplete#sources#omni#input_patterns.fsharp = '.*[^=\);]'
-  " "let g:neocomplete#sources#omni#input_patterns.php = '[^. \t]->\h\w*\|\h\w*::'
-  " " et g:neocomplete#sources#omni#input_patterns.c = '[^.[:digit:] *\t]\%(\.\|->\)'
-  " "let g:neocomplete#sources#omni#input_patterns.cpp = '[^.[:digit:] *\t]\%(\.\|->\)\|\h\w*::'
 endif
 " }}}
 
@@ -463,7 +430,7 @@ if s:has_plug('incsearch.vim')
   map /  <Plug>(incsearch-forward)
   map ?  <Plug>(incsearch-backward)
   map g/ <Plug>(incsearch-stay)
-  augroup incsearch-keymap
+  augroup vimrc_incsearch_keymap
     autocmd!
     autocmd VimEnter call s:incsearch_keymap()
   augroup END
@@ -478,19 +445,16 @@ if s:has_plug('vimfiler.vim')
   nnoremap <leader>uv :VimFilerBufferDir<CR>
 endif
 " }}}
+
 " Unite {{{
 if s:has_plug('unite.vim')
   " Use ag for search
   if executable('ag')
-    set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ -C0
-    set grepformat=%f:%l:%c:%m
     let g:unite_source_grep_command = 'ag'
     let g:unite_source_grep_default_opts = '--line-numbers --nogroup --nocolor --smart-case --follow -C0'
     let g:unite_source_grep_recursive_opt = ''
     let g:unite_source_rec_async_command = 'ag --follow --nocolor --nogroup --hidden -g ""'
   elseif executable('pt')
-    set grepprg=pt\ /nogroup\ /nocolor\ /smart-case\ /follow
-    set grepformat=%f:%l:%m
     let g:unite_source_grep_command = 'pt'
     let g:unite_source_grep_default_opts = '/nogroup /nocolor /smart-case /follow /C0'
     let g:unite_source_grep_recursive_opt = ''
@@ -506,6 +470,9 @@ if s:has_plug('unite.vim')
   nnoremap <silent> <leader>ur :<C-u>Unite -hide-source-names -no-split -start-insert file_mru<cr>
   nnoremap <silent> <leader>uy :<C-u>Unite -no-split history/yank<cr>
   nnoremap <silent> <leader>ue :<C-u>Unite -no-split buffer<cr>
+  nnoremap <silent> <leader>uu :<C-u>UniteResume -no-split<cr>
+  nnoremap <silent> <leader>u] :<C-u>UniteNext<cr>
+  nnoremap <silent> <leader>u[ :<C-u>UnitePrevious<cr>
 
   " Custom mappings for the unite buffer
   autocmd FileType unite call s:unite_settings()
@@ -531,7 +498,20 @@ if s:has_plug('vim-airline')
   let g:airline_left_sep = ''
   let g:airline_right_sep = ''
   let g:airline_theme = 'powerlineish'
-  let g:airline#extensions#whitespace#enabled = 0
+  let g:airline_extensions = ['branch', 'netrw', 'quickfix', 'unite']
+  let g:airline_mode_map = {
+      \ '__' : '-',
+      \ 'n'  : 'N ',
+      \ 'i'  : 'I ',
+      \ 'R'  : 'R ',
+      \ 'c'  : 'C ',
+      \ 'v'  : 'V ',
+      \ 'V'  : 'Vˡ',
+      \ '' : 'Vᵇ',
+      \ 's'  : 'S ',
+      \ 'S'  : 'S ',
+      \ '' : 'S ',
+      \ }
 endif
 "}}}
 
@@ -560,11 +540,9 @@ endif
 if s:has_plug('gruvbox')
   if has('gui_running')
     let g:gruvbox_invert_selection=0
-    let g:gruvbox_italic=0
     let g:gruvbox_contrast_dark='medium'
-  else
-    let g:gruvbox_italic=0
   endif
+  let g:gruvbox_italic=0
   colorscheme gruvbox
   let g:airline_theme='gruvbox'
 endif
@@ -675,7 +653,7 @@ endfunction
 command! -bang -bar -nargs=0 -range VimEvaluate
       \ call VimEvaluate_linewise(<line1>, <line2>, '<bang>' != '!')
 
-augroup vim_evaluate
+augroup vimrc_vim_evaluate
   autocmd!
   autocmd FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
         \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
