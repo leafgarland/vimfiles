@@ -74,9 +74,9 @@ Plug 'PProvost/vim-ps1', {'for': 'ps1'}
 Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
-Plug 'guns/vim-sexp', {'for': 'clojure'}
+Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
 Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
-Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': 'clojure'}
+Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure', 'scheme']}
 Plug 'jimenezrick/vimerl', {'for': 'erlang'}
 Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
 Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
@@ -386,8 +386,8 @@ if s:has_plug('fsharpbinding')
       let g:neocomplete#sources.fsharp = ['omni']
     endif
 
-    nmap <leader>i :call fsharpbinding#python#FsiSendLine() <CR>
-    vmap <leader>i :<C-U>call fsharpbinding#python#FsiSendSel() <CR>
+    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine() <CR>
+    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel() <CR>
   endfunction
 endif
 " }}}
@@ -528,11 +528,16 @@ endif
 
 "{{{ Slimux
 if s:has_plug('slimux')
-  map <C-c><C-c> :SlimuxREPLSendLine<CR>
-  vmap <C-c><C-c> :SlimuxREPLSendSelection<CR>
-  map <Leader>a :SlimuxShellLast<CR>
-  map <Leader>k :SlimuxSendKeysLast<CR>
-  let g:slimux_scheme_keybindings=2
+  augroup slimux-settings
+    autocmd!
+    autocmd FileType scheme call s:slimux_scheme_settings()
+  augroup END
+  function! s:slimux_scheme_settings()
+    nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
+    nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
+    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+  endfunction
+  let g:slimux_scheme_keybindings=1
 endif
 "}}}
 
