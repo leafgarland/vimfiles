@@ -1,14 +1,12 @@
 " vim: foldlevel=0 foldmethod=marker shiftwidth=2 :
 
 " Environment {{{
-
-" Basics {{{
+set nocompatible
+set encoding=utf8
+set background=dark
 if &shell =~# 'fish$'
   set shell=zsh
 endif
-set nocompatible
-set background=dark
-"}}}
 
 " Windows Compatible {{{
 let s:is_win = has('win32') || has('win64')
@@ -23,7 +21,6 @@ if s:is_win
   endif
 endif
 "}}}
-
 "}}}
 
 " Plugins {{{
@@ -83,7 +80,6 @@ Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
 Plug 'pangloss/vim-javascript', {'for': 'javascript'}
 Plug 'mxw/vim-jsx', {'for': 'javascript'}
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
-Plug 'jb55/Vim-Roy', {'for': 'roy'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'lambdatoast/elm.vim', {'for': 'elm'}
@@ -173,6 +169,7 @@ set foldnestmax=10
 
 set linebreak
 
+set list
 set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
 set tags=./tags;/,~/.vimtags
@@ -190,7 +187,7 @@ if has('gui_running')
   set columns=120
   set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
 else
-  let t_Co=256
+  set t_Co=256
   let base16colorspace=256
 endif
 "}}}
@@ -262,27 +259,34 @@ noremap zh 20zh
 
 noremap <leader>ee :e $MYVIMRC<CR>
 
+" copy/paste from system
 nnoremap <leader>y "*y
 nnoremap <leader>p :set paste<CR>"*]p:set nopaste<CR>
 nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
+vnoremap <leader>p :<C-U>set paste<CR>"*]p:set nopaste<CR>
+vnoremap <leader>P :<C-U>set paste<CR>"*]P:set nopaste<CR>
 vnoremap <leader>y "*ygv
 
+" move to end of copy/paste
 vnoremap y y`]
 vnoremap p p`]
 nnoremap p p`]
 
 " duplicate visual selection
-vmap D y'>p
+vnoremap D y'>p
 
 nnoremap <leader>bb :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
 
+" select whole buffer
 nnoremap vaa ggvGg_
 nnoremap Vaa ggVG
+" select current line, no whitespace
 nnoremap vv ^vg_
+" select last changed/yanked
 nnoremap gV `[v`]
-
+	
 " Create a split on the given side.
 " From http://technotales.wordpress.com/2010/04/29/vim-splits-a-guide-to-doing-exactly-what-you-want/ via joakimk.
 nnoremap <leader>swh   :leftabove  vsp<CR>
@@ -301,6 +305,7 @@ vnoremap <M-k> :m-2<CR>gv
 " Move to start/end of text in line
 nnoremap H ^
 nnoremap L $
+vnoremap H ^
 vnoremap L g_
 
 " move to last change
@@ -326,24 +331,24 @@ augroup vimrc_filetypes
 
   " json {{{
   autocmd FileType json set equalprg=python\ -m\ json.tool
-  set shiftwidth=2
+  autocmd FileType json set shiftwidth=2
   " }}}
 
   " xml {{{
   autocmd BufNewFile,BufRead *.config setfiletype xml
   autocmd BufNewFile,BufRead *.*proj setfiletype xml
   autocmd BufNewFile,BufRead *.xaml setfiletype xml
-  let g:xml_syntax_folding=1
   autocmd FileType xml set foldmethod=syntax
   autocmd FileType xml set equalprg=xmllint\ --format\ -
-  set shiftwidth=2
+  autocmd FileType xml set shiftwidth=2
+  let g:xml_syntax_folding=1
   " }}}
 
   " fsharp {{{
   if executable('fantomas')
     autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
   endif
-  set shiftwidth=2
+  autocmd FileType fsharp set shiftwidth=2
   " }}}
 
   " help {{{
@@ -386,8 +391,9 @@ if s:has_plug('fsharpbinding')
       let g:neocomplete#sources.fsharp = ['omni']
     endif
 
-    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine() <CR>
-    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel() <CR>
+    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
+    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel()<CR>
+    vmap <buffer> <leader>l ggVG:<C-U>call fsharpbinding#python#FsiSendSel()<CR>
   endfunction
 endif
 " }}}
@@ -442,7 +448,7 @@ endif
 
 " VimFiler {{{
 if s:has_plug('vimfiler.vim')
-  nnoremap <leader>uv :VimFilerBufferDir<CR>
+  nnoremap <leader>uv :VimFilerBufferDir -find -safe<CR>
 endif
 " }}}
 
@@ -550,6 +556,13 @@ if s:has_plug('gruvbox')
   let g:gruvbox_italic=0
   colorscheme gruvbox
   let g:airline_theme='gruvbox'
+endif
+"}}}
+
+" seoul {{{
+if s:has_plug('seoul256.vim')
+  " darker background (233-239)
+  let g:seoul256_background = 234
 endif
 "}}}
 
