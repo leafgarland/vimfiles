@@ -24,6 +24,7 @@ endif
 "}}}
 
 " Plugins {{{
+let g:plug_threads=16
 call plug#begin('~/.vim/bundle')
 
 " Base
@@ -83,6 +84,8 @@ Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'lambdatoast/elm.vim', {'for': 'elm'}
+Plug 'rust-lang/rust.vim', {'for': 'rust'}
+Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 
 if has('mac')
   Plug 'jszakmeister/vim-togglecursor'
@@ -143,7 +146,7 @@ endif
 "}}}
 
 " Vim UI {{{
-set showmode
+set noshowmode
 
 if has('cmdline_info')
   set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%)
@@ -153,7 +156,6 @@ set sidescroll=1
 set sidescrolloff=5
 set scrolloff=5
 
-set linespace=0
 set number
 set hlsearch
 set cursorline
@@ -183,6 +185,7 @@ autocmd QuickFixCmdPost    l* nested lwindow
 if has('gui_running')
   set cursorline
   set guioptions=egt
+  set linespace=0
   set lines=50
   set columns=120
   set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
@@ -265,7 +268,7 @@ nnoremap <leader>p :set paste<CR>"*]p:set nopaste<CR>
 nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
 vnoremap <leader>p :<C-U>set paste<CR>"*]p:set nopaste<CR>
 vnoremap <leader>P :<C-U>set paste<CR>"*]P:set nopaste<CR>
-vnoremap <leader>y "*ygv
+vnoremap <leader>y "*y
 
 " move to end of copy/paste
 vnoremap y y`]
@@ -330,25 +333,25 @@ augroup vimrc_filetypes
   autocmd!
 
   " json {{{
-  autocmd FileType json set equalprg=python\ -m\ json.tool
-  autocmd FileType json set shiftwidth=2
+  autocmd FileType json setlocal equalprg=python\ -m\ json.tool
+  autocmd FileType json setlocal shiftwidth=2
   " }}}
 
   " xml {{{
   autocmd BufNewFile,BufRead *.config setfiletype xml
   autocmd BufNewFile,BufRead *.*proj setfiletype xml
   autocmd BufNewFile,BufRead *.xaml setfiletype xml
-  autocmd FileType xml set foldmethod=syntax
-  autocmd FileType xml set equalprg=xmllint\ --format\ -
-  autocmd FileType xml set shiftwidth=2
+  autocmd FileType xml setlocal foldmethod=syntax
+  autocmd FileType xml setlocal equalprg=xmllint\ --format\ -
+  autocmd FileType xml setlocal shiftwidth=2
   let g:xml_syntax_folding=1
   " }}}
 
   " fsharp {{{
   if executable('fantomas')
-    autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
+    autocmd FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
   endif
-  autocmd FileType fsharp set shiftwidth=2
+  autocmd FileType fsharp setlocal shiftwidth=2
   " }}}
 
   " help {{{
@@ -386,9 +389,7 @@ if s:has_plug('fsharpbinding')
     autocmd FileType fsharp call s:fsharpbinding_settings()
   augroup END
   function! s:fsharpbinding_settings()
-    if s:has_plug('neocomplete-vim')
-      let g:neocomplete#sources#omni#input_patterns.fsharp = '.*[^=\);]'
-      let g:neocomplete#sources.fsharp = ['omni']
+    if s:has_plug('neocomplete.vim')
     endif
 
     nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
@@ -417,8 +418,20 @@ endif
 " }}}
 
 " Neocomplete {{{
-if s:has_plug('neocomplete-vim')
+if s:has_plug('neocomplete.vim')
   let g:neocomplete#enable_at_startup = 1
+
+  " For smart TAB completion.
+  inoremap <expr><TAB>  pumvisible() ? "\<C-n>" :
+         \ <SID>check_back_space() ? "\<TAB>" :
+         \ neocomplete#start_manual_complete()
+  function! s:check_back_space()
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~ '\s'
+  endfunction
+
+  inoremap <C-k>  <Plug>(neocomplete_start_unite_complete)
+  inoremap <C-q>  <Plug>(neocomplete_start_unite_quick_match)
 endif
 " }}}
 
@@ -503,7 +516,6 @@ endif
 if s:has_plug('vim-airline')
   let g:airline_left_sep = ''
   let g:airline_right_sep = ''
-  let g:airline_theme = 'powerlineish'
   let g:airline_extensions = ['branch', 'netrw', 'quickfix', 'unite']
   let g:airline_mode_map = {
       \ '__' : '-',
