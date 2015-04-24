@@ -1,15 +1,12 @@
 " vim: foldlevel=0 foldmethod=marker shiftwidth=2 :
 
 " Environment {{{
-
-" Basics {{{
-" fish as shell seems to cause issues with extra characters
+set nocompatible
+set encoding=utf8
+set background=dark
 if &shell =~# 'fish$'
   set shell=bash
 endif
-set nocompatible
-set background=dark
-"}}}
 
 " Windows Compatible {{{
 let s:is_win = has('win32') || has('win64')
@@ -24,10 +21,10 @@ if s:is_win
   endif
 endif
 "}}}
-
 "}}}
 
 " Plugins {{{
+let g:plug_threads=16
 call plug#begin('~/.vim/bundle')
 
 " Base
@@ -88,10 +85,11 @@ Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
 Plug 'pangloss/vim-javascript', {'for': 'javascript'}
 Plug 'mxw/vim-jsx', {'for': 'javascript'}
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
-Plug 'jb55/Vim-Roy', {'for': 'roy'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'lambdatoast/elm.vim', {'for': 'elm'}
+Plug 'rust-lang/rust.vim', {'for': 'rust'}
+Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
 
@@ -158,7 +156,7 @@ endif
 "}}}
 
 " Vim UI {{{
-set showmode
+set noshowmode
 
 if has('cmdline_info')
   set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%)
@@ -168,7 +166,6 @@ set sidescroll=1
 set sidescrolloff=5
 set scrolloff=5
 
-set linespace=0
 set number
 set hlsearch
 set cursorline
@@ -184,6 +181,7 @@ set foldnestmax=10
 
 set linebreak
 
+set list
 set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
 set tags=./tags;/,~/.vimtags
@@ -197,11 +195,12 @@ autocmd QuickFixCmdPost    l* nested lwindow
 if has('gui_running')
   set cursorline
   set guioptions=egt
+  set linespace=0
   set lines=50
   set columns=120
   set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
 else
-  let t_Co=256
+  set t_Co=256
   let base16colorspace=256
 endif
 "}}}
@@ -273,25 +272,32 @@ noremap zh 20zh
 
 noremap <leader>ee :e $MYVIMRC<CR>
 
+" copy/paste from system
 nnoremap <leader>y "*y
 nnoremap <leader>p :set paste<CR>"*]p:set nopaste<CR>
 nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
-vnoremap <leader>y "*ygv
+vnoremap <leader>p :<C-U>set paste<CR>"*]p:set nopaste<CR>
+vnoremap <leader>P :<C-U>set paste<CR>"*]P:set nopaste<CR>
+vnoremap <leader>y "*y
 
+" move to end of copy/paste
 vnoremap y y`]
 vnoremap p p`]
 nnoremap p p`]
 
 " duplicate visual selection
-vmap D y'>p
+vnoremap D y'>p
 
 nnoremap <leader>bb :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
 
+" select whole buffer
 nnoremap vaa ggvGg_
 nnoremap Vaa ggVG
+" select current line, no whitespace
 nnoremap vv ^vg_
+" select last changed/yanked
 nnoremap gV `[v`]
 
 " Create a split on the given side.
@@ -312,6 +318,7 @@ vnoremap <M-k> :m-2<CR>gv
 " Move to start/end of text in line
 nnoremap H ^
 nnoremap L $
+vnoremap H ^
 vnoremap L g_
 
 " move to last change
@@ -337,24 +344,24 @@ augroup vimrc_filetypes
 
   " json {{{
   autocmd FileType json setlocal equalprg=python\ -m\ json.tool
-  set shiftwidth=2
+  autocmd FileType json setlocal shiftwidth=2
   " }}}
 
   " xml {{{
   autocmd BufNewFile,BufRead *.config setfiletype xml
   autocmd BufNewFile,BufRead *.*proj setfiletype xml
   autocmd BufNewFile,BufRead *.xaml setfiletype xml
-  let g:xml_syntax_folding=1
   autocmd FileType xml setlocal foldmethod=syntax
   autocmd FileType xml setlocal equalprg=xmllint\ --format\ -
-  set shiftwidth=2
+  autocmd FileType xml setlocal shiftwidth=2
+  let g:xml_syntax_folding=1
   " }}}
 
   " fsharp {{{
   if executable('fantomas')
     autocmd FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
   endif
-  set shiftwidth=2
+  autocmd FileType fsharp setlocal shiftwidth=2
   " }}}
 
   " help {{{
@@ -392,13 +399,12 @@ if s:has_plug('fsharpbinding')
     autocmd FileType fsharp call s:fsharpbinding_settings()
   augroup END
   function! s:fsharpbinding_settings()
-    if s:has_plug('neocomplete-vim')
-      let g:neocomplete#sources#omni#input_patterns.fsharp = '.*[^=\);]'
-      let g:neocomplete#sources.fsharp = ['omni']
+    if s:has_plug('neocomplete.vim')
     endif
 
-    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine() <CR>
-    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel() <CR>
+    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
+    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel()<CR>
+    vmap <buffer> <leader>l ggVG:<C-U>call fsharpbinding#python#FsiSendSel()<CR>
   endfunction
 endif
 " }}}
@@ -422,8 +428,20 @@ endif
 " }}}
 
 " Neocomplete {{{
-if s:has_plug('neocomplete-vim')
+if s:has_plug('neocomplete.vim')
   let g:neocomplete#enable_at_startup = 1
+
+  " For smart TAB completion.
+  inoremap <expr><TAB>  pumvisible() ? "\<C-n>" :
+         \ <SID>check_back_space() ? "\<TAB>" :
+         \ neocomplete#start_manual_complete()
+  function! s:check_back_space()
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~ '\s'
+  endfunction
+
+  inoremap <C-k>  <Plug>(neocomplete_start_unite_complete)
+  inoremap <C-q>  <Plug>(neocomplete_start_unite_quick_match)
 endif
 " }}}
 
@@ -453,7 +471,7 @@ endif
 
 " VimFiler {{{
 if s:has_plug('vimfiler.vim')
-  nnoremap <leader>uv :VimFilerBufferDir<CR>
+  nnoremap <leader>uv :VimFilerBufferDir -find -safe<CR>
 endif
 " }}}
 
@@ -508,7 +526,6 @@ endif
 if s:has_plug('vim-airline')
   let g:airline_left_sep = ''
   let g:airline_right_sep = ''
-  let g:airline_theme = 'powerlineish'
   let g:airline_extensions = ['branch', 'netrw', 'quickfix', 'unite']
   let g:airline_mode_map = {
       \ '__' : '-',
@@ -561,6 +578,13 @@ if s:has_plug('gruvbox')
   let g:gruvbox_italic=0
   colorscheme gruvbox
   let g:airline_theme='gruvbox'
+endif
+"}}}
+
+" seoul {{{
+if s:has_plug('seoul256.vim')
+  " darker background (233-239)
+  let g:seoul256_background = 234
 endif
 "}}}
 
