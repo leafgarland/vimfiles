@@ -3,8 +3,9 @@
 " Environment {{{
 
 " Basics {{{
+" fish as shell seems to cause issues with extra characters
 if &shell =~# 'fish$'
-  set shell=zsh
+  set shell=bash
 endif
 set nocompatible
 set background=dark
@@ -58,6 +59,7 @@ Plug 'haya14busa/incsearch.vim'
 Plug 'Shougo/unite.vim'
 Plug 'Shougo/neomru.vim'
 Plug 'Shougo/vimfiler.vim'
+Plug 'thinca/vim-ref'
 Plug 'Soares/butane.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
@@ -77,7 +79,10 @@ Plug 'guns/vim-clojure-static', {'for': 'clojure'}
 Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
 Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
 Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure', 'scheme']}
-Plug 'jimenezrick/vimerl', {'for': 'erlang'}
+Plug 'vim-erlang/vim-erlang-runtime', {'for': 'erlang'}
+Plug 'vim-erlang/vim-erlang-compiler', {'for': 'erlang'}
+Plug 'vim-erlang/vim-erlang-omnicomplete', {'for': 'erlang'}
+Plug 'vim-erlang/vim-erlang-tags', {'for': 'erlang'}
 Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
 Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
 Plug 'pangloss/vim-javascript', {'for': 'javascript'}
@@ -87,17 +92,21 @@ Plug 'jb55/Vim-Roy', {'for': 'roy'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'lambdatoast/elm.vim', {'for': 'elm'}
+Plug 'wlangstroth/vim-racket', {'for': 'racket'}
+Plug 'beyondmarc/glsl.vim'
 
 if has('mac')
-  Plug 'jszakmeister/vim-togglecursor'
-  Plug 'sophacles/vim-processing'
-  Plug 'epeli/slimux'
+  if !has('nvim')
+    Plug 'jszakmeister/vim-togglecursor'
+  endif
+  Plug 'tmux-plugins/vim-tmux-focus-events'
   Plug 'christoomey/vim-tmux-navigator'
-  Plug 'wlangstroth/vim-racket', {'for': 'racket'}
+  Plug 'tmux-plugins/vim-tmux'
+  Plug 'epeli/slimux'
   Plug 'dag/vim-fish', {'for': 'fish'}
 endif
 
-let s:use_ycm=0
+let s:use_ycm=1
 if s:use_ycm
   if s:is_win
     Plug '~/.vim/win-bundle/ycm'
@@ -131,9 +140,11 @@ set backupdir=~/.vim/backup//
 set directory=~/.vim/swap//
 set undodir=~/.vim/undo//
 
-set cryptmethod=blowfish
-" disables swaps, backups and history etc for encrypted files
-autocmd BufReadPost * if &key != "" | setl noswapfile nowritebackup viminfo= nobackup noshelltemp secure | endif
+if !has('nvim')
+  set cryptmethod=blowfish
+  " disables swaps, backups and history etc for encrypted files
+  autocmd BufReadPost * if &key != "" | setl noswapfile nowritebackup viminfo= nobackup noshelltemp secure | endif
+end
 
 let g:netrw_menu = 0
 
@@ -325,7 +336,7 @@ augroup vimrc_filetypes
   autocmd!
 
   " json {{{
-  autocmd FileType json set equalprg=python\ -m\ json.tool
+  autocmd FileType json setlocal equalprg=python\ -m\ json.tool
   set shiftwidth=2
   " }}}
 
@@ -334,14 +345,14 @@ augroup vimrc_filetypes
   autocmd BufNewFile,BufRead *.*proj setfiletype xml
   autocmd BufNewFile,BufRead *.xaml setfiletype xml
   let g:xml_syntax_folding=1
-  autocmd FileType xml set foldmethod=syntax
-  autocmd FileType xml set equalprg=xmllint\ --format\ -
+  autocmd FileType xml setlocal foldmethod=syntax
+  autocmd FileType xml setlocal equalprg=xmllint\ --format\ -
   set shiftwidth=2
   " }}}
 
   " fsharp {{{
   if executable('fantomas')
-    autocmd FileType fsharp set equalprg=fantomas\ --stdin\ --stdout
+    autocmd FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
   endif
   set shiftwidth=2
   " }}}
