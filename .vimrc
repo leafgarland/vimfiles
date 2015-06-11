@@ -39,6 +39,7 @@ Plug 'chriskempson/base16-vim'
 Plug 'bling/vim-airline'
 Plug 'morhetz/gruvbox/'
 Plug 'junegunn/seoul256.vim'
+Plug 'NLKNguyen/papercolor-theme'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -70,7 +71,7 @@ Plug 'tpope/vim-jdaddy', {'for': 'json'}
 Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
 Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
 Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-Plug 'fsharp/fsharpbinding', {'for': 'fsharp', 'rtp': 'vim'}
+Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
 Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
@@ -186,9 +187,18 @@ set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
 set tags=./tags;/,~/.vimtags
 
-" Opens quick fix window when there are items, close it when empty
-autocmd QuickFixCmdPost [^l]* nested cwindow
-autocmd QuickFixCmdPost    l* nested lwindow
+augroup vimrc_ui
+  autocmd!
+
+  " Show CursorLine in active window only
+  autocmd WinEnter * set cursorline
+  autocmd WinLeave * set nocursorline
+
+  " Opens quick fix window when there are items, close it when empty
+  autocmd QuickFixCmdPost [^l]* nested cwindow
+  autocmd QuickFixCmdPost    l* nested lwindow
+augroup end
+
 "}}}
 
 " GUI Settings {{{
@@ -393,12 +403,16 @@ endif
 " }}}
 
 " FSharp {{{
-if s:has_plug('fsharpbinding')
+if s:has_plug('vim-fsharp')
+  let g:fsharpbinding_debug=1
   augroup vimrc_fsharpbinding_settings
     autocmd!
     autocmd FileType fsharp call s:fsharpbinding_settings()
   augroup END
   function! s:fsharpbinding_settings()
+    setlocal include=^#load\ 
+    setlocal complete+=i
+
     if s:has_plug('neocomplete.vim')
     endif
 
@@ -471,6 +485,7 @@ endif
 
 " VimFiler {{{
 if s:has_plug('vimfiler.vim')
+  let g:vimfiler_as_default_explorer = 1
   nnoremap <leader>uv :VimFilerBufferDir -find -safe<CR>
 endif
 " }}}
@@ -574,10 +589,11 @@ if s:has_plug('gruvbox')
   if has('gui_running')
     let g:gruvbox_invert_selection=0
     let g:gruvbox_contrast_dark='medium'
+    let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
-  colorscheme gruvbox
   let g:airline_theme='gruvbox'
+  colorscheme gruvbox
 endif
 "}}}
 
@@ -698,6 +714,11 @@ augroup vimrc_vim_evaluate
   autocmd FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
         \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
 augroup end
+"}}}
+
+" slash replacements {{{
+command! -range SlashForwards :<line1>,<line2>s/\\/\//g
+command! -range SlashBackwards :<line1>,<line2>s/\//\\/g
 "}}}
 
 "}}}
