@@ -54,19 +54,23 @@ Plug 'wellle/targets.vim'
 Plug 'haya14busa/incsearch.vim'
 
 " Tools
-Plug 'Shougo/unite.vim'
-Plug 'Shougo/neomru.vim'
-Plug 'Shougo/vimfiler.vim'
-Plug 'thinca/vim-ref'
 Plug 'Soares/butane.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-vinegar'
 Plug 'tpope/vim-projectionist'
 
+" Unite
+Plug 'Shougo/unite.vim'
+Plug 'Shougo/neomru.vim'
+Plug 'Shougo/unite-outline'
+Plug 'tsukkee/unite-tag'
+Plug 'Shougo/vimfiler.vim'
+Plug 'thinca/vim-ref'
+
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
-Plug 'leshill/vim-json', {'for': 'json'}
+Plug 'elzr/vim-json', {'for': 'json'}
 Plug 'tpope/vim-jdaddy', {'for': 'json'}
 Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
 Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
@@ -88,6 +92,7 @@ Plug 'mxw/vim-jsx', {'for': 'javascript'}
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
+Plug 'exu/pgsql.vim', {'for': 'pgsql'}
 Plug 'lambdatoast/elm.vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
@@ -201,7 +206,7 @@ augroup end
 
 "}}}
 
-" GUI Settings {{{
+" GUI Settings: {{{
 if has('gui_running')
   set cursorline
   set guioptions=egt
@@ -473,13 +478,6 @@ if s:has_plug('incsearch.vim')
   map /  <Plug>(incsearch-forward)
   map ?  <Plug>(incsearch-backward)
   map g/ <Plug>(incsearch-stay)
-  augroup vimrc_incsearch_keymap
-    autocmd!
-    autocmd VimEnter call s:incsearch_keymap()
-  augroup END
-  function! s:incsearch_keymap()
-    IncSearchNoreMap <C-n> <Over>(buffer-complete)
-  endfunction
 endif
 " }}}
 
@@ -492,6 +490,99 @@ endif
 
 " Unite {{{
 if s:has_plug('unite.vim')
+
+  let g:unite_source_tag_max_fname_length = 70
+  let g:unite_source_history_yank_enable = 1
+  let g:unite_source_mark_marks =
+    \ "abcdefghijklmnopqrstuvwxyz" .
+    \ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+  call unite#custom#source('tag', 'sorters', ['sorter_rank'])
+
+  let s:sorter = has("ruby") ? 'sorter_selecta' : 'sorter_rank'
+  call unite#custom#source('file,directory,file_rec,file_rec/async,neomru/file,tag', 'sorters', [s:sorter])
+  call unite#custom#source('file,directory,file_rec,file_rec/async,tag', 'matchers',
+  \ ['converter_relative_word', 'matcher_fuzzy'])
+
+  call unite#custom#source('neomru/file', 'matchers',
+  \ ['converter_relative_word', 'matcher_project_files', 'matcher_fuzzy'])
+
+  call unite#custom#profile('default', 'context', {
+  \ 'direction' : 'topleft',
+  \ 'prompt' : '  →  ',
+  \ })
+
+  call unite#custom#profile('source/grep', 'context', {
+  \ 'buffer_name' : 'grep',
+  \ 'no_quit' : 0
+  \ })
+
+  call unite#custom#profile('source/buffer', 'context', {
+  \ 'buffer_name' : 'buffer',
+  \ 'start_insert' : 1
+  \ })
+
+  call unite#custom#profile('source/tag', 'context', {
+  \ 'buffer_name' : 'tag',
+  \ 'start_insert' : 1,
+  \ 'resume' : 1,
+  \ 'input' : ''
+  \ })
+
+  call unite#custom#profile('source/neomru/file', 'context', {
+  \ 'buffer_name' : 'mru',
+  \ 'start_insert' : 1
+  \ })
+
+  call unite#custom#profile('source/neomru/directory', 'context', {
+  \ 'buffer_name' : 'dirs',
+  \ 'start_insert' : 1,
+  \ 'default_action' : 'cd'
+  \ })
+
+  call unite#custom#profile('source/outline', 'context', {
+  \ 'buffer_name' : 'outline',
+  \ 'start_insert' : 1,
+  \ 'auto_highlight' : 1,
+  \ })
+
+  nnoremap [unite] <Nop>
+  nmap <leader>u [unite]
+
+  nnoremap <silent> [unite]g :<C-u>UniteWithInput grep:.<CR>
+  nnoremap <silent> [unite]] :<C-u>UniteWithCursorWord -no-start-insert grep:.<CR>
+  nnoremap <silent> [unite]G :<C-u>UniteResume grep<CR>
+  nnoremap <silent> [unite]p :<C-u>Unite -no-split -resume -buffer-name=project -no-restore -input= -start-insert -hide-source-names -unique file directory file_rec/async<CR>
+  nnoremap <silent> [unite]f :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
+  nnoremap <silent> [unite]b :<C-u>Unite -no-split buffer<CR>
+  nnoremap <silent> [unite]t :<C-u>Unite -no-split -input= tag<CR>
+  nnoremap <silent> [unite]r :<C-u>Unite -no-split neomru/file<CR>
+  nnoremap <silent> [unite]d :<C-u>Unite -no-split neomru/directory<CR>
+  nnoremap <silent> [unite]y :<C-u>Unite history/yank<CR>
+
+  nnoremap <silent> [unite]u :<C-u>UniteResume<CR>
+  nnoremap <silent> [unite]n :<C-u>UniteNext<CR>
+  nnoremap <silent> [unite]p :<C-u>UnitePrevious<CR>
+
+  nnoremap <silent> [unite]o :<C-u>Unite -split -vertical -winwidth=30 outline<CR>
+
+  " Custom mappings for the unite buffer
+  autocmd FileType unite call s:unite_settings()
+  function! s:unite_settings()
+    " Enable navigation with control-j and control-k in insert mode
+    imap <buffer> <C-j>   <Plug>(unite_select_next_line)
+    imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
+    imap <buffer> qq      <Plug>(unite_exit)
+    function! airline#extensions#unite#apply(...)
+      if &ft == 'unite'
+        call a:1.add_section('airline_a', ' Unite ')
+        call a:1.add_section('airline_b', ' %{get(unite#get_context(), "buffer_name", "")} ')
+        call a:1.add_section('airline_c', ' ')
+        return 1
+      endif
+    endfunction
+  endfunction
+
   " Use ag for search
   if executable('ag')
     let g:unite_source_grep_command = 'ag'
@@ -505,26 +596,6 @@ if s:has_plug('unite.vim')
     let g:unite_source_rec_async_command = 'pt /nocolor /nogroup -g .'
   endif
 
-  let g:unite_source_history_yank_enable = 1
-  call unite#filters#matcher_default#use(['matcher_fuzzy'])
-
-  nnoremap <silent> <leader>uf :<C-u>Unite -no-split -start-insert file_rec/async<cr>
-  nnoremap <silent> <leader>ut :<C-u>Unite -no-split -start-insert file<cr>
-  nnoremap <silent> <leader>uo :<C-u>UniteWithBufferDir -no-split -start-insert file_rec/async<cr>
-  nnoremap <silent> <leader>ur :<C-u>Unite -hide-source-names -no-split -start-insert file_mru<cr>
-  nnoremap <silent> <leader>uy :<C-u>Unite -no-split history/yank<cr>
-  nnoremap <silent> <leader>ue :<C-u>Unite -no-split buffer<cr>
-  nnoremap <silent> <leader>uu :<C-u>UniteResume -no-split<cr>
-  nnoremap <silent> <leader>u] :<C-u>UniteNext<cr>
-  nnoremap <silent> <leader>u[ :<C-u>UnitePrevious<cr>
-
-  " Custom mappings for the unite buffer
-  autocmd FileType unite call s:unite_settings()
-  function! s:unite_settings()
-    " Enable navigation with control-j and control-k in insert mode
-    imap <buffer> <C-j>   <Plug>(unite_select_next_line)
-    imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
-  endfunction
 endif
 "}}}
 
@@ -594,6 +665,17 @@ if s:has_plug('gruvbox')
   let g:gruvbox_italic=0
   let g:airline_theme='gruvbox'
   colorscheme gruvbox
+
+  " Status Colors: {{{
+  highlight! link StatusLineInsert DiffAdd
+  highlight! link StatusLineVisual DiffText
+  highlight! link StatusLineNormal StatusLine
+  highlight! link User1 GitGutterDelete
+  highlight! link User2 GitGutterAdd
+  highlight! link User3 GitGutterChange
+  highlight! link User3 SignatureMarkerText
+  " }}}
+
 endif
 "}}}
 
