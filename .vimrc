@@ -69,13 +69,14 @@ Plug 'Shougo/vimfiler.vim'
 Plug 'thinca/vim-ref'
 
 " Filetypes
+Plug 'eagletmt/ghcmod-vim'
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
 Plug 'elzr/vim-json', {'for': 'json'}
 Plug 'tpope/vim-jdaddy', {'for': 'json'}
 Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
 Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
 Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
+Plug 'leafgarland/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
 Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
@@ -92,8 +93,7 @@ Plug 'mxw/vim-jsx', {'for': 'javascript'}
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
-Plug 'exu/pgsql.vim', {'for': 'pgsql'}
-Plug 'lambdatoast/elm.vim', {'for': 'elm'}
+Plug 'ajhager/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
@@ -110,7 +110,7 @@ if has('mac')
   Plug 'dag/vim-fish', {'for': 'fish'}
 endif
 
-let s:use_ycm=1
+let s:use_ycm=0
 if s:use_ycm
   if s:is_win
     Plug '~/.vim/win-bundle/ycm'
@@ -118,9 +118,14 @@ if s:use_ycm
     Plug 'Valloric/YouCompleteMe'
   endif
 else
-  Plug 'ajh17/VimCompletesMe'
-  " Plug 'Shougo/neocomplete.vim'
-  Plug 'OmniSharp/omnisharp-vim'
+  if has('nvim')
+    Plug 'Shougo/deoplete.nvim'
+  else
+    Plug 'jszakmeister/vim-togglecursor'
+    Plug 'ajh17/VimCompletesMe'
+    " Plug 'Shougo/neocomplete.vim'
+    Plug 'OmniSharp/omnisharp-vim'
+  endif
 endif
 
 call plug#end()
@@ -428,6 +433,15 @@ if s:has_plug('vim-fsharp')
 endif
 " }}}
 
+" deoplete {{{
+if s:has_plug('deoplete.vim')
+  let g:deoplete#enable_at_startup = 1
+  let g:deoplete#enable_smart_case = 1
+  let g:deoplete#sources = {}
+  let g:deoplete#sources._ = ['buffer', 'file']
+endif
+" }}}
+
 " YouCompleteMe {{{
 if s:has_plug('YouCompleteMe')
   let g:ycm_semantic_triggers =  {
@@ -665,17 +679,6 @@ if s:has_plug('gruvbox')
   let g:gruvbox_italic=0
   let g:airline_theme='gruvbox'
   colorscheme gruvbox
-
-  " Status Colors: {{{
-  highlight! link StatusLineInsert DiffAdd
-  highlight! link StatusLineVisual DiffText
-  highlight! link StatusLineNormal StatusLine
-  highlight! link User1 GitGutterDelete
-  highlight! link User2 GitGutterAdd
-  highlight! link User3 GitGutterChange
-  highlight! link User3 SignatureMarkerText
-  " }}}
-
 endif
 "}}}
 
