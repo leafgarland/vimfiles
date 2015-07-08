@@ -1,6 +1,6 @@
-" vim: foldlevel=0 foldmethod=marker shiftwidth=2 :
+" vim: foldlevel=0 foldmethod=marker shiftwidth=2
 
-" Environment {{{
+" Environment: {{{
 set nocompatible
 set encoding=utf8
 set background=dark
@@ -8,7 +8,7 @@ if &shell =~# 'fish$'
   set shell=bash
 endif
 
-" Windows Compatible {{{
+" Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
 if s:is_win
   " On Windows, also use '.vim' instead of 'vimfiles'
@@ -23,7 +23,7 @@ endif
 "}}}
 "}}}
 
-" Plugins {{{
+" Plugins: {{{
 let g:plug_threads=16
 call plug#begin('~/.vim/bundle')
 
@@ -135,7 +135,7 @@ function! s:has_plug(name)
 endfunction
 "}}}
 
-" General {{{
+" General: {{{
 set mouse=a
 
 set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
@@ -166,7 +166,7 @@ elseif executable('pt')
 endif
 "}}}
 
-" Vim UI {{{
+" Vim UI: {{{
 set noshowmode
 
 if has('cmdline_info')
@@ -225,7 +225,7 @@ else
 endif
 "}}}
 
-" Formatting {{{
+" Formatting: {{{
 set nowrap
 set autoindent
 set shiftwidth=4                " use indents of 4 spaces
@@ -234,7 +234,7 @@ set tabstop=4                   " an indentation every four columns
 set softtabstop=4               " let backspace delete indent
 "}}}
 
-" Key Mappings {{{
+" Key Mappings: {{{
 
 " Show syntax groups under cursor
 map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<'
@@ -358,16 +358,16 @@ vnoremap <leader>V :g//d<CR>
 
 "}}}
 
-" Filetypes {{{
+" Filetypes: {{{
 augroup vimrc_filetypes
   autocmd!
 
-  " json {{{
+  " json: {{{
   autocmd FileType json setlocal equalprg=python\ -m\ json.tool
   autocmd FileType json setlocal shiftwidth=2
   " }}}
 
-  " xml {{{
+  " xml: {{{
   autocmd BufNewFile,BufRead *.config setfiletype xml
   autocmd BufNewFile,BufRead *.*proj setfiletype xml
   autocmd BufNewFile,BufRead *.xaml setfiletype xml
@@ -377,14 +377,14 @@ augroup vimrc_filetypes
   let g:xml_syntax_folding=1
   " }}}
 
-  " fsharp {{{
+  " fsharp: {{{
   if executable('fantomas')
     autocmd FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
   endif
   autocmd FileType fsharp setlocal shiftwidth=2
   " }}}
 
-  " help {{{
+  " help: {{{
   autocmd FileType help call s:help_filetype_settings()
   function! s:help_filetype_settings()
     nnoremap <buffer> q :wincmd c<CR>
@@ -394,9 +394,9 @@ augroup vimrc_filetypes
 augroup end
 "}}}
 
-" Plugins config {{{
+" Plugins config: {{{
 
-" Omnisharp {{{
+" Omnisharp: {{{
 if s:has_plug('omnisharp-vim')
   if s:has_plug('neocomplete-vim')
     augroup vimrc_omnisharp_neocomplete
@@ -412,7 +412,7 @@ if s:has_plug('omnisharp-vim')
 endif
 " }}}
 
-" FSharp {{{
+" FSharp: {{{
 if s:has_plug('vim-fsharp')
   let g:fsharpbinding_debug=1
   augroup vimrc_fsharpbinding_settings
@@ -460,7 +460,7 @@ if s:has_plug('YouCompleteMe')
 endif
 " }}}
 
-" Neocomplete {{{
+" Neocomplete: {{{
 if s:has_plug('neocomplete.vim')
   let g:neocomplete#enable_at_startup = 1
 
@@ -478,7 +478,7 @@ if s:has_plug('neocomplete.vim')
 endif
 " }}}
 
-" IncSearch {{{
+" IncSearch: {{{
 if s:has_plug('incsearch.vim')
   let g:incsearch#magic = '\v' " very magic
   let g:incsearch#do_not_save_error_message_history = 1
@@ -495,30 +495,25 @@ if s:has_plug('incsearch.vim')
 endif
 " }}}
 
-" VimFiler {{{
+" VimFiler: {{{
 if s:has_plug('vimfiler.vim')
   let g:vimfiler_as_default_explorer = 1
   nnoremap <leader>uv :VimFilerBufferDir -find -safe<CR>
 endif
 " }}}
 
-" Unite {{{
+" Unite: {{{
 if s:has_plug('unite.vim')
 
   let g:unite_source_tag_max_fname_length = 70
   let g:unite_source_history_yank_enable = 1
-  let g:unite_source_mark_marks =
-    \ "abcdefghijklmnopqrstuvwxyz" .
-    \ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-  call unite#custom#source('tag', 'sorters', ['sorter_rank'])
 
   let s:sorter = has("ruby") ? 'sorter_selecta' : 'sorter_rank'
   call unite#custom#source('file,directory,file_rec,file_rec/async,neomru/file,tag', 'sorters', [s:sorter])
-  call unite#custom#source('file,directory,file_rec,file_rec/async,tag', 'matchers',
+  call unite#custom#source('file,directory,file_rec,file_rec/async,neomru/file,tag', 'matchers',
   \ ['converter_relative_word', 'matcher_fuzzy'])
 
-  call unite#custom#source('neomru/file', 'matchers',
+  call unite#custom#profile('match_project_files', 'matchers',
   \ ['converter_relative_word', 'matcher_project_files', 'matcher_fuzzy'])
 
   call unite#custom#profile('default', 'context', {
@@ -564,29 +559,30 @@ if s:has_plug('unite.vim')
   nmap <leader>u [unite]
 
   nnoremap <silent> [unite]g :<C-u>UniteWithInput grep:.<CR>
-  nnoremap <silent> [unite]] :<C-u>UniteWithCursorWord -no-start-insert grep:.<CR>
+  nnoremap <silent> [unite]w :<C-u>UniteWithCursorWord -no-start-insert grep:.<CR>
   nnoremap <silent> [unite]G :<C-u>UniteResume grep<CR>
   nnoremap <silent> [unite]p :<C-u>Unite -no-split -resume -buffer-name=project -no-restore -input= -start-insert -hide-source-names -unique file directory file_rec/async<CR>
   nnoremap <silent> [unite]f :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
-  nnoremap <silent> [unite]b :<C-u>Unite -no-split buffer<CR>
+  nnoremap <silent> [unite]b :<C-u>Unite -auto-resize buffer<CR>
   nnoremap <silent> [unite]t :<C-u>Unite -no-split -input= tag<CR>
-  nnoremap <silent> [unite]r :<C-u>Unite -no-split neomru/file<CR>
+  nnoremap <silent> [unite]r :<C-u>Unite -no-split -profile-name=match_project_files neomru/file<CR>
+  nnoremap <silent> [unite]R :<C-u>Unite -no-split neomru/file<CR>
   nnoremap <silent> [unite]d :<C-u>Unite -no-split neomru/directory<CR>
   nnoremap <silent> [unite]y :<C-u>Unite history/yank<CR>
 
   nnoremap <silent> [unite]u :<C-u>UniteResume<CR>
-  nnoremap <silent> [unite]n :<C-u>UniteNext<CR>
-  nnoremap <silent> [unite]p :<C-u>UnitePrevious<CR>
+  nnoremap <silent> [unite]] :<C-u>UniteNext<CR>
+  nnoremap <silent> [unite][ :<C-u>UnitePrevious<CR>
 
   nnoremap <silent> [unite]o :<C-u>Unite -split -vertical -winwidth=30 outline<CR>
 
   " Custom mappings for the unite buffer
   autocmd FileType unite call s:unite_settings()
   function! s:unite_settings()
-    " Enable navigation with control-j and control-k in insert mode
     imap <buffer> <C-j>   <Plug>(unite_select_next_line)
     imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
     imap <buffer> qq      <Plug>(unite_exit)
+
     function! airline#extensions#unite#apply(...)
       if &ft == 'unite'
         call a:1.add_section('airline_a', ' Unite ')
@@ -600,9 +596,9 @@ if s:has_plug('unite.vim')
   " Use ag for search
   if executable('ag')
     let g:unite_source_grep_command = 'ag'
-    let g:unite_source_grep_default_opts = '--line-numbers --nogroup --nocolor --smart-case --follow -C0'
+    let g:unite_source_grep_default_opts = '--vimgrep'
     let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_rec_async_command = 'ag --follow --nocolor --nogroup --hidden -g ""'
+    let g:unite_source_rec_async_command = 'ag --vimgrep -g .'
   elseif executable('pt')
     let g:unite_source_grep_command = 'pt'
     let g:unite_source_grep_default_opts = '/nogroup /nocolor /smart-case /follow /C0'
@@ -613,7 +609,7 @@ if s:has_plug('unite.vim')
 endif
 "}}}
 
-" Butane {{{
+" Butane: {{{
 if s:has_plug('butane.vim')
   noremap <leader>bd :Bclose<CR>
   noremap <leader>bD :Bclose!<CR>
@@ -622,7 +618,7 @@ if s:has_plug('butane.vim')
 endif
 "}}}
 
-" Airline {{{
+" Airline: {{{
 if s:has_plug('vim-airline')
   let g:airline_left_sep = ''
   let g:airline_right_sep = ''
@@ -643,7 +639,7 @@ if s:has_plug('vim-airline')
 endif
 "}}}
 
-" Fugitive {{{
+" Fugitive: {{{
 if s:has_plug('vim-fugitive')
   nnoremap <silent> <leader>gs :Gstatus<CR>
   nnoremap <silent> <leader>gd :Gdiff<CR>
@@ -669,7 +665,7 @@ if s:has_plug('slimux')
 endif
 "}}}
 
-" gruvbox {{{
+" gruvbox: {{{
 if s:has_plug('gruvbox')
   if has('gui_running')
     let g:gruvbox_invert_selection=0
@@ -682,7 +678,7 @@ if s:has_plug('gruvbox')
 endif
 "}}}
 
-" seoul {{{
+" seoul: {{{
 if s:has_plug('seoul256.vim')
   " darker background (233-239)
   let g:seoul256_background = 234
@@ -691,7 +687,7 @@ endif
 
 "}}}
 
-" Functions {{{
+" Functions: {{{
 
 " vp doesn't replace paste buffer {{{
 function! RestoreRegister()
