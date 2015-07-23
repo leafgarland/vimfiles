@@ -110,7 +110,7 @@ if has('mac')
   Plug 'dag/vim-fish', {'for': 'fish'}
 endif
 
-let s:use_ycm=0
+let s:use_ycm=1
 if s:use_ycm
   if s:is_win
     Plug '~/.vim/win-bundle/ycm'
@@ -508,7 +508,7 @@ if s:has_plug('unite.vim')
   let g:unite_source_tag_max_fname_length = 70
   let g:unite_source_history_yank_enable = 1
 
-  let s:sorter = has("ruby") ? 'sorter_selecta' : 'sorter_rank'
+  let s:sorter = has('ruby') ? 'sorter_selecta' : 'sorter_rank'
   call unite#custom#source('file,directory,file_rec,file_rec/async,neomru/file,tag', 'sorters', [s:sorter])
   call unite#custom#source('file,directory,file_rec,file_rec/async,neomru/file,tag', 'matchers',
   \ ['converter_relative_word', 'matcher_fuzzy'])
@@ -561,7 +561,8 @@ if s:has_plug('unite.vim')
   nnoremap <silent> [unite]g :<C-u>UniteWithInput grep:.<CR>
   nnoremap <silent> [unite]w :<C-u>UniteWithCursorWord -no-start-insert grep:.<CR>
   nnoremap <silent> [unite]G :<C-u>UniteResume grep<CR>
-  nnoremap <silent> [unite]p :<C-u>Unite -no-split -resume -buffer-name=project -no-restore -input= -start-insert -hide-source-names -unique file directory file_rec/async<CR>
+  nnoremap <silent> [unite]p :<C-u>Unite -no-split -resume -buffer-name=project
+    \ -no-restore -input= -start-insert -hide-source-names -unique file file_rec/async<CR>
   nnoremap <silent> [unite]f :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
   nnoremap <silent> [unite]b :<C-u>Unite -auto-resize buffer<CR>
   nnoremap <silent> [unite]t :<C-u>Unite -no-split -input= tag<CR>
@@ -655,11 +656,21 @@ if s:has_plug('slimux')
   augroup slimux-settings
     autocmd!
     autocmd FileType scheme call s:slimux_scheme_settings()
+    autocmd FileType fsharp call s:slimux_fsharp_settings()
   augroup END
   function! s:slimux_scheme_settings()
     nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
     nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
     vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+  endfunction
+  function! s:slimux_fsharp_settings()
+    nnoremap <buffer> <silent> <leader>l :SlimuxREPLSendBuffer<CR>
+    nnoremap <buffer> <silent> <leader>i :SlimuxREPLSendLine<CR>
+    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+  endfunction
+  " Add ;; to the end of the fsharp sent text
+  function! SlimuxPost_fsharp(target_pane)
+    call system('tmux send-keys -t ' . a:target_pane . ' \\\; \\\; C-m')
   endfunction
   let g:slimux_scheme_keybindings=1
 endif
