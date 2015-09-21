@@ -36,10 +36,10 @@ Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
 Plug 'chriskempson/base16-vim'
-Plug 'bling/vim-airline'
 Plug 'morhetz/gruvbox/'
 Plug 'junegunn/seoul256.vim'
 Plug 'NLKNguyen/papercolor-theme'
+Plug 'bling/vim-airline'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -76,7 +76,7 @@ Plug 'tpope/vim-jdaddy', {'for': 'json'}
 Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
 Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
 Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-Plug 'leafgarland/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
+Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
 Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
@@ -246,7 +246,10 @@ let mapleader = "\<space>"
 nmap <leader><leader> :
 vmap <leader><leader> :
 
-nnoremap <leader>w :w<CR>
+nnoremap <leader>fs :w<CR>
+
+" switch to alternate buffer
+nnoremap <leader><tab> :b#<CR>
 
 " Easier moving in tabs and windows
 nnoremap <C-J> <C-W>j
@@ -265,8 +268,8 @@ inoremap jk <esc>
 nnoremap <leader>j i<CR><Esc>
 
 " folding options
-nnoremap <leader>ff za
-nnoremap <leader>F :<C-U>let &foldlevel=v:count<CR>
+nnoremap <leader>ef za
+nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
 
 "clearing highlighted search
 nnoremap <silent> <leader>/ :nohlsearch<CR>
@@ -290,15 +293,22 @@ nnoremap <silent> <C-W>z :wincmd z<Bar>cclose<Bar>lclose<CR>
 noremap zl 20zl
 noremap zh 20zh
 
-noremap <leader>ee :e $MYVIMRC<CR>
+noremap <leader>fed :e $MYVIMRC<CR>
 
 " copy/paste from system
-nnoremap <leader>y "*y
-nnoremap <leader>p :set paste<CR>"*]p:set nopaste<CR>
-nnoremap <leader>P :set paste<CR>"*]P:set nopaste<CR>
-vnoremap <leader>p :<C-U>set paste<CR>"*]p:set nopaste<CR>
-vnoremap <leader>P :<C-U>set paste<CR>"*]P:set nopaste<CR>
-vnoremap <leader>y "*y
+nnoremap <C-y> "*y
+vnoremap <C-y> "*y
+if has('gui_running')
+  nnoremap <C-p> "*]p
+  nnoremap <C-P> "*]P
+  vnoremap <C-p> "*]p
+  vnoremap <C-P> "*]P
+else
+  nnoremap <C-p> :set paste<CR>"*]p:set nopaste<CR>
+  nnoremap <C-P> :set paste<CR>"*]P:set nopaste<CR>
+  vnoremap <C-p> :<C-U>set paste<CR>"*]p:set nopaste<CR>
+  vnoremap <C-P> :<C-U>set paste<CR>"*]P:set nopaste<CR>
+endif
 
 " move to end of copy/paste
 vnoremap y y`]
@@ -308,7 +318,7 @@ nnoremap p p`]
 " duplicate visual selection
 vnoremap D y'>p
 
-nnoremap <leader>bb :b#<CR>
+nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
 
@@ -372,9 +382,12 @@ augroup vimrc_filetypes
   autocmd BufNewFile,BufRead *.*proj setfiletype xml
   autocmd BufNewFile,BufRead *.xaml setfiletype xml
   autocmd FileType xml setlocal foldmethod=syntax
-  autocmd FileType xml setlocal equalprg=xmllint\ --format\ -
+  autocmd FileType xml setlocal equalprg=xmllint\ --format\ --recover\ -
   autocmd FileType xml setlocal shiftwidth=2
   let g:xml_syntax_folding=1
+  " the xml highlighting can be broken on large files, so we
+  " increase the max num of lines that the highlighting examines
+  syntax sync maxlines=10000
   " }}}
 
   " fsharp: {{{
@@ -396,8 +409,17 @@ augroup end
 
 " Plugins config: {{{
 
+" Targets {{{
+  " add curly braces
+  let g:targets_argOpening = '[({[]'
+  let g:targets_argClosing = '[]})]'
+  " args separated by , and ;
+  let g:targets_argSeparator = '[,;]'
+" }}}
+
 " Omnisharp: {{{
 if s:has_plug('omnisharp-vim')
+  " let g:OmniSharp_server_type = 'roslyn'
   if s:has_plug('neocomplete-vim')
     augroup vimrc_omnisharp_neocomplete
       autocmd!
@@ -561,19 +583,18 @@ if s:has_plug('unite.vim')
   nnoremap <silent> [unite]g :<C-u>UniteWithInput grep:.<CR>
   nnoremap <silent> [unite]w :<C-u>UniteWithCursorWord -no-start-insert grep:.<CR>
   nnoremap <silent> [unite]G :<C-u>UniteResume grep<CR>
-  nnoremap <silent> [unite]p :<C-u>Unite -no-split -resume -buffer-name=project
-    \ -no-restore -input= -start-insert -hide-source-names -unique file file_rec/async<CR>
-  nnoremap <silent> [unite]f :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
-  nnoremap <silent> [unite]b :<C-u>Unite -auto-resize buffer<CR>
   nnoremap <silent> [unite]t :<C-u>Unite -no-split -input= tag<CR>
-  nnoremap <silent> [unite]r :<C-u>Unite -no-split -profile-name=match_project_files neomru/file<CR>
-  nnoremap <silent> [unite]R :<C-u>Unite -no-split neomru/file<CR>
-  nnoremap <silent> [unite]d :<C-u>Unite -no-split neomru/directory<CR>
   nnoremap <silent> [unite]y :<C-u>Unite history/yank<CR>
+  nnoremap <silent> <leader>bb :<C-u>Unite -no-split buffer<CR>
+  nnoremap <silent> <leader>pf :<C-u>Unite -no-split -resume -buffer-name=project -no-restore -input= -start-insert -hide-source-names -unique file directory file_rec/async<CR>
+  nnoremap <silent> <leader>ff :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
+  nnoremap <silent> <leader>fR :<C-u>Unite -no-split neomru/file<CR>
+  nnoremap <silent> <leader>pp :<C-u>Unite -no-split neomru/directory<CR>
+  nnoremap <silent> <leader>fr :<C-u>Unite -no-split -profile-name=match_project_files neomru/file<CR>
 
   nnoremap <silent> [unite]u :<C-u>UniteResume<CR>
-  nnoremap <silent> [unite]] :<C-u>UniteNext<CR>
-  nnoremap <silent> [unite][ :<C-u>UnitePrevious<CR>
+  nnoremap <silent> ]u :<C-u>UniteNext<CR>
+  nnoremap <silent> [u :<C-u>UnitePrevious<CR>
 
   nnoremap <silent> [unite]o :<C-u>Unite -split -vertical -winwidth=30 outline<CR>
 
@@ -599,12 +620,12 @@ if s:has_plug('unite.vim')
     let g:unite_source_grep_command = 'ag'
     let g:unite_source_grep_default_opts = '--vimgrep'
     let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_rec_async_command = 'ag --vimgrep -g .'
+    let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g .']
   elseif executable('pt')
     let g:unite_source_grep_command = 'pt'
     let g:unite_source_grep_default_opts = '/nogroup /nocolor /smart-case /follow /C0'
     let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_rec_async_command = 'pt /nocolor /nogroup -g .'
+    let g:unite_source_rec_async_command = ['pt', '/nocolor', '/nogroup', '-g .']
   endif
 
 endif
@@ -689,6 +710,10 @@ if s:has_plug('gruvbox')
 endif
 "}}}
 
+" PaperColor: {{{
+let g:PaperColor_Dark_Override={'cursorline' : 'NONE'}
+" }}}
+
 " seoul: {{{
 if s:has_plug('seoul256.vim')
   " darker background (233-239)
@@ -727,7 +752,7 @@ xnoremap # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R>=@/<CR><CR>
 "}}}
 
 " Zoom font size {{{
-if has('gui')
+if has('gui_running')
   let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
   function! s:ChangeZoom(zoomInc)
     let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
