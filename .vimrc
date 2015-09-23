@@ -256,6 +256,16 @@ nnoremap <C-J> <C-W>j
 nnoremap <C-K> <C-W>k
 nnoremap <C-L> <C-W>l
 nnoremap <C-H> <C-W>h
+" windows cmds under <leader>w
+nnoremap <leader>w <C-w>
+nnoremap <leader>ww <C-w>p
+" close all preview windows and quickfix|location lists
+nnoremap <silent> <leader>wz :wincmd z<Bar>cclose<Bar>lclose<CR>
+" Create a split on the given side.
+nnoremap <leader>wsh   :leftabove  vsp<CR>
+nnoremap <leader>wsl :rightbelow vsp<CR>
+nnoremap <leader>wsk     :leftabove  sp<CR>
+nnoremap <leader>wsj   :rightbelow sp<CR>
 
 " Wrapped lines goes down/up to next row, rather than next line in file.
 nnoremap j gj
@@ -285,9 +295,6 @@ vnoremap < <gv
 vnoremap > >gv
 
 noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
-
-" close all preview windows and quickfix|location lists
-nnoremap <silent> <C-W>z :wincmd z<Bar>cclose<Bar>lclose<CR>
 
 " Easier horizontal scrolling
 noremap zl 20zl
@@ -329,13 +336,6 @@ nnoremap Vaa ggVG
 nnoremap vv ^vg_
 " select last changed/yanked
 nnoremap gV `[v`]
-
-" Create a split on the given side.
-" From http://technotales.wordpress.com/2010/04/29/vim-splits-a-guide-to-doing-exactly-what-you-want/ via joakimk.
-nnoremap <leader>swh   :leftabove  vsp<CR>
-nnoremap <leader>swl :rightbelow vsp<CR>
-nnoremap <leader>swk     :leftabove  sp<CR>
-nnoremap <leader>swj   :rightbelow sp<CR>
 
 " <alt-j> <alt-k> move line
 nnoremap <M-j> :m+<CR>
@@ -520,7 +520,7 @@ endif
 " VimFiler: {{{
 if s:has_plug('vimfiler.vim')
   let g:vimfiler_as_default_explorer = 1
-  nnoremap <leader>uv :VimFilerBufferDir -find -safe<CR>
+  nnoremap <leader>fj :VimFilerBufferDir -find -safe<CR>
 endif
 " }}}
 
