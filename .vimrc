@@ -59,6 +59,8 @@ Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-vinegar'
 Plug 'tpope/vim-projectionist'
+Plug 'SirVer/ultisnips'
+Plug 'honza/vim-snippets'
 
 " Unite
 Plug 'Shougo/unite.vim'
@@ -95,6 +97,7 @@ Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'ajhager/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
+Plug 'racer-rust/vim-racer', {'do': 'cargo build --release'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
@@ -455,6 +458,13 @@ if s:has_plug('vim-fsharp')
 endif
 " }}}
 
+" rust racer {{{
+if s:has_plug('vim-racer')
+  let g:racer_cmd = '~/Dev/rust/racer/target/release/racer'
+  let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source-rustc-1.3.0/src'
+endif
+" }}}
+
 " deoplete {{{
 if s:has_plug('deoplete.vim')
   let g:deoplete#enable_at_startup = 1
@@ -462,6 +472,12 @@ if s:has_plug('deoplete.vim')
   let g:deoplete#sources = {}
   let g:deoplete#sources._ = ['buffer', 'file']
 endif
+" }}}
+
+" Ultisnips {{{
+let g:UltiSnipsExpandTrigger="<c-j>"
+let g:UltiSnipsJumpForwardTrigger="<c-j>"
+let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 " }}}
 
 " YouCompleteMe {{{
@@ -474,11 +490,14 @@ if s:has_plug('YouCompleteMe')
     \   'perl' : ['->'],
     \   'php' : ['->', '::'],
     \   'cs,java,javascript,d,vim,python,perl6,scala,vb,elixir,go' : ['.'],
-    \   'ruby' : ['.', '::'],
+    \   'ruby,rust' : ['.', '::'],
     \   'lua' : ['.', ':'],
     \   'erlang' : [':'],
     \   'fsharp' : ['.'],
     \ }
+  nnoremap <leader>mgd :YcmCompleter GoToDefinition<CR>
+  nnoremap <leader>mgh :YcmCompleter GoToDeclaration<CR>
+  nnoremap <leader>mht :YcmCompleter GetType<CR>
 endif
 " }}}
 
