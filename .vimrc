@@ -167,6 +167,11 @@ elseif executable('pt')
   set grepprg=pt\ /nogroup\ /nocolor\ /smart-case\ /follow
   set grepformat=%f:%l:%m
 endif
+
+" vim will select ff=unix for any file with a \n in, no matter how many
+" \r\n line endings there might be. Use this cmd to reload the file forcing
+" ff=dos
+command! ReloadDos :e ++ff=dos<CR>
 "}}}
 
 " Vim UI: {{{
@@ -381,16 +386,20 @@ augroup vimrc_filetypes
   " }}}
 
   " xml: {{{
+  let g:xml_syntax_folding=1
   autocmd BufNewFile,BufRead *.config setfiletype xml
   autocmd BufNewFile,BufRead *.*proj setfiletype xml
   autocmd BufNewFile,BufRead *.xaml setfiletype xml
-  autocmd FileType xml setlocal foldmethod=syntax
-  autocmd FileType xml setlocal equalprg=xmllint\ --format\ --recover\ -
-  autocmd FileType xml setlocal shiftwidth=2
-  let g:xml_syntax_folding=1
-  " the xml highlighting can be broken on large files, so we
-  " increase the max num of lines that the highlighting examines
-  syntax sync maxlines=10000
+
+  autocmd FileType xml call s:xml_filetype_settings()
+  function! s:xml_filetype_settings()
+    setlocal foldmethod=syntax
+    setlocal equalprg=xmllint\ --format\ --recover\ -
+    setlocal shiftwidth=2
+    " the xml highlighting can be broken on large files, so we
+    " increase the max num of lines that the highlighting examines
+    syntax sync maxlines=10000
+  endfunction
   " }}}
 
   " fsharp: {{{
@@ -514,14 +523,13 @@ if s:has_plug('neocomplete.vim')
     return !col || getline('.')[col - 1]  =~ '\s'
   endfunction
 
-  inoremap <C-k>  <Plug>(neocomplete_start_unite_complete)
-  inoremap <C-q>  <Plug>(neocomplete_start_unite_quick_match)
+  imap <C-k>  <Plug>(neocomplete_start_unite_complete)
 endif
 " }}}
 
 " IncSearch: {{{
 if s:has_plug('incsearch.vim')
-  let g:incsearch#magic = '\v' " very magic
+  " let g:incsearch#magic = '\v' " very magic
   let g:incsearch#do_not_save_error_message_history = 1
   let g:incsearch#auto_nohlsearch = 1
   map n  <Plug>(incsearch-nohl-n)
