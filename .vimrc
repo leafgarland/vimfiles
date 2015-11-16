@@ -35,17 +35,14 @@ Plug 'kana/vim-textobj-user'
 Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
-Plug 'chriskempson/base16-vim'
 Plug 'morhetz/gruvbox/'
-Plug 'junegunn/seoul256.vim'
 Plug 'NLKNguyen/papercolor-theme'
-Plug 'bling/vim-airline'
+Plug 'itchyny/lightline.vim'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
-Plug 'tpope/vim-speeddating'
 Plug 'tpope/vim-unimpaired'
 Plug 'tpope/vim-abolish'
 Plug 'tommcdo/vim-exchange'
@@ -71,7 +68,6 @@ Plug 'Shougo/vimfiler.vim'
 Plug 'thinca/vim-ref'
 
 " Filetypes
-Plug 'eagletmt/ghcmod-vim'
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
 Plug 'elzr/vim-json', {'for': 'json'}
 Plug 'tpope/vim-jdaddy', {'for': 'json'}
@@ -103,7 +99,10 @@ Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
 
 if has('mac')
-  if !has('nvim')
+  if has('nvim')
+    Plug 'benekastah/neomake'
+  else
+    Plug 'scrooloose/syntastic'
     Plug 'jszakmeister/vim-togglecursor'
   endif
   Plug 'tmux-plugins/vim-tmux-focus-events'
@@ -111,9 +110,11 @@ if has('mac')
   Plug 'tmux-plugins/vim-tmux'
   Plug 'epeli/slimux'
   Plug 'dag/vim-fish', {'for': 'fish'}
+else
+  Plug 'scrooloose/syntastic'
 endif
 
-let s:use_ycm=1
+let s:use_ycm=0
 if s:use_ycm
   if s:is_win
     Plug '~/.vim/win-bundle/ycm'
@@ -124,11 +125,9 @@ else
   if has('nvim')
     Plug 'Shougo/deoplete.nvim'
   else
-    Plug 'jszakmeister/vim-togglecursor'
-    Plug 'ajh17/VimCompletesMe'
-    " Plug 'Shougo/neocomplete.vim'
-    Plug 'OmniSharp/omnisharp-vim'
+    Plug 'Shougo/neocomplete.vim'
   endif
+  Plug 'OmniSharp/omnisharp-vim'
 endif
 
 call plug#end()
@@ -151,12 +150,6 @@ set backup
 set backupdir=~/.vim/backup//
 set directory=~/.vim/swap//
 set undodir=~/.vim/undo//
-
-if !has('nvim')
-  set cryptmethod=blowfish
-  " disables swaps, backups and history etc for encrypted files
-  autocmd BufReadPost * if &key != "" | setl noswapfile nowritebackup viminfo= nobackup noshelltemp secure | endif
-end
 
 let g:netrw_menu = 0
 
@@ -227,9 +220,6 @@ if has('gui_running')
   set lines=50
   set columns=120
   set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
-else
-  set t_Co=256
-  let base16colorspace=256
 endif
 "}}}
 
@@ -470,12 +460,12 @@ endif
 " rust racer {{{
 if s:has_plug('vim-racer')
   let g:racer_cmd = '~/Dev/rust/racer/target/release/racer'
-  let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source-rustc-1.3.0/src'
+  let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/src'
 endif
 " }}}
 
 " deoplete {{{
-if s:has_plug('deoplete.vim')
+if s:has_plug('deoplete.nvim')
   let g:deoplete#enable_at_startup = 1
   let g:deoplete#enable_smart_case = 1
   let g:deoplete#sources = {}
@@ -632,14 +622,17 @@ if s:has_plug('unite.vim')
     imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
     imap <buffer> qq      <Plug>(unite_exit)
 
-    function! airline#extensions#unite#apply(...)
-      if &ft == 'unite'
-        call a:1.add_section('airline_a', ' Unite ')
-        call a:1.add_section('airline_b', ' %{get(unite#get_context(), "buffer_name", "")} ')
-        call a:1.add_section('airline_c', ' ')
-        return 1
-      endif
-    endfunction
+
+    if s:has_plug('vim-airline')
+      function! airline#extensions#unite#apply(...)
+        if &ft == 'unite'
+          call a:1.add_section('airline_a', ' Unite ')
+          call a:1.add_section('airline_b', ' %{get(unite#get_context(), "buffer_name", "")} ')
+          call a:1.add_section('airline_c', ' ')
+          return 1
+        endif
+      endfunction
+    endif
   endfunction
 
   " Use ag for search
@@ -687,6 +680,86 @@ if s:has_plug('vim-airline')
       \ }
 endif
 "}}}
+
+" Lightline: {{{
+let g:lightline = {
+  \ 'colorscheme': 'gruvbox',
+  \ 'active': {
+  \   'left': [ [ 'mode', 'paste' ], [ 'fugitive', 'filename' ] ],
+  \   'right': [ [ 'lineinfo' ], [ 'filetype', 'fileencoding'] ]
+  \ },
+  \ 'component_function': {
+  \   'fugitive': 'LightLineFugitive',
+  \   'filename': 'LightLineFilename',
+  \   'filetype': 'LightLineFiletype',
+  \   'fileencoding': 'LightLineFileencoding',
+  \   'mode': 'LightLineMode',
+  \ },
+  \ 'component': {
+  \   'lineinfo': '%l:%c %3p%%',
+  \ },
+  \ 'separator': { 'left': '', 'right': '' },
+  \ 'subseparator': { 'left': '┇', 'right': '┇' }
+  \ }
+
+function! LightLineModified()
+  return &ft =~ 'help' ? '' : &modified ? '+' : &modifiable ? '' : '-'
+endfunction
+
+function! LightLineReadonly()
+  return &ft =~ 'help' ? '' : &readonly ? '' : ''
+endfunction
+
+function! LightLineFilename()
+  let fname = expand('%:t')
+  return fname == '__Tagbar__' ? g:lightline.fname :
+       \ &ft == 'vimfiler' ? vimfiler#get_status_string() :
+       \ &ft == 'unite' ? unite#get_status_string() :
+       \ ('' != LightLineReadonly() ? LightLineReadonly() . ' ' : '') .
+       \ ('' != fname ? fname : '[No Name]') .
+       \ ('' != LightLineModified() ? ' ' . LightLineModified() : '')
+endfunction
+
+function! LightLineFileencoding()
+  let encoding = strlen(&fenc) ? &fenc : &enc
+  return winwidth(0) > 70 ? (encoding != 'utf-8' ? encoding : '') : ''
+endfunction
+
+function! LightLineFugitive()
+  try
+    if expand('%:t') !~? 'Tagbar' && &ft !~? 'vimfiler\|help' && exists('*fugitive#head')
+      let mark = ''
+      let _ = fugitive#head()
+      return strlen(_) ? mark._ : ''
+    endif
+  catch
+  endtry
+  return ''
+endfunction
+
+function! LightLineFiletype()
+  return winwidth(0) > 70 ? (strlen(&filetype) ? &filetype : 'no ft') : ''
+endfunction
+
+function! LightLineMode()
+  let fname = expand('%:t')
+  return fname == '__Tagbar__' ? 'Tagbar' :
+        \ &ft == 'help' ? 'Help' :
+        \ &ft == 'unite' ? 'Unite' :
+        \ &ft == 'vimfiler' ? 'VimFiler' :
+        \ winwidth(0) > 60 ? lightline#mode() : ''
+endfunction
+
+let g:tagbar_status_func = 'TagbarStatusFunc'
+
+function! TagbarStatusFunc(current, sort, fname, ...) abort
+  let g:lightline.fname = a:fname
+  return lightline#statusline(0)
+endfunction
+
+let g:unite_force_overwrite_statusline = 0
+let g:vimfiler_force_overwrite_statusline = 0
+" }}}
 
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
