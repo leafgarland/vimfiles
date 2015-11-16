@@ -93,7 +93,7 @@ Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'ajhager/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
-Plug 'racer-rust/vim-racer', {'do': 'cargo build --release'}
+Plug 'racer-rust/vim-racer', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
@@ -161,10 +161,6 @@ elseif executable('pt')
   set grepformat=%f:%l:%m
 endif
 
-" vim will select ff=unix for any file with a \n in, no matter how many
-" \r\n line endings there might be. Use this cmd to reload the file forcing
-" ff=dos
-command! ReloadDos :e ++ff=dos<CR>
 "}}}
 
 " Vim UI: {{{
@@ -276,7 +272,7 @@ inoremap jk <esc>
 nnoremap <leader>j i<CR><Esc>
 
 " folding options
-nnoremap <leader>ef za
+nnoremap <leader>z za
 nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
 
 "clearing highlighted search
@@ -370,6 +366,11 @@ vnoremap <leader>V :g//d<CR>
 augroup vimrc_filetypes
   autocmd!
 
+  " log: {{{
+  autocmd BufNewFile,BufRead *.log setfiletype log4net
+  autocmd BufNewFile,BufRead *.log.? setfiletype log4net
+  " }}}
+
   " json: {{{
   autocmd FileType json setlocal equalprg=python\ -m\ json.tool
   autocmd FileType json setlocal shiftwidth=2
@@ -460,7 +461,12 @@ endif
 " rust racer {{{
 if s:has_plug('vim-racer')
   let g:racer_cmd = '~/Dev/rust/racer/target/release/racer'
-  let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/src'
+  if s:is_win
+    let g:racer_cmd = 'C:/dev/tmp/me/rust/racer/target/release/racer.exe'
+  endif
+  if !exists('$RUST_SRC_PATH')
+    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source-rustc-1.3.0/src'
+  endif
 endif
 " }}}
 
@@ -936,6 +942,22 @@ augroup end
 " slash replacements {{{
 command! -range SlashForwards :<line1>,<line2>s/\\/\//g
 command! -range SlashBackwards :<line1>,<line2>s/\//\\/g
+"}}}
+
+" copy to html {{{
+function! s:CpHtml(line1, line2)
+  :call tohtml#Convert2HTML(a:line1, a:line2)
+  :%!html2clipboard
+  :close!
+endfunction
+command! -range CpHtml :call <sid>CpHtml(<line1>,<line2>)
+"}}}
+
+" reload with dos endings {{{
+" vim will select ff=unix for any file with a \n in, no matter how many
+" \r\n line endings there might be. Use this cmd to reload the file forcing
+" ff=dos
+command! ReloadDos :e ++ff=dos<CR>
 "}}}
 
 "}}}
