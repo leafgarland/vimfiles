@@ -460,12 +460,12 @@ endif
 
 " rust racer {{{
 if s:has_plug('vim-racer')
-  let g:racer_cmd = '~/Dev/rust/racer/target/release/racer'
-  if s:is_win
-    let g:racer_cmd = 'C:/dev/tmp/me/rust/racer/target/release/racer.exe'
-  endif
+  let racer_locations = [
+        \ '~/Dev/rust/racer/target/release/racer',
+        \ 'C:/dev/tmp/me/rust/racer/target/release/racer.exe']
+  let g:racer_cmd = get(filter(copy(racer_locations), 'filereadable(expand(v:val))'), 0, '')
   if !exists('$RUST_SRC_PATH')
-    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source-rustc-1.3.0/src'
+    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/src'
   endif
 endif
 " }}}
