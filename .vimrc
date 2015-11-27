@@ -257,7 +257,7 @@ nnoremap <C-H> <C-W>h
 nnoremap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
 " close all preview windows and quickfix|location lists
-nnoremap <silent> <leader>wz :wincmd z<Bar>cclose<Bar>lclose<CR>
+nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
 " Create a split on the given side.
 nnoremap <leader>wsh   :leftabove  vsp<CR>
 nnoremap <leader>wsl :rightbelow vsp<CR>
@@ -352,8 +352,8 @@ vnoremap L g_
 nnoremap gI `.
 
 " search for word under cursor in current file using vimgrep
-nnoremap <leader>8 :vimgrep <cword> %<CR>
-vnoremap <leader>8 y:<C-U>vimgrep '<C-R>"' %<CR>gv
+nnoremap <leader>8 :lvimgrep <cword> % \| lopen<CR>
+vnoremap <leader>8 y:<C-U>lvimgrep /<C-R>"/ % \| lopen<CR>gv
 
 " delete all non-matching/matching lines using last used search
 nnoremap <leader>v :v//d<CR>
@@ -717,6 +717,7 @@ function! LightLineFilename()
   return &ft == 'vimfiler' ? vimfiler#get_status_string() :
        \ &ft == 'unite' ? unite#get_status_string() :
        \ &ft == 'help' ? fname :
+       \ &ft == 'qf' ? get(w:, 'quickfix_title', '') :
        \ readonly . ('' != fname ? fname : '[no name]') . modified
 endfunction
 
@@ -728,7 +729,7 @@ endfunction
 
 function! LightLineFugitive()
   try
-    if &ft !~? 'help\|vimfiler\|unite' && exists('*fugitive#head')
+    if &ft !~? 'help\|vimfiler\|unite\|qf' && exists('*fugitive#head')
       let mark = ''
       let _ = fugitive#head()
       return strlen(_) ? mark._ : ''
@@ -748,6 +749,7 @@ function! LightLineMode()
   return &ft == 'help' ? 'Help' :
        \ &ft == 'unite' ? 'Unite' :
        \ &ft == 'vimfiler' ? 'VimFiler' :
+       \ &ft == 'qf' ? (get(w:, 'quickfix_title', '') =~? ':[lL]' ? 'LocList' : 'QuickFix') :
        \ winwidth(0) > 60 ? lightline#mode() : ''
 endfunction
 
