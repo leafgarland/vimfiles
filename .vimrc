@@ -10,6 +10,8 @@ endif
 
 " Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
+let s:is_gui = has('gui_running')
+let s:is_wincon = !s:is_gui && s:is_win
 if s:is_win
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
@@ -35,9 +37,11 @@ Plug 'kana/vim-textobj-user'
 Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
-Plug 'morhetz/gruvbox/'
-Plug 'NLKNguyen/papercolor-theme'
-Plug 'itchyny/lightline.vim'
+if !s:is_wincon
+  Plug 'morhetz/gruvbox/'
+  Plug 'NLKNguyen/papercolor-theme'
+  Plug 'itchyny/lightline.vim'
+endif
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -56,8 +60,7 @@ Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-vinegar'
 Plug 'tpope/vim-projectionist'
-Plug 'SirVer/ultisnips'
-Plug 'honza/vim-snippets'
+Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 
 " Unite
 Plug 'Shougo/unite.vim'
@@ -209,9 +212,9 @@ augroup end
 "}}}
 
 " GUI Settings: {{{
-if has('gui_running')
+if s:is_gui
   set cursorline
-  set guioptions=egt
+  set guioptions=gt
   set linespace=0
   set lines=50
   set columns=120
@@ -222,10 +225,10 @@ endif
 " Formatting: {{{
 set nowrap
 set autoindent
-set shiftwidth=4                " use indents of 4 spaces
-set expandtab                   " tabs are spaces, not tabs
-set tabstop=4                   " an indentation every four columns
-set softtabstop=4               " let backspace delete indent
+set expandtab
+set tabstop=8
+set shiftwidth=4
+set softtabstop=0
 "}}}
 
 " Key Mappings: {{{
@@ -299,7 +302,7 @@ noremap <leader>fed :e $MYVIMRC<CR>
 " copy/paste from system
 nnoremap <C-y> "*y
 vnoremap <C-y> "*y
-if has('gui_running')
+if s:is_gui
   nnoremap <C-p> "*]p
   nnoremap <C-P> "*]P
   vnoremap <C-p> "*]p
@@ -412,7 +415,7 @@ augroup end
 
 " Plugins config: {{{
 
-" Targets {{{
+" Targets: {{{
   " add curly braces
   let g:targets_argOpening = '[({[]'
   let g:targets_argClosing = '[]})]'
@@ -628,7 +631,6 @@ if s:has_plug('unite.vim')
     imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
     imap <buffer> qq      <Plug>(unite_exit)
 
-
     if s:has_plug('vim-airline')
       function! airline#extensions#unite#apply(...)
         if &ft == 'unite'
@@ -702,38 +704,31 @@ let g:lightline = {
   \   'mode': 'LightLineMode',
   \ },
   \ 'component': {
-  \   'lineinfo': '%l:%c %3p%%',
+  \   'lineinfo': '%4l:%-3c %3p%%',
   \ },
-  \ 'separator': { 'left': '', 'right': '' },
-  \ 'subseparator': { 'left': '┇', 'right': '┇' }
+  \ 'separator': { 'left': '', 'right': '' },
+  \ 'subseparator': { 'left': '│', 'right': '│' }
   \ }
-
-function! LightLineModified()
-  return &ft =~ 'help' ? '' : &modified ? '+' : &modifiable ? '' : '-'
-endfunction
-
-function! LightLineReadonly()
-  return &ft =~ 'help' ? '' : &readonly ? '' : ''
-endfunction
 
 function! LightLineFilename()
   let fname = expand('%:t')
-  return fname == '__Tagbar__' ? g:lightline.fname :
-       \ &ft == 'vimfiler' ? vimfiler#get_status_string() :
+  let modified = &modified ? ' +' : &modifiable ? '' : ' -'
+  let readonly = &readonly ? ' ' : ''
+  return &ft == 'vimfiler' ? vimfiler#get_status_string() :
        \ &ft == 'unite' ? unite#get_status_string() :
-       \ ('' != LightLineReadonly() ? LightLineReadonly() . ' ' : '') .
-       \ ('' != fname ? fname : '[No Name]') .
-       \ ('' != LightLineModified() ? ' ' . LightLineModified() : '')
+       \ &ft == 'help' ? fname :
+       \ readonly . ('' != fname ? fname : '[no name]') . modified
 endfunction
 
 function! LightLineFileencoding()
   let encoding = strlen(&fenc) ? &fenc : &enc
-  return winwidth(0) > 70 ? (encoding != 'utf-8' ? encoding : '') : ''
+  return &ft == 'help' ? '' :
+        \ winwidth(0) > 70 ? (encoding != 'utf-8' ? encoding : '') : ''
 endfunction
 
 function! LightLineFugitive()
   try
-    if expand('%:t') !~? 'Tagbar' && &ft !~? 'vimfiler\|help' && exists('*fugitive#head')
+    if &ft !~? 'help\|vimfiler\|unite' && exists('*fugitive#head')
       let mark = ''
       let _ = fugitive#head()
       return strlen(_) ? mark._ : ''
@@ -744,23 +739,16 @@ function! LightLineFugitive()
 endfunction
 
 function! LightLineFiletype()
-  return winwidth(0) > 70 ? (strlen(&filetype) ? &filetype : 'no ft') : ''
+  return &ft == 'help' ? '' :
+        \ winwidth(0) > 70 ? (strlen(&filetype) ? &filetype : '[no ft]') : ''
 endfunction
 
 function! LightLineMode()
   let fname = expand('%:t')
-  return fname == '__Tagbar__' ? 'Tagbar' :
-        \ &ft == 'help' ? 'Help' :
-        \ &ft == 'unite' ? 'Unite' :
-        \ &ft == 'vimfiler' ? 'VimFiler' :
-        \ winwidth(0) > 60 ? lightline#mode() : ''
-endfunction
-
-let g:tagbar_status_func = 'TagbarStatusFunc'
-
-function! TagbarStatusFunc(current, sort, fname, ...) abort
-  let g:lightline.fname = a:fname
-  return lightline#statusline(0)
+  return &ft == 'help' ? 'Help' :
+       \ &ft == 'unite' ? 'Unite' :
+       \ &ft == 'vimfiler' ? 'VimFiler' :
+       \ winwidth(0) > 60 ? lightline#mode() : ''
 endfunction
 
 let g:unite_force_overwrite_statusline = 0
@@ -805,7 +793,7 @@ endif
 
 " gruvbox: {{{
 if s:has_plug('gruvbox')
-  if has('gui_running')
+  if s:is_gui
     let g:gruvbox_invert_selection=0
     let g:gruvbox_contrast_dark='medium'
     let g:gruvbox_contrast_light='hard'
@@ -858,7 +846,7 @@ xnoremap # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R>=@/<CR><CR>
 "}}}
 
 " Zoom font size {{{
-if has('gui_running')
+if s:is_gui
   let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
   function! s:ChangeZoom(zoomInc)
     let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
@@ -961,3 +949,18 @@ command! ReloadDos :e ++ff=dos<CR>
 "}}}
 
 "}}}
+
+" Windows console vim {{{
+if s:is_wincon
+  " tidy up the colors when running in Windows console.
+  colorscheme default
+  highlight Comment ctermfg=8
+  highlight Folded ctermfg=0 ctermbg=8
+  highlight CursorLine ctermbg=NONE cterm=NONE
+  highlight LineNr ctermfg=7
+  highlight CursorLineNr ctermfg=14
+  highlight MatchParen ctermbg=NONE ctermfg=NONE cterm=reverse
+  highlight Pmenu ctermbg=7 ctermfg=0
+  highlight PmenuSel ctermbg=8 ctermfg=15
+endif
+" }}}
