@@ -100,6 +100,7 @@ Plug 'racer-rust/vim-racer', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
+Plug 'cespare/vim-toml', {'for': 'toml'}
 
 if has('mac')
   if has('nvim')
@@ -232,6 +233,14 @@ set softtabstop=0
 "}}}
 
 " Key Mappings: {{{
+
+if has('nvim')
+  tnoremap <Esc><Esc> <C-\><C-n>
+  tnoremap <C-h> <C-\><C-n><C-w>h
+  tnoremap <C-j> <C-\><C-n><C-w>j
+  tnoremap <C-k> <C-\><C-n><C-w>k
+  tnoremap <C-l> <C-\><C-n><C-w>l
+endif
 
 " Show syntax groups under cursor
 map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<'
@@ -665,27 +674,6 @@ if s:has_plug('butane.vim')
   noremap <leader>bD :Bclose!<CR>
   noremap <leader>br :Breset<CR>
   noremap <leader>bR :Breset!<CR>
-endif
-"}}}
-
-" Airline: {{{
-if s:has_plug('vim-airline')
-  let g:airline_left_sep = ''
-  let g:airline_right_sep = ''
-  let g:airline_extensions = ['branch', 'netrw', 'quickfix', 'unite']
-  let g:airline_mode_map = {
-      \ '__' : '-',
-      \ 'n'  : 'N ',
-      \ 'i'  : 'I ',
-      \ 'R'  : 'R ',
-      \ 'c'  : 'C ',
-      \ 'v'  : 'V ',
-      \ 'V'  : 'Vˡ',
-      \ '' : 'Vᵇ',
-      \ 's'  : 'S ',
-      \ 'S'  : 'S ',
-      \ '' : 'S ',
-      \ }
 endif
 "}}}
 
