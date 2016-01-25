@@ -101,6 +101,7 @@ Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
 Plug 'cespare/vim-toml', {'for': 'toml'}
+Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
 
 if has('mac')
   if has('nvim')
