@@ -115,7 +115,7 @@ if has('mac')
   Plug 'epeli/slimux'
   Plug 'dag/vim-fish', {'for': 'fish'}
 else
-  Plug 'scrooloose/syntastic'
+  Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
 let s:use_ycm=0
@@ -169,6 +169,7 @@ endif
 
 " Vim UI: {{{
 set noshowmode
+set noshowcmd
 
 if has('cmdline_info')
   set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%)
@@ -472,10 +473,6 @@ endif
 
 " rust racer {{{
 if s:has_plug('vim-racer')
-  let racer_locations = [
-        \ '~/Dev/rust/racer/target/release/racer',
-        \ 'C:/dev/tmp/me/rust/racer/target/release/racer.exe']
-  let g:racer_cmd = get(filter(copy(racer_locations), 'filereadable(expand(v:val))'), 0, '')
   if !exists('$RUST_SRC_PATH')
     let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/src'
   endif
@@ -556,6 +553,12 @@ endif
 if s:has_plug('vimfiler.vim')
   let g:vimfiler_as_default_explorer = 1
   nnoremap <leader>fj :VimFilerBufferDir -find -safe<CR>
+endif
+" }}}
+
+" Syntastic: {{{
+if s:has_plug('syntastic')
+  let g:syntastic_stl_format = '[Syntax: %E{line:%fe }%W{#W:%w}%B{ }%E{#E:%e}]'
 endif
 " }}}
 
@@ -681,7 +684,11 @@ endif
 let g:lightline = {
   \ 'colorscheme': 'gruvbox',
   \ 'active': {
-  \   'left': [ [ 'mode', 'paste' ], [ 'fugitive', 'filename' ] ],
+  \   'left': [ [ 'filetype' ], [ 'fugitive', 'filename' ] ],
+  \   'right': [ [ 'lineinfo' ], [ 'fileencoding'] ]
+  \ },
+  \ 'inactive': {
+  \   'left': [ [ 'fugitive', 'filename' ] ],
   \   'right': [ [ 'lineinfo' ], [ 'filetype', 'fileencoding'] ]
   \ },
   \ 'component_function': {
@@ -699,12 +706,12 @@ let g:lightline = {
   \ }
 
 function! LightLineFilename()
-  let fname = expand('%:t')
+  let fname = expand( '%')
   let modified = &modified ? ' +' : &modifiable ? '' : ' -'
   let readonly = &readonly ? ' ' : ''
   return &ft == 'vimfiler' ? vimfiler#get_status_string() :
        \ &ft == 'unite' ? unite#get_status_string() :
-       \ &ft == 'help' ? fname :
+       \ &ft == 'help' ? expand('%:t') :
        \ &ft == 'qf' ? get(w:, 'quickfix_title', '') :
        \ readonly . ('' != fname ? fname : '[no name]') . modified
 endfunction
@@ -728,7 +735,7 @@ function! LightLineFugitive()
 endfunction
 
 function! LightLineFiletype()
-  return &ft == 'help' ? '' :
+  return &ft == 'qf' ? (get(w:, 'quickfix_title', '') =~? ':[lL]' ? 'LocList' : 'QuickFix') :
         \ winwidth(0) > 70 ? (strlen(&filetype) ? &filetype : '[no ft]') : ''
 endfunction
 
@@ -795,7 +802,11 @@ endif
 "}}}
 
 " PaperColor: {{{
-let g:PaperColor_Dark_Override={'cursorline' : 'NONE'}
+if s:has_plug('papercolor-theme')
+  let g:PaperColor_Dark_Override={'cursorline' : 'NONE'}
+  let g:PaperColor_Light_Override={'cursorline' : 'NONE'}
+  colorscheme PaperColor
+endif
 " }}}
 
 " seoul: {{{
