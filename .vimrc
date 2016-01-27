@@ -26,7 +26,6 @@ endif
 "}}}
 
 " Plugins: {{{
-let g:plug_threads=16
 call plug#begin('~/.vim/bundle')
 
 " Base
@@ -682,75 +681,79 @@ endif
 "}}}
 
 " Lightline: {{{
-let g:lightline = {
-  \ 'colorscheme': 'gruvbox',
-  \ 'active': {
-  \   'left': [ [ 'filetype' ], [ 'fugitive', 'filename' ] ],
-  \   'right': [ [ 'lineinfo' ], [ 'fileencoding'] ]
-  \ },
-  \ 'inactive': {
-  \   'left': [ [ 'fugitive', 'filename' ] ],
-  \   'right': [ [ 'lineinfo' ], [ 'filetype', 'fileencoding'] ]
-  \ },
-  \ 'component_function': {
-  \   'fugitive': 'LightLineFugitive',
-  \   'filename': 'LightLineFilename',
-  \   'filetype': 'LightLineFiletype',
-  \   'fileencoding': 'LightLineFileencoding',
-  \   'mode': 'LightLineMode',
-  \ },
-  \ 'component': {
-  \   'lineinfo': '%4l:%-3c %3p%%',
-  \ },
-  \ 'separator': { 'left': '', 'right': '' },
-  \ 'subseparator': { 'left': '│', 'right': '│' }
-  \ }
+if (s:has_plug('lightline.vim'))
+  let g:lightline = {
+    \ 'colorscheme': 'mygruvbox',
+    \ 'active': {
+    \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ] ],
+    \   'right': [ [ 'lineinfo' ], [ 'fugitive' ] ]
+    \ },
+    \ 'inactive': {
+    \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ] ],
+    \   'right': [ [ 'lineinfo' ], [ 'fugitive' ] ]
+    \ },
+    \ 'component_function': {
+    \   'fugitive': 'LightLineFugitive',
+    \   'filename': 'LightLineFilename',
+    \   'mode': 'LightLineMode',
+    \   'modified': 'LightLineModified',
+    \ },
+    \ 'component': {
+    \   'lineinfo': '%4l:%-3c %3p%%'
+    \ },
+    \ 'separator': { 'left': '', 'right': '' },
+    \ 'subseparator': { 'left': '', 'right': '' },
+    \ 'mode_map': {
+    \   'n': 'N ', 'i': 'I ', 'R': 'R ', 'v': 'V ',
+    \   'V': 'VL', 'c': 'C ', "\<C-v>": 'VB', 's': 'S ',
+    \   'S': 'SL', "\<C-s>": 'SB', 't': 'T ', '?': '  '
+    \ }
+    \ }
+  function! s:is_basic_file()
+      return &filetype !~? 'help\|vimfiler\|unite\|qf'
+  endfunction
 
-function! LightLineFilename()
-  let fname = expand( '%')
-  let modified = &modified ? ' +' : &modifiable ? '' : ' -'
-  let readonly = &readonly ? ' ' : ''
-  return &ft == 'vimfiler' ? vimfiler#get_status_string() :
-       \ &ft == 'unite' ? unite#get_status_string() :
-       \ &ft == 'help' ? expand('%:t') :
-       \ &ft == 'qf' ? get(w:, 'quickfix_title', '') :
-       \ readonly . ('' != fname ? fname : '[no name]') . modified
-endfunction
+  function! LightLineFilename()
+    let fname = expand('%')
+    return &filetype == 'vimfiler' ? vimfiler#get_status_string() :
+         \ &filetype == 'unite' ? unite#get_status_string() :
+         \ &filetype == 'help' ? expand('%:t:r') :
+         \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
+         \ '' != fname ? fname : '[no name]'
+  endfunction
 
-function! LightLineFileencoding()
-  let encoding = strlen(&fenc) ? &fenc : &enc
-  return &ft == 'help' ? '' :
-        \ winwidth(0) > 70 ? (encoding != 'utf-8' ? encoding : '') : ''
-endfunction
-
-function! LightLineFugitive()
-  try
-    if &ft !~? 'help\|vimfiler\|unite\|qf' && exists('*fugitive#head')
-      let mark = ''
-      let _ = fugitive#head()
-      return strlen(_) ? mark._ : ''
+  function! LightLineModified()
+    if !s:is_basic_file()
+      return ''
     endif
-  catch
-  endtry
-  return ''
-endfunction
+    let modified = &modified ? '+' : ''
+    let readonly = &readonly ? '' : ''
+    return modified . readonly
+  endfunction
 
-function! LightLineFiletype()
-  return &ft == 'qf' ? (get(w:, 'quickfix_title', '') =~? ':[lL]' ? 'LocList' : 'QuickFix') :
-        \ winwidth(0) > 70 ? (strlen(&filetype) ? &filetype : '[no ft]') : ''
-endfunction
+  function! LightLineFugitive()
+    try
+      if s:is_basic_file() && exists('*fugitive#head')
+        let mark = ''
+        let head = fugitive#head()
+        return strlen(head) ? mark . head : ''
+      endif
+    catch
+    endtry
+    return ''
+  endfunction
 
-function! LightLineMode()
-  let fname = expand('%:t')
-  return &ft == 'help' ? 'Help' :
-       \ &ft == 'unite' ? 'Unite' :
-       \ &ft == 'vimfiler' ? 'VimFiler' :
-       \ &ft == 'qf' ? (get(w:, 'quickfix_title', '') =~? ':[lL]' ? 'LocList' : 'QuickFix') :
-       \ winwidth(0) > 60 ? lightline#mode() : ''
-endfunction
+  function! LightLineMode()
+    return &ft == 'help' ? 'Help' :
+         \ &ft == 'unite' ? 'Unite' :
+         \ &ft == 'vimfiler' ? 'VimFiler' :
+         \ &ft == 'qf' ? (get(w:, 'quickfix_title', '') =~? ':[lL]' ? 'LocList' : 'QuickFix') :
+         \ winwidth(0) > 60 ? lightline#mode() : ''
+  endfunction
 
-let g:unite_force_overwrite_statusline = 0
-let g:vimfiler_force_overwrite_statusline = 0
+  let g:unite_force_overwrite_statusline = 0
+  let g:vimfiler_force_overwrite_statusline = 0
+endif
 " }}}
 
 " Fugitive: {{{
@@ -789,6 +792,14 @@ if s:has_plug('slimux')
 endif
 "}}}
 
+" PaperColor: {{{
+if s:has_plug('papercolor-theme')
+  let g:PaperColor_Dark_Override={'cursorline' : 'NONE'}
+  let g:PaperColor_Light_Override={'cursorline' : 'NONE'}
+  colorscheme PaperColor
+endif
+" }}}
+
 " gruvbox: {{{
 if s:has_plug('gruvbox')
   if s:is_gui
@@ -799,16 +810,10 @@ if s:has_plug('gruvbox')
   let g:gruvbox_italic=0
   let g:airline_theme='gruvbox'
   colorscheme gruvbox
+  highlight CursorLine guibg=NONE
+  highlight CursorLineNr guibg=NONE
 endif
 "}}}
-
-" PaperColor: {{{
-if s:has_plug('papercolor-theme')
-  let g:PaperColor_Dark_Override={'cursorline' : 'NONE'}
-  let g:PaperColor_Light_Override={'cursorline' : 'NONE'}
-  colorscheme PaperColor
-endif
-" }}}
 
 " seoul: {{{
 if s:has_plug('seoul256.vim')
