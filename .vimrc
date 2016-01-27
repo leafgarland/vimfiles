@@ -709,17 +709,18 @@ if (s:has_plug('lightline.vim'))
     \   'S': 'SL', "\<C-s>": 'SB', 't': 'T ', '?': '  '
     \ }
     \ }
+
   function! s:is_basic_file()
       return &filetype !~? 'help\|vimfiler\|unite\|qf'
   endfunction
 
   function! LightLineFilename()
-    let fname = expand('%')
+    let fname = expand('%:~:.')
     return &filetype == 'vimfiler' ? vimfiler#get_status_string() :
          \ &filetype == 'unite' ? unite#get_status_string() :
          \ &filetype == 'help' ? expand('%:t:r') :
          \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
-         \ '' != fname ? fname : '[no name]'
+         \ strlen(fname) ? fname : '[no name]'
   endfunction
 
   function! LightLineModified()
