@@ -642,30 +642,20 @@ if s:has_plug('unite.vim')
     imap <buffer> <C-j>   <Plug>(unite_select_next_line)
     imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
     imap <buffer> qq      <Plug>(unite_exit)
-
-    if s:has_plug('vim-airline')
-      function! airline#extensions#unite#apply(...)
-        if &ft == 'unite'
-          call a:1.add_section('airline_a', ' Unite ')
-          call a:1.add_section('airline_b', ' %{get(unite#get_context(), "buffer_name", "")} ')
-          call a:1.add_section('airline_c', ' ')
-          return 1
-        endif
-      endfunction
-    endif
   endfunction
 
-  " Use ag for search
-  if executable('ag')
+  " Use pt|ag for grep
+  if executable('pt')
+    let g:unite_source_grep_command = 'pt'
+    let g:unite_source_grep_default_opts = '--nogroup --nocolor'
+    let g:unite_source_grep_recursive_opt = ''
+    let g:unite_source_grep_encoding = 'utf-8'
+    let g:unite_source_rec_async_command = ['pt', '--nocolor', '--nogroup', '-g', '.', '']
+  elseif executable('ag')
     let g:unite_source_grep_command = 'ag'
     let g:unite_source_grep_default_opts = '--vimgrep'
     let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g .']
-  elseif executable('pt')
-    let g:unite_source_grep_command = 'pt'
-    let g:unite_source_grep_default_opts = '/nogroup /nocolor /smart-case /follow /C0'
-    let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_rec_async_command = ['pt', '/nocolor', '/nogroup', '-g .']
+    let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g', '.', '']
   endif
 
 endif
@@ -683,7 +673,6 @@ endif
 " Lightline: {{{
 if (s:has_plug('lightline.vim'))
   let g:lightline = {
-    \ 'colorscheme': 'mygruvbox',
     \ 'active': {
     \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ] ],
     \   'right': [ [ 'lineinfo' ], [ 'fugitive' ] ]
@@ -809,7 +798,6 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
-  let g:airline_theme='gruvbox'
   colorscheme gruvbox
   highlight CursorLine guibg=NONE
   highlight CursorLineNr guibg=NONE
@@ -866,6 +854,7 @@ if s:has_plug('gruvbox')
     let s:p.normal.warning = [ [ s:bg2, s:yellow ] ]
 
     let g:lightline#colorscheme#mygruvbox#palette = lightline#colorscheme#flatten(s:p)
+    let g:lightline.colorscheme = 'mygruvbox'
   endif
   "}}}
 endif
