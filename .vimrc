@@ -844,13 +844,18 @@ if s:has_plug('gruvbox')
 
     let s:p = {'normal':{}, 'inactive':{}, 'insert':{}, 'replace':{}, 'visual':{}, 'tabline':{}}
 
-    let s:p.normal.left = [ [ s:blue, s:bg3], [ s:fg0, s:bg4], [ s:orange, s:bg4 ] ]
+    let s:p.normal.left = [ [ s:blue, s:bg2], [ s:fg0, s:bg3], [ s:orange, s:bg3 ] ]
     let s:p.normal.right = [ [ s:green, s:bg3], [ s:yellow , s:bg3] ]
     let s:p.normal.middle = [ [ s:fg3, s:bg3] ]
 
     let s:p.inactive.left = [ [ s:bg4, s:bg2], [ s:bg4 , s:bg2], [ s:bg4, s:bg2 ] ]
     let s:p.inactive.right = [ [ s:bg4, s:bg2], [ s:bg4 , s:bg2] ]
     let s:p.inactive.middle = [ [ s:bg4, s:bg2] ]
+
+    let s:p.insert = deepcopy(s:p.normal)
+    let s:p.insert.left[0] = [ s:yellow, s:bg2 ]
+    let s:p.visual = deepcopy(s:p.normal)
+    let s:p.visual.left[0] = [ s:green, s:bg2 ]
 
     let s:p.tabline.left = [ [ s:fg4, s:bg2 ] ]
     let s:p.tabline.tabsel = [ [ s:bg0, s:yellow ] ]
