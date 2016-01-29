@@ -292,7 +292,7 @@ nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
 nnoremap <silent> <leader>/ :nohlsearch<CR>
 
 " Change Working Directory to that of the current file
-cnoremap cd. lcd %:p:h
+cnoremap cd. cd %:p:h
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
 cnoremap <C-p> <Up>
 cnoremap <C-n> <Down>
@@ -675,17 +675,19 @@ if (s:has_plug('lightline.vim'))
   let g:lightline = {
     \ 'active': {
     \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ] ],
-    \   'right': [ [ 'lineinfo' ], [ 'fugitive' ] ]
+    \   'right': [ [ 'lineinfo' ], [ 'fugitive', 'fileencoding', 'fileformat' ] ],
     \ },
     \ 'inactive': {
-    \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ] ],
-    \   'right': [ [ 'lineinfo' ], [ 'fugitive' ] ]
+    \   'left': [ [ 'mode' ], [ 'filename' ] ],
+    \   'right': []
     \ },
     \ 'component_function': {
     \   'fugitive': 'LightLineFugitive',
     \   'filename': 'LightLineFilename',
     \   'mode': 'LightLineMode',
     \   'modified': 'LightLineModified',
+    \   'fileencoding': 'LightLineFileEncoding',
+    \   'fileformat': 'LightLineFileFormat'
     \ },
     \ 'component': {
     \   'lineinfo': '%4l:%-3c %3p%%'
@@ -703,13 +705,35 @@ if (s:has_plug('lightline.vim'))
       return &filetype !~? 'help\|vimfiler\|unite\|qf'
   endfunction
 
+  function! s:is_small_win()
+      return winwidth(0) < 60
+  endfunction
+
   function! LightLineFilename()
     let fname = expand('%:~:.')
+    let maxPathLen = winwidth(0) - 30
+    if strlen(fname) > maxPathLen
+      let fname = pathshorten(fname)
+    endif
     return &filetype == 'vimfiler' ? vimfiler#get_status_string() :
          \ &filetype == 'unite' ? unite#get_status_string() :
          \ &filetype == 'help' ? expand('%:t:r') :
          \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
          \ strlen(fname) ? fname : '[no name]'
+  endfunction
+
+  function! LightLineFileFormat()
+    if !s:is_basic_file() || s:is_small_win()
+      return ''
+    endif
+    return &binary ? 'binary' : &fileformat == substitute(&fileformats, ",.*$", "", "") ? '' : &fileformat
+  endfunction
+
+  function! LightLineFileEncoding()
+    if !s:is_basic_file() || s:is_small_win()
+      return ''
+    endif
+    return &binary ? '' : &fileencoding == 'utf-8' ? '' : &fileencoding
   endfunction
 
   function! LightLineModified()
@@ -722,8 +746,11 @@ if (s:has_plug('lightline.vim'))
   endfunction
 
   function! LightLineFugitive()
+    if !s:is_basic_file() || s:is_small_win()
+      return ''
+    endif
     try
-      if s:is_basic_file() && exists('*fugitive#head')
+      if exists('*fugitive#head')
         let mark = ''
         let head = fugitive#head()
         return strlen(head) ? mark . head : ''
@@ -734,11 +761,10 @@ if (s:has_plug('lightline.vim'))
   endfunction
 
   function! LightLineMode()
-    return &ft == 'help' ? 'Help' :
-         \ &ft == 'unite' ? 'Unite' :
-         \ &ft == 'vimfiler' ? 'VimFiler' :
-         \ &ft == 'qf' ? (get(w:, 'quickfix_title', '') =~? ':[lL]' ? 'LocList' : 'QuickFix') :
-         \ winwidth(0) > 60 ? lightline#mode() : ''
+    if winwidth(0) < 60
+      return ''
+    endif
+    return &ft
   endfunction
 
   let g:unite_force_overwrite_statusline = 0
@@ -836,7 +862,7 @@ if s:has_plug('gruvbox')
     let s:p.normal.right = [ [ s:green, s:bg3], [ s:yellow , s:bg3] ]
     let s:p.normal.middle = [ [ s:fg3, s:bg3] ]
 
-    let s:p.inactive.left = [ [ s:bg4, s:bg2], [ s:bg4 , s:bg2], [ s:bg4, s:bg2 ] ]
+    let s:p.inactive.left = [ [ s:bg4, s:bg1], [ s:fg3 , s:bg2], [ s:bg4, s:bg2 ] ]
     let s:p.inactive.right = [ [ s:bg4, s:bg2], [ s:bg4 , s:bg2] ]
     let s:p.inactive.middle = [ [ s:bg4, s:bg2] ]
 
@@ -845,16 +871,19 @@ if s:has_plug('gruvbox')
     let s:p.visual = deepcopy(s:p.normal)
     let s:p.visual.left[0] = [ s:green, s:bg2 ]
 
-    let s:p.tabline.left = [ [ s:fg4, s:bg2 ] ]
-    let s:p.tabline.tabsel = [ [ s:bg0, s:yellow ] ]
-    let s:p.tabline.middle = [ [ s:bg0, s:bg0 ] ]
-    let s:p.tabline.right = [ [ s:bg0, s:orange ] ]
+    let s:p.tabline.left = [ [ s:fg2, s:bg2 ] ]
+    let s:p.tabline.tabsel = [ [ s:yellow, s:bg3 ] ]
+    let s:p.tabline.middle = [ [ s:bg4, s:bg1 ] ]
+    let s:p.tabline.right = [ [ s:orange, s:bg2 ] ]
 
     let s:p.normal.error = [ [ s:bg0, s:orange ] ]
     let s:p.normal.warning = [ [ s:bg2, s:yellow ] ]
 
     let g:lightline#colorscheme#mygruvbox#palette = lightline#colorscheme#flatten(s:p)
     let g:lightline.colorscheme = 'mygruvbox'
+
+    exe 'highlight StatusLine gui=NONE guibg=' . s:bg3[0] . ' guifg=' . s:fg1[0]
+    exe 'highlight StatusLineNC gui=NONE guibg=' . s:bg2[0] . ' guifg=' . s:bg4[0]
   endif
   "}}}
 endif
