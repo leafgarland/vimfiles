@@ -57,7 +57,6 @@ Plug 'haya14busa/incsearch.vim'
 Plug 'Soares/butane.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
-Plug 'tpope/vim-vinegar'
 Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 
@@ -118,13 +117,9 @@ else
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
-let s:use_ycm=0
+let s:use_ycm=1
 if s:use_ycm
-  if s:is_win
-    Plug '~/.vim/win-bundle/ycm'
-  else
     Plug 'Valloric/YouCompleteMe'
-  endif
 else
   if has('nvim')
     Plug 'Shougo/deoplete.nvim'
@@ -220,7 +215,7 @@ if s:is_gui
   set linespace=0
   set lines=50
   set columns=120
-  set guifont=Source_Code_Pro:h12,Monaco:h16,Consolas:h11,Courier\ New:h14
+  set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
 endif
 "}}}
 
@@ -425,6 +420,20 @@ augroup end
 
 " Plugins config: {{{
 
+" Projectionist: {{{
+let g:projectionist_heuristics = {
+      \ "build.fsx": {
+      \   "src/*.fs": {
+      \     "type": "source",
+      \     "alternate": "test/{}.fs",
+      \   },
+      \   "test/*.fs": {
+      \     "type": "test",
+      \     "alternate": "src/{}.fs",
+      \   },
+      \   "*.fsx": {"type": "script"}
+      \ }}
+" }}}
 " Targets: {{{
   " add curly braces
   let g:targets_argOpening = '[({[]'
@@ -553,6 +562,7 @@ endif
 if s:has_plug('vimfiler.vim')
   let g:vimfiler_as_default_explorer = 1
   nnoremap <leader>fj :VimFilerBufferDir -find -safe<CR>
+  nnoremap <leader>pe :VimFiler -safe<CR>
 endif
 " }}}
 
