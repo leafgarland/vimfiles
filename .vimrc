@@ -40,6 +40,7 @@ if !s:is_wincon
   Plug 'morhetz/gruvbox/'
   Plug 'NLKNguyen/papercolor-theme'
   Plug 'itchyny/lightline.vim'
+  Plug 'justinmk/molokai'
 endif
 
 " Motions and actions
@@ -122,7 +123,8 @@ if s:use_ycm
     Plug 'Valloric/YouCompleteMe'
 else
   if has('nvim')
-    Plug 'Shougo/deoplete.nvim'
+    Plug 'Valloric/YouCompleteMe'
+    " Plug 'Shougo/deoplete.nvim'
   else
     Plug 'Shougo/neocomplete.vim'
   endif
@@ -144,6 +146,10 @@ set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatib
 set virtualedit=onemore         " allow for cursor beyond last character
 set history=1000
 set hidden
+
+set foldopen+=jump
+set breakindent
+set smartcase
 
 set backup
 set backupdir=~/.vim/backup//
@@ -174,12 +180,12 @@ set sidescroll=1
 set sidescrolloff=5
 set scrolloff=5
 
+set wildmode=longest:full,full
 set number
 set hlsearch
 set cursorline
 set winminheight=0              " windows can be 0 line high
 set ignorecase
-set wildmode=list:longest,full  " completion, list matches, then longest common part, then all.
 set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
 
 set foldenable
@@ -434,6 +440,7 @@ let g:projectionist_heuristics = {
       \   "*.fsx": {"type": "script"}
       \ }}
 " }}}
+
 " Targets: {{{
   " add curly braces
   let g:targets_argOpening = '[({[]'
@@ -467,11 +474,8 @@ if s:has_plug('vim-fsharp')
     autocmd FileType fsharp call s:fsharpbinding_settings()
   augroup END
   function! s:fsharpbinding_settings()
-    setlocal include=^#load\ 
+    setlocal include=^#load\
     setlocal complete+=i
-
-    if s:has_plug('neocomplete.vim')
-    endif
 
     nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
     vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel()<CR>
@@ -505,19 +509,19 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
 " YouCompleteMe {{{
 if s:has_plug('YouCompleteMe')
-  let g:ycm_semantic_triggers =  {
-    \   'c' : ['->', '.'],
-    \   'objc' : ['->', '.'],
-    \   'ocaml' : ['.', '#'],
-    \   'cpp,objcpp' : ['->', '.', '::'],
-    \   'perl' : ['->'],
-    \   'php' : ['->', '::'],
-    \   'cs,java,javascript,d,vim,python,perl6,scala,vb,elixir,go' : ['.'],
-    \   'ruby,rust' : ['.', '::'],
-    \   'lua' : ['.', ':'],
-    \   'erlang' : [':'],
-    \   'fsharp' : ['.'],
-    \ }
+  " let g:ycm_semantic_triggers =  {
+  "   \   'c' : ['->', '.'],
+  "   \   'objc' : ['->', '.'],
+  "   \   'ocaml' : ['.', '#'],
+  "   \   'cpp,objcpp' : ['->', '.', '::'],
+  "   \   'perl' : ['->'],
+  "   \   'php' : ['->', '::'],
+  "   \   'cs,java,javascript,d,vim,python,perl6,scala,vb,elixir,go' : ['.'],
+  "   \   'ruby,rust' : ['.', '::'],
+  "   \   'lua' : ['.', ':'],
+  "   \   'erlang' : [':'],
+  "   \   'fsharp' : ['.'],
+  "   \ }
   nnoremap <leader>mgd :YcmCompleter GoToDefinition<CR>
   nnoremap <leader>mgh :YcmCompleter GoToDeclaration<CR>
   nnoremap <leader>mht :YcmCompleter GetType<CR>
@@ -665,7 +669,7 @@ if s:has_plug('unite.vim')
     let g:unite_source_grep_command = 'ag'
     let g:unite_source_grep_default_opts = '--vimgrep'
     let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g', '.', '']
+    let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g', '.']
   endif
 
 endif
@@ -692,12 +696,12 @@ if (s:has_plug('lightline.vim'))
     \   'right': []
     \ },
     \ 'component_function': {
-    \   'fugitive': 'LightLineFugitive',
+    \   'fileencoding': 'LightLineFileEncoding',
+    \   'fileformat': 'LightLineFileFormat',
     \   'filename': 'LightLineFilename',
+    \   'fugitive': 'LightLineFugitive',
     \   'mode': 'LightLineMode',
     \   'modified': 'LightLineModified',
-    \   'fileencoding': 'LightLineFileEncoding',
-    \   'fileformat': 'LightLineFileFormat'
     \ },
     \ 'component': {
     \   'lineinfo': '%4l:%-3c %3p%%'
@@ -789,7 +793,8 @@ if s:has_plug('vim-fugitive')
   nnoremap <silent> <leader>gc :Gcommit<CR>
   nnoremap <silent> <leader>gb :Gblame<CR>
   nnoremap <silent> <leader>gl :Glog<CR>
-  nnoremap <silent> <leader>gp :Git push<CR>
+  nnoremap <silent> <leader>gp :Git pull<CR>
+  nnoremap <silent> <leader>gP :Git push<CR>
 endif
 "}}}
 
@@ -834,9 +839,15 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
+
+  augroup vimrc_gruvbox
+    autocmd!
+    autocmd ColorScheme gruvbox
+      \ :highlight CursorLine guibg=NONE<CR> |
+      \ :highlight CursorLineNr guibg=NONE<CR>
+  augroup end
+
   colorscheme gruvbox
-  highlight CursorLine guibg=NONE
-  highlight CursorLineNr guibg=NONE
 
   " Lightline gruvbox colorscheme: {{{
   if exists('g:lightline')
@@ -937,7 +948,7 @@ xnoremap # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R>=@/<CR><CR>
 "}}}
 
 " Zoom font size {{{
-if s:is_gui
+if exists('+gfn')
   let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
   function! s:ChangeZoom(zoomInc)
     let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
