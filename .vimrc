@@ -11,7 +11,7 @@ endif
 " Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
 let s:is_gui = has('gui_running')
-let s:is_wincon = !s:is_gui && s:is_win
+let s:is_wincon = !has('nvim') && !s:is_gui && s:is_win
 if s:is_win
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
@@ -36,12 +36,10 @@ Plug 'kana/vim-textobj-user'
 Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
-if !s:is_wincon
   Plug 'morhetz/gruvbox/'
   Plug 'NLKNguyen/papercolor-theme'
   Plug 'itchyny/lightline.vim'
   Plug 'justinmk/molokai'
-endif
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -215,8 +213,7 @@ augroup end
 "}}}
 
 " GUI Settings: {{{
-if s:is_gui
-  set cursorline
+if exists('+guioptions')
   set guioptions=gt
   set linespace=0
   set lines=50
@@ -235,6 +232,10 @@ set softtabstop=0
 "}}}
 
 " Key Mappings: {{{
+
+" disable exmode maps
+nmap Q <Nop>
+nmap gQ <Nop>
 
 if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
@@ -313,17 +314,10 @@ noremap <leader>fed :e $MYVIMRC<CR>
 " copy/paste from system
 nnoremap <C-y> "*y
 vnoremap <C-y> "*y
-if s:is_gui
-  nnoremap <C-p> "*]p
-  nnoremap <C-P> "*]P
-  vnoremap <C-p> "*]p
-  vnoremap <C-P> "*]P
-else
   nnoremap <C-p> :set paste<CR>"*]p:set nopaste<CR>
   nnoremap <C-P> :set paste<CR>"*]P:set nopaste<CR>
   vnoremap <C-p> :<C-U>set paste<CR>"*]p:set nopaste<CR>
   vnoremap <C-P> :<C-U>set paste<CR>"*]P:set nopaste<CR>
-endif
 
 " move to end of copy/paste
 vnoremap y y`]
@@ -488,6 +482,9 @@ endif
 if s:has_plug('vim-racer')
   if !exists('$RUST_SRC_PATH')
     let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/src'
+  endif
+  if s:has_plug('YouCompleteMe')
+    let g:ycm_rust_src_path = $RUST_SRC_PATH
   endif
 endif
 " }}}
@@ -843,8 +840,8 @@ if s:has_plug('gruvbox')
   augroup vimrc_gruvbox
     autocmd!
     autocmd ColorScheme gruvbox
-      \ :highlight CursorLine guibg=NONE<CR> |
-      \ :highlight CursorLineNr guibg=NONE<CR>
+      \ :highlight CursorLine guibg=NONE |
+      \ :highlight CursorLineNr guibg=NONE
   augroup end
 
   colorscheme gruvbox
@@ -948,7 +945,7 @@ xnoremap # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R>=@/<CR><CR>
 "}}}
 
 " Zoom font size {{{
-if exists('+gfn')
+if exists('+guifont')
   let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
   function! s:ChangeZoom(zoomInc)
     let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
