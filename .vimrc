@@ -59,6 +59,8 @@ Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'Valloric/YouCompleteMe'
+Plug 'Shougo/neopairs.vim'
+Plug 'cohama/lexima.vim'
 
 " Unite
 Plug 'Shougo/unite.vim'
