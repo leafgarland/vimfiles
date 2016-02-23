@@ -58,6 +58,7 @@ Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
+Plug 'Valloric/YouCompleteMe'
 
 " Unite
 Plug 'Shougo/unite.vim'
@@ -77,9 +78,9 @@ Plug 'PProvost/vim-ps1', {'for': 'ps1'}
 Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
-Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
+Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']} |
+      \ Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure', 'scheme']}
 Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
-Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure', 'scheme']}
 Plug 'vim-erlang/vim-erlang-runtime', {'for': 'erlang'}
 Plug 'vim-erlang/vim-erlang-compiler', {'for': 'erlang'}
 Plug 'vim-erlang/vim-erlang-omnicomplete', {'for': 'erlang'}
@@ -93,7 +94,7 @@ Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'ajhager/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
-Plug 'racer-rust/vim-racer', {'for': 'rust'}
+" Plug 'racer-rust/vim-racer', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
@@ -116,18 +117,6 @@ else
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
-let s:use_ycm=1
-if s:use_ycm
-    Plug 'Valloric/YouCompleteMe'
-else
-  if has('nvim')
-    Plug 'Valloric/YouCompleteMe'
-    " Plug 'Shougo/deoplete.nvim'
-  else
-    Plug 'Shougo/neocomplete.vim'
-  endif
-  Plug 'OmniSharp/omnisharp-vim'
-endif
 
 call plug#end()
 
@@ -153,6 +142,8 @@ set backup
 set backupdir=~/.vim/backup//
 set directory=~/.vim/swap//
 set undodir=~/.vim/undo//
+set undolevels=5000
+set undofile
 
 let g:netrw_menu = 0
 
@@ -287,7 +278,6 @@ inoremap jk <esc>
 nnoremap <leader>j i<CR><Esc>
 
 " folding options
-nnoremap <leader>z za
 nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
 
 "clearing highlighted search
@@ -685,11 +675,11 @@ endif
 if (s:has_plug('lightline.vim'))
   let g:lightline = {
     \ 'active': {
-    \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ] ],
+    \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ], [ 'arglist' ] ],
     \   'right': [ [ 'lineinfo' ], [ 'fugitive', 'fileencoding', 'fileformat' ] ],
     \ },
     \ 'inactive': {
-    \   'left': [ [ 'mode' ], [ 'filename' ] ],
+    \   'left': [ [ 'mode' ], [ 'filename', ], [ 'modified' ] ],
     \   'right': []
     \ },
     \ 'component_function': {
@@ -699,6 +689,7 @@ if (s:has_plug('lightline.vim'))
     \   'fugitive': 'LightLineFugitive',
     \   'mode': 'LightLineMode',
     \   'modified': 'LightLineModified',
+    \   'arglist': 'LightLineArglist',
     \ },
     \ 'component': {
     \   'lineinfo': '%4l:%-3c %3p%%'
@@ -731,6 +722,13 @@ if (s:has_plug('lightline.vim'))
          \ &filetype == 'help' ? expand('%:t:r') :
          \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
          \ strlen(fname) ? fname : '[no name]'
+  endfunction
+  function! LightLineArglist()
+    if s:is_small_win() || argc() <= 1 || argv(argidx()) != expand('%')
+      return ''
+    else
+      return (argidx() + 1) . ' of ' . argc()
+    endif
   endfunction
 
   function! LightLineFileFormat()
@@ -775,7 +773,7 @@ if (s:has_plug('lightline.vim'))
     if winwidth(0) < 60
       return ''
     endif
-    return &ft
+    return &previewwindow ? "preview" : &ft
   endfunction
 
   let g:unite_force_overwrite_statusline = 0
@@ -1047,6 +1045,88 @@ command! -range CpHtml :call <sid>CpHtml(<line1>,<line2>)
 command! ReloadDos :e ++ff=dos<CR>
 "}}}
 
+" Use ;<key> instead of Shift-<key> {{{
+inoremap <expr> ;  <SID>sticky_func()
+cnoremap <expr> ;  <SID>sticky_func()
+snoremap <expr> ;  <SID>sticky_func()
+function! s:sticky_func()
+  let l:sticky_table = {
+    \',' : '<', '.' : '>', '/' : '?',
+    \'1' : '!', '2' : '@', '3' : '#', '4' : '$', '5' : '%',
+    \'6' : '^', '7' : '&', '8' : '*', '9' : '(', '0' : ')', '-' : '_', '=' : '+',
+    \';' : ':', '[' : '{', ']' : '}', '`' : '~', "'" : "\"", '\' : '|',
+    \}
+  let l:special_table = {
+    \"\<ESC>" : "\<ESC>", "\<Space>" : '; ', "\<CR>" : ";\<CR>"
+    \}
+  if mode() !~# '^c'
+    echo 'Input sticky key: '
+  endif
+  let l:key = getchar()
+  if nr2char(l:key) =~ '\l'
+    return toupper(nr2char(l:key))
+  elseif has_key(l:sticky_table, nr2char(l:key))
+    return l:sticky_table[nr2char(l:key)]
+  elseif has_key(l:special_table, nr2char(l:key))
+    return l:special_table[nr2char(l:key)]
+  else
+    return ';' . nr2char(l:key)
+  endif
+endfunction
+"}}}
+" Visual Markers {{{
+nnoremap <expr> <leader>m VisualMarker(v:count)
+let g:myvimrc_visual_marks = {}
+let g:myvimrc_visual_marks_groups = ['Question', 'WarningMsg']
+function! VisualMarker(count)
+  let rc = nr2char(getchar())
+  if rc == '' || rc !~ '[a-zA-Z]'
+    return ''
+  endif
+  let curr_line = line('.')
+  if has_key(g:myvimrc_visual_marks, rc)
+    let [m,l] = g:myvimrc_visual_marks[rc]
+    call matchdelete(m)
+    call remove(g:myvimrc_visual_marks, rc)
+    if l == curr_line
+      delmarks rc
+      return ''
+    endif
+  endif
+  let grp = g:myvimrc_visual_marks_groups[a:count % len(g:myvimrc_visual_marks_groups)]
+  let m = matchaddpos(grp, [line('.')])
+  let g:myvimrc_visual_marks[rc] = [m,curr_line]
+  return 'm' . rc
+endfunction
+"}}}
+" Warn when persistent undo moves into previous sessions {{{
+" https://github.com/thoughtstream/Damian-Conway-s-Vim-Setup/blob/master/plugin/undowarnings.vim
+nnoremap <expr> u  VerifyUndo()
+augroup UndoWarnings
+  autocmd!
+  autocmd BufReadPost *   :call s:remember_undo_start()
+augroup END
+function! s:remember_undo_start()
+  let undo_now = undotree().seq_cur
+  if undo_now > 0
+    let b:undo_start = exists('b:undo_start') ? b:undo_start : undo_now
+  endif
+endfunction
+function! VerifyUndo ()
+  if !exists('b:undo_start')
+    return 'u'
+  endif
+  " Are we back at the start of this session (but still with undos possible)???
+  let undo_now = undotree().seq_cur
+  " If so, check whether to undo into pre-history...
+  if undo_now > 0 && undo_now == b:undo_start
+    return confirm("Undo into previous session?", "&Yes\n&No", 1) == 1 ? "\<C-L>u" : "\<C-L>"
+  else
+    " Otherwise, always undo...
+    return 'u'
+  endif
+endfunction
+" }}}
 "}}}
 
 " Windows console vim {{{
