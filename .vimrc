@@ -207,7 +207,7 @@ augroup end
 
 " GUI Settings: {{{
 if exists('+guioptions')
-  set guioptions=gt
+  set guioptions=gtc
   set linespace=0
   set lines=50
   set columns=120
@@ -1077,54 +1077,102 @@ function! s:sticky_func()
 endfunction
 "}}}
 " Visual Markers {{{
-nnoremap <expr> <leader>m VisualMarker(v:count)
-let g:myvimrc_visual_marks = {}
-let g:myvimrc_visual_marks_groups = ['Question', 'WarningMsg']
-function! VisualMarker(count)
-  let rc = nr2char(getchar())
-  if rc == '' || rc !~ '[a-zA-Z]'
-    return ''
+nnoremap <expr> <leader>m ToggleVisualMarker()
+augroup VisualMarkers
+  autocmd!
+  autocmd TextChanged,TextChangedI * :call s:update_visual_markers()
+augroup END
+let g:myvimrc_visual_marks_groups = [
+      \ 'GruvboxBlueSign',  'GruvboxGreenSign', 'GruvboxRedSign',
+      \ 'GruvboxPurpleSign', 'GruvboxYellowSign']
+function! s:update_visual_markers()
+  if !exists('b:myvimrc_visual_marks') || empty(b:myvimrc_visual_marks)
+    return
+  endif
+  if exists('b:myvimrc_visual_marks_last_line_count') && b:myvimrc_visual_marks_last_line_count == line('$')
+    return
+  endif
+  for [k,v] in items(b:myvimrc_visual_marks)
+    let [m,l] = v
+    let mark_line = line("'".k)
+    if mark_line != l
+      call matchdelete(m)
+      if mark_line > 0
+        let grp = g:myvimrc_visual_marks_groups[char2nr(k) % len(g:myvimrc_visual_marks_groups)]
+        let m = matchaddpos(grp, [mark_line])
+        let b:myvimrc_visual_marks[k] = [m,mark_line]
+      else
+        call remove(b:myvimrc_visual_marks, k)
+      endif
+    endif
+  endfor
+  let b:myvimrc_visual_marks_last_line_count = line('$')
+endfunction
+function! s:remove_visual_mark(match, reg)
+  call matchdelete(a:match)
+  call remove(b:myvimrc_visual_marks, a:reg)
+  execute 'delmarks ' . a:reg
+endfunction
+function! ToggleVisualMarker()
+  if !exists('b:myvimrc_visual_marks')
+    let b:myvimrc_visual_marks = {}
+  endif
+  let c = getchar()
+  let rc = nr2char(c)
+  if rc !~ '[a-zA-Z]'
+    if rc == ' '
+      for [k,v] in items(b:myvimrc_visual_marks)
+        let [m,l] = v
+        call s:remove_visual_mark(m, k)
+      endfor
+    endif
+    return
   endif
   let curr_line = line('.')
-  if has_key(g:myvimrc_visual_marks, rc)
-    let [m,l] = g:myvimrc_visual_marks[rc]
-    call matchdelete(m)
-    call remove(g:myvimrc_visual_marks, rc)
-    if l == curr_line
-      delmarks rc
-      return ''
+  let toggled_off = 0
+  for [k,v] in items(b:myvimrc_visual_marks)
+    let [m,l] = v
+    if l == curr_line || k == rc
+      call s:remove_visual_mark(m, k)
+      let toggled_off = l == curr_line && k == rc
     endif
+  endfor
+  if toggled_off
+    return
+    endif
+  " matchaddpos() wont add a match on blank lines
+  if getline('.') == ''
+    return
   endif
-  let grp = g:myvimrc_visual_marks_groups[a:count % len(g:myvimrc_visual_marks_groups)]
+  let grp = g:myvimrc_visual_marks_groups[c % len(g:myvimrc_visual_marks_groups)]
   let m = matchaddpos(grp, [line('.')])
-  let g:myvimrc_visual_marks[rc] = [m,curr_line]
+  let b:myvimrc_visual_marks[rc] = [m,curr_line]
   return 'm' . rc
 endfunction
 "}}}
 " Warn when persistent undo moves into previous sessions {{{
-" https://github.com/thoughtstream/Damian-Conway-s-Vim-Setup/blob/master/plugin/undowarnings.vim
+" based on https://github.com/thoughtstream/Damian-Conway-s-Vim-Setup/blob/master/plugin/undowarnings.vim
 nnoremap <expr> u  VerifyUndo()
 augroup UndoWarnings
   autocmd!
-  autocmd BufReadPost *   :call s:remember_undo_start()
+  autocmd BufReadPost  *  :call s:remember_undo_start(0)
+  autocmd BufWritePost *  :call s:remember_undo_start(1)
 augroup END
-function! s:remember_undo_start()
+function! s:remember_undo_start(reset)
   let undo_now = undotree().seq_cur
-  if undo_now > 0
-    let b:undo_start = exists('b:undo_start') ? b:undo_start : undo_now
+  if undo_now > 0 && (!exists('b:undo_start') || a:reset)
+    let b:undo_start = undo_now
   endif
 endfunction
 function! VerifyUndo ()
   if !exists('b:undo_start')
     return 'u'
   endif
-  " Are we back at the start of this session (but still with undos possible)???
+
   let undo_now = undotree().seq_cur
-  " If so, check whether to undo into pre-history...
   if undo_now > 0 && undo_now == b:undo_start
     return confirm("Undo into previous session?", "&Yes\n&No", 1) == 1 ? "\<C-L>u" : "\<C-L>"
   else
-    " Otherwise, always undo...
     return 'u'
   endif
 endfunction
