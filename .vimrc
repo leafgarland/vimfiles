@@ -1090,22 +1090,28 @@ function! s:sticky_func()
   endif
 endfunction
 "}}}
+
 " Visual Markers {{{
 nnoremap <expr> <leader>m ToggleVisualMarker()
+
 augroup VisualMarkers
   autocmd!
   autocmd TextChanged,TextChangedI * :call s:update_visual_markers()
 augroup END
+
 let g:myvimrc_visual_marks_groups = [
       \ 'GruvboxBlueSign',  'GruvboxGreenSign', 'GruvboxRedSign',
       \ 'GruvboxPurpleSign', 'GruvboxYellowSign']
+
 function! s:update_visual_markers()
   if !exists('b:myvimrc_visual_marks') || empty(b:myvimrc_visual_marks)
     return
   endif
+
   if exists('b:myvimrc_visual_marks_last_line_count') && b:myvimrc_visual_marks_last_line_count == line('$')
     return
   endif
+
   for [k,v] in items(b:myvimrc_visual_marks)
     let [m,l] = v
     let mark_line = line("'".k)
@@ -1120,17 +1126,21 @@ function! s:update_visual_markers()
       endif
     endif
   endfor
+
   let b:myvimrc_visual_marks_last_line_count = line('$')
 endfunction
+
 function! s:remove_visual_mark(match, reg)
   call matchdelete(a:match)
   call remove(b:myvimrc_visual_marks, a:reg)
   execute 'delmarks ' . a:reg
 endfunction
+
 function! ToggleVisualMarker()
   if !exists('b:myvimrc_visual_marks')
     let b:myvimrc_visual_marks = {}
   endif
+
   let c = getchar()
   let rc = nr2char(c)
   if rc !~ '[a-zA-Z]'
@@ -1142,6 +1152,7 @@ function! ToggleVisualMarker()
     endif
     return
   endif
+
   let curr_line = line('.')
   let toggled_off = 0
   for [k,v] in items(b:myvimrc_visual_marks)
@@ -1151,33 +1162,40 @@ function! ToggleVisualMarker()
       let toggled_off = l == curr_line && k == rc
     endif
   endfor
+
   if toggled_off
     return
-    endif
+  endif
+
   " matchaddpos() wont add a match on blank lines
   if getline('.') == ''
     return
   endif
+
   let grp = g:myvimrc_visual_marks_groups[c % len(g:myvimrc_visual_marks_groups)]
   let m = matchaddpos(grp, [line('.')])
   let b:myvimrc_visual_marks[rc] = [m,curr_line]
   return 'm' . rc
 endfunction
 "}}}
+
 " Warn when persistent undo moves into previous sessions {{{
 " based on https://github.com/thoughtstream/Damian-Conway-s-Vim-Setup/blob/master/plugin/undowarnings.vim
 nnoremap <expr> u  VerifyUndo()
+
 augroup UndoWarnings
   autocmd!
   autocmd BufReadPost  *  :call s:remember_undo_start(0)
   autocmd BufWritePost *  :call s:remember_undo_start(1)
 augroup END
+
 function! s:remember_undo_start(reset)
   let undo_now = undotree().seq_cur
   if undo_now > 0 && (!exists('b:undo_start') || a:reset)
     let b:undo_start = undo_now
   endif
 endfunction
+
 function! VerifyUndo ()
   if !exists('b:undo_start')
     return 'u'
@@ -1191,6 +1209,7 @@ function! VerifyUndo ()
   endif
 endfunction
 " }}}
+
 "}}}
 
 " Windows console vim {{{
