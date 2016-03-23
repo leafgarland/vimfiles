@@ -36,10 +36,10 @@ Plug 'kana/vim-textobj-user'
 Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
-  Plug 'morhetz/gruvbox/'
-  Plug 'NLKNguyen/papercolor-theme'
-  Plug 'itchyny/lightline.vim'
-  Plug 'justinmk/molokai'
+Plug 'morhetz/gruvbox/'
+Plug 'NLKNguyen/papercolor-theme'
+Plug 'itchyny/lightline.vim'
+Plug 'justinmk/molokai'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -93,7 +93,7 @@ Plug 'mxw/vim-jsx', {'for': 'javascript'}
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
-Plug 'ajhager/elm-vim', {'for': 'elm'}
+Plug 'elmcast/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
 " Plug 'racer-rust/vim-racer', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
@@ -129,7 +129,7 @@ endfunction
 " General: {{{
 set mouse=a
 
-set shortmess+=fiIlmnrxoOtT      " abbrev. of messages (avoids 'hit enter')
+set shortmess=aIoOtTx
 set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
 set virtualedit=onemore         " allow for cursor beyond last character
 set history=1000
