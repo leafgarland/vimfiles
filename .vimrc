@@ -53,7 +53,6 @@ Plug 'wellle/targets.vim'
 Plug 'haya14busa/incsearch.vim'
 
 " Tools
-Plug 'Soares/butane.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
@@ -252,6 +251,8 @@ nnoremap <leader>fs :w<CR>
 
 " switch to alternate buffer
 nnoremap <leader><tab> :b#<CR>
+nnoremap <leader>bd :bdelete<CR>
+nnoremap <leader>bD :bdelete!<CR>
 
 " Easier moving in tabs and windows
 nnoremap <C-J> <C-W>j
@@ -259,7 +260,7 @@ nnoremap <C-K> <C-W>k
 nnoremap <C-L> <C-W>l
 nnoremap <C-H> <C-W>h
 " windows cmds under <leader>w
-nnoremap <leader>w <C-w>
+nmap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
 " close all preview windows and quickfix|location lists
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
@@ -324,8 +325,8 @@ nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
 
 " select whole buffer
-nnoremap vaa ggvGg_
-nnoremap Vaa ggVG
+nnoremap vA ggvGg_
+nnoremap VA ggVG
 " select current line, no whitespace
 nnoremap vv ^vg_
 " select last changed/yanked
@@ -411,6 +412,10 @@ augroup end
 "}}}
 
 " Plugins config: {{{
+
+" Vimproc: {{{
+let g:vimproc#download_windows_dll=1
+" }}}
 
 " Projectionist: {{{
 let g:projectionist_heuristics = {
@@ -555,7 +560,7 @@ endif
 if s:has_plug('vimfiler.vim')
   let g:vimfiler_as_default_explorer = 1
   nnoremap <leader>fj :VimFilerBufferDir -find -safe<CR>
-  nnoremap <leader>pe :VimFiler -safe<CR>
+  nnoremap <leader>pe :VimFilerCurrentDir -safe<CR>
 endif
 " }}}
 
@@ -837,22 +842,17 @@ if s:has_plug('gruvbox')
   endif
   let g:gruvbox_italic=0
 
-  augroup vimrc_gruvbox
-    autocmd!
-    autocmd ColorScheme gruvbox
-      \ :highlight CursorLine guibg=NONE |
-      \ :highlight CursorLineNr guibg=NONE
-  augroup end
-
-  colorscheme gruvbox
-
   " Lightline gruvbox colorscheme: {{{
-  if exists('g:lightline')
-    function! s:getGruvColor(group)
-      let guiColor = synIDattr(hlID(a:group), "fg", "gui") 
-      let termColor = synIDattr(hlID(a:group), "fg", "cterm") 
-      return [ guiColor, termColor ]
-    endfunction
+  function! s:getGruvColor(group)
+    let guiColor = synIDattr(hlID(a:group), "fg", "gui") 
+    let termColor = synIDattr(hlID(a:group), "fg", "cterm") 
+    return [ guiColor, termColor ]
+  endfunction
+
+  function! s:setGruvboxLightlineColors(update)
+    if !exists('g:lightline') || g:colors_name != 'gruvbox'
+      return
+    endif
 
     let s:bg0  = s:getGruvColor('GruvboxBg0')
     let s:bg1  = s:getGruvColor('GruvboxBg1')
@@ -876,18 +876,18 @@ if s:has_plug('gruvbox')
 
     let s:p = {'normal':{}, 'inactive':{}, 'insert':{}, 'replace':{}, 'visual':{}, 'tabline':{}}
 
-    let s:p.normal.left = [ [ s:blue, s:bg2], [ s:fg0, s:bg3], [ s:orange, s:bg3 ] ]
-    let s:p.normal.right = [ [ s:green, s:bg3], [ s:yellow , s:bg3] ]
+    let s:p.normal.left = [ [ s:aqua, s:bg3], [ s:fg0, s:bg3], [ s:orange, s:bg3 ] ]
+    let s:p.normal.right = [ [ s:aqua, s:bg3], [ s:yellow , s:bg3] ]
     let s:p.normal.middle = [ [ s:fg3, s:bg3] ]
 
-    let s:p.inactive.left = [ [ s:bg4, s:bg1], [ s:fg3 , s:bg2], [ s:bg4, s:bg2 ] ]
+    let s:p.inactive.left = [ [ s:bg4, s:bg2], [ s:fg3 , s:bg2], [ s:bg4, s:bg2 ] ]
     let s:p.inactive.right = [ [ s:bg4, s:bg2], [ s:bg4 , s:bg2] ]
     let s:p.inactive.middle = [ [ s:bg4, s:bg2] ]
 
     let s:p.insert = deepcopy(s:p.normal)
-    let s:p.insert.left[0] = [ s:yellow, s:bg2 ]
+    let s:p.insert.left[0] = [ s:yellow, s:bg3 ]
     let s:p.visual = deepcopy(s:p.normal)
-    let s:p.visual.left[0] = [ s:green, s:bg2 ]
+    let s:p.visual.left[0] = [ s:orange, s:bg3 ]
 
     let s:p.tabline.left = [ [ s:fg2, s:bg2 ] ]
     let s:p.tabline.tabsel = [ [ s:yellow, s:bg3 ] ]
@@ -902,8 +902,22 @@ if s:has_plug('gruvbox')
 
     exe 'highlight StatusLine gui=NONE guibg=' . s:bg3[0] . ' guifg=' . s:fg1[0]
     exe 'highlight StatusLineNC gui=NONE guibg=' . s:bg2[0] . ' guifg=' . s:bg4[0]
+    if a:update
+      call lightline#colorscheme()
   endif
+  endfunction
   "}}}
+  augroup vimrc_gruvbox
+    autocmd!
+    autocmd ColorScheme gruvbox
+      \ :highlight CursorLine guibg=NONE |
+      \ :highlight CursorLineNr guibg=NONE |
+      \ :call s:setGruvboxLightlineColors(0)
+    autocmd OptionSet background
+      \ :call s:setGruvboxLightlineColors(1)
+  augroup end
+  colorscheme gruvbox
+  call s:setGruvboxLightlineColors(0)
 endif
 "}}}
 
