@@ -15,6 +15,7 @@ let s:is_wincon = !has('nvim') && !s:is_gui && s:is_win
 if s:is_win
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
+  set packpath=$HOME/.vim
   " On windows, if gvim.exe is executed from cygwin bash shell, the shell
   " needs to be changed to the shell most plugins expect on windows.
   " This does not change &shell inside cygwin or msys vim.
@@ -190,12 +191,16 @@ set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
 set tags=./tags;/,~/.vimtags
 
+let g:myvimrc_manage_cursorline=0
 augroup vimrc_ui
   autocmd!
 
   " Show CursorLine in active window only
+  if g:myvimrc_manage_cursorline
+    set cursorline
   autocmd WinEnter * set cursorline
   autocmd WinLeave * set nocursorline
+  endif
 
   " Opens quick fix window when there are items, close it when empty
   autocmd QuickFixCmdPost [^l]* nested cwindow
@@ -211,6 +216,9 @@ if exists('+guioptions')
   set lines=50
   set columns=120
   set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
+  if exists('+renderoptions')
+    set renderoptions=type:directx,renmode:4,taamode:1,geom:1
+  endif
 endif
 "}}}
 
@@ -247,7 +255,7 @@ let mapleader = "\<space>"
 nmap <leader><leader> :
 vmap <leader><leader> :
 
-nnoremap <leader>fs :w<CR>
+nnoremap <leader>fs :update<CR>
 
 " switch to alternate buffer
 nnoremap <leader><tab> :b#<CR>
@@ -503,6 +511,15 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
 " YouCompleteMe {{{
 if s:has_plug('YouCompleteMe')
+
+  " Sometimes YCM is unhappy with the python it uses, so we can force it to
+  " use a specific python
+  let s:ycm_python=expand('$LOCALAPPDATA/scoop/apps/python/3.5.1/python.exe')
+  if executable(s:ycm_python)
+    let g:ycm_path_to_python_interpreter = s:ycm_python
+  endif
+
+  " let g:ycm_server_log_level = 'debug'
   " let g:ycm_semantic_triggers =  {
   "   \   'c' : ['->', '.'],
   "   \   'objc' : ['->', '.'],
@@ -513,9 +530,15 @@ if s:has_plug('YouCompleteMe')
   "   \   'cs,java,javascript,d,vim,python,perl6,scala,vb,elixir,go' : ['.'],
   "   \   'ruby,rust' : ['.', '::'],
   "   \   'lua' : ['.', ':'],
+  "   \   'elm' : ['.'],
   "   \   'erlang' : [':'],
   "   \   'fsharp' : ['.'],
   "   \ }
+
+  let g:ycm_semantic_triggers =  {
+    \   'elm' : ['.'],
+    \ }
+
   nnoremap <leader>mgd :YcmCompleter GoToDefinition<CR>
   nnoremap <leader>mgh :YcmCompleter GoToDeclaration<CR>
   nnoremap <leader>mht :YcmCompleter GetType<CR>
@@ -859,7 +882,7 @@ if s:has_plug('gruvbox')
     let s:bg2  = s:getGruvColor('GruvboxBg2')
     let s:bg3  = s:getGruvColor('GruvboxBg3')
     let s:bg4  = s:getGruvColor('GruvboxBg4')
-    let s:bg4  = s:getGruvColor('GruvboxGray')
+    " let s:bg4  = s:getGruvColor('GruvboxGray')
     let s:fg0  = s:getGruvColor('GruvboxFg0')
     let s:fg1  = s:getGruvColor('GruvboxFg1')
     let s:fg2  = s:getGruvColor('GruvboxFg2')
@@ -876,8 +899,8 @@ if s:has_plug('gruvbox')
 
     let s:p = {'normal':{}, 'inactive':{}, 'insert':{}, 'replace':{}, 'visual':{}, 'tabline':{}}
 
-    let s:p.normal.left = [ [ s:aqua, s:bg3], [ s:fg0, s:bg3], [ s:orange, s:bg3 ] ]
-    let s:p.normal.right = [ [ s:aqua, s:bg3], [ s:yellow , s:bg3] ]
+    let s:p.normal.left = [ [ s:fg3, s:bg3], [ s:fg0, s:bg3], [ s:orange, s:bg3 ] ]
+    let s:p.normal.right = [ [ s:fg3, s:bg3], [ s:fg4 , s:bg3] ]
     let s:p.normal.middle = [ [ s:fg3, s:bg3] ]
 
     let s:p.inactive.left = [ [ s:bg4, s:bg2], [ s:fg3 , s:bg2], [ s:bg4, s:bg2 ] ]
@@ -885,7 +908,7 @@ if s:has_plug('gruvbox')
     let s:p.inactive.middle = [ [ s:bg4, s:bg2] ]
 
     let s:p.insert = deepcopy(s:p.normal)
-    let s:p.insert.left[0] = [ s:yellow, s:bg3 ]
+    let s:p.insert.left[0] = [ s:green, s:bg3 ]
     let s:p.visual = deepcopy(s:p.normal)
     let s:p.visual.left[0] = [ s:orange, s:bg3 ]
 
@@ -910,8 +933,6 @@ if s:has_plug('gruvbox')
   augroup vimrc_gruvbox
     autocmd!
     autocmd ColorScheme gruvbox
-      \ :highlight CursorLine guibg=NONE |
-      \ :highlight CursorLineNr guibg=NONE |
       \ :call s:setGruvboxLightlineColors(0)
     autocmd OptionSet background
       \ :call s:setGruvboxLightlineColors(1)
