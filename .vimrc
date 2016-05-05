@@ -61,13 +61,13 @@ Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'Valloric/YouCompleteMe'
 Plug 'Shougo/neopairs.vim'
 Plug 'cohama/lexima.vim'
+Plug 'justinmk/vim-dirvish'
 
 " Unite
 Plug 'Shougo/unite.vim'
 Plug 'Shougo/neomru.vim'
 Plug 'Shougo/unite-outline'
 Plug 'tsukkee/unite-tag'
-Plug 'Shougo/vimfiler.vim'
 Plug 'thinca/vim-ref'
 
 " Filetypes
@@ -174,7 +174,6 @@ set scrolloff=5
 set wildmode=longest:full,full
 set number
 set hlsearch
-set cursorline
 set winminheight=0              " windows can be 0 line high
 set ignorecase
 set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
@@ -579,11 +578,29 @@ if s:has_plug('incsearch.vim')
 endif
 " }}}
 
-" VimFiler: {{{
-if s:has_plug('vimfiler.vim')
-  let g:vimfiler_as_default_explorer = 1
-  nnoremap <leader>fj :VimFilerBufferDir -find -safe<CR>
-  nnoremap <leader>pe :VimFilerCurrentDir -safe<CR>
+" Dirvish: {{{
+if s:has_plug('vim-dirvish')
+  nnoremap <leader>fj :Dirvish %<CR>
+  nnoremap <leader>pe :Dirvish<CR>
+  function! s:dirvish_grep()
+    let pattern = input('pattern: ')
+    if pattern == ''
+      return
+    endif
+    execute('grep ' . pattern . ' %')
+  endfunction
+  function! s:dirvish_settings()
+    nmap <silent> <buffer> h <Plug>(dirvish_up)
+    nnoremap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
+    nnoremap <silent> <buffer> gh :keeppatterns g@\v[\/]\.[^\/]+[\/]?$@d<CR>
+    nnoremap <silent> <buffer> gr :call <sid>dirvish_grep()<CR>
+    nnoremap <silent> <buffer> gd :sort r /[^\/]$/<CR>
+    call fugitive#detect(@%)
+  endfunction
+  augroup vimrc_dirvish
+    autocmd!
+    autocmd FileType dirvish :call s:dirvish_settings()
+  augroup END
 endif
 " }}}
 
@@ -734,7 +751,7 @@ if (s:has_plug('lightline.vim'))
     \ }
 
   function! s:is_basic_file()
-      return &filetype !~? 'help\|vimfiler\|unite\|qf'
+      return &filetype !~? 'help\|unite\|qf'
   endfunction
 
   function! s:is_small_win()
@@ -747,7 +764,7 @@ if (s:has_plug('lightline.vim'))
     if strlen(fname) > maxPathLen
       let fname = pathshorten(fname)
     endif
-    return &filetype == 'vimfiler' ? vimfiler#get_status_string() :
+    return &filetype == 'dirvish' ? expand('%:~') :
          \ &filetype == 'unite' ? unite#get_status_string() :
          \ &filetype == 'help' ? expand('%:t:r') :
          \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
@@ -803,11 +820,12 @@ if (s:has_plug('lightline.vim'))
     if winwidth(0) < 60
       return ''
     endif
-    return &previewwindow ? "preview" : &ft
+    return &previewwindow ? "preview" :
+      \ &ft == "dirvish" ? "dir" :
+      \ &ft
   endfunction
 
   let g:unite_force_overwrite_statusline = 0
-  let g:vimfiler_force_overwrite_statusline = 0
 endif
 " }}}
 
@@ -1080,36 +1098,6 @@ command! -range CpHtml :call <sid>CpHtml(<line1>,<line2>)
 " \r\n line endings there might be. Use this cmd to reload the file forcing
 " ff=dos
 command! ReloadDos :e ++ff=dos<CR>
-"}}}
-
-" Use ;<key> instead of Shift-<key> {{{
-inoremap <expr> ;  <SID>sticky_func()
-cnoremap <expr> ;  <SID>sticky_func()
-snoremap <expr> ;  <SID>sticky_func()
-function! s:sticky_func()
-  let l:sticky_table = {
-    \',' : '<', '.' : '>', '/' : '?',
-    \'1' : '!', '2' : '@', '3' : '#', '4' : '$', '5' : '%',
-    \'6' : '^', '7' : '&', '8' : '*', '9' : '(', '0' : ')', '-' : '_', '=' : '+',
-    \';' : ':', '[' : '{', ']' : '}', '`' : '~', "'" : "\"", '\' : '|',
-    \}
-  let l:special_table = {
-    \"\<ESC>" : "\<ESC>", "\<Space>" : '; ', "\<CR>" : ";\<CR>"
-    \}
-  if mode() !~# '^c'
-    echo 'Input sticky key: '
-  endif
-  let l:key = getchar()
-  if nr2char(l:key) =~ '\l'
-    return toupper(nr2char(l:key))
-  elseif has_key(l:sticky_table, nr2char(l:key))
-    return l:sticky_table[nr2char(l:key)]
-  elseif has_key(l:special_table, nr2char(l:key))
-    return l:special_table[nr2char(l:key)]
-  else
-    return ';' . nr2char(l:key)
-  endif
-endfunction
 "}}}
 
 " Visual Markers {{{
