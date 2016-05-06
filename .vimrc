@@ -44,6 +44,7 @@ Plug 'justinmk/molokai'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
+Plug 'kana/vim-textobj-entire'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-unimpaired'
@@ -197,8 +198,8 @@ augroup vimrc_ui
   " Show CursorLine in active window only
   if g:myvimrc_manage_cursorline
     set cursorline
-  autocmd WinEnter * set cursorline
-  autocmd WinLeave * set nocursorline
+    autocmd WinEnter * set cursorline
+    autocmd WinLeave * set nocursorline
   endif
 
   " Opens quick fix window when there are items, close it when empty
@@ -314,10 +315,10 @@ noremap <leader>fed :e $MYVIMRC<CR>
 " copy/paste from system
 nnoremap <C-y> "*y
 vnoremap <C-y> "*y
-  nnoremap <C-p> :set paste<CR>"*]p:set nopaste<CR>
-  nnoremap <C-P> :set paste<CR>"*]P:set nopaste<CR>
-  vnoremap <C-p> :<C-U>set paste<CR>"*]p:set nopaste<CR>
-  vnoremap <C-P> :<C-U>set paste<CR>"*]P:set nopaste<CR>
+nnoremap <C-p> :set paste<CR>"*]p:set nopaste<CR>
+nnoremap <C-P> :set paste<CR>"*]P:set nopaste<CR>
+vnoremap <C-p> :<C-U>set paste<CR>"*]p:set nopaste<CR>
+vnoremap <C-P> :<C-U>set paste<CR>"*]P:set nopaste<CR>
 
 " move to end of copy/paste
 vnoremap y y`]
@@ -331,9 +332,6 @@ nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
 
-" select whole buffer
-nnoremap vA ggvGg_
-nnoremap VA ggVG
 " select current line, no whitespace
 nnoremap vv ^vg_
 " select last changed/yanked
@@ -493,15 +491,6 @@ if s:has_plug('vim-racer')
 endif
 " }}}
 
-" deoplete {{{
-if s:has_plug('deoplete.nvim')
-  let g:deoplete#enable_at_startup = 1
-  let g:deoplete#enable_smart_case = 1
-  let g:deoplete#sources = {}
-  let g:deoplete#sources._ = ['buffer', 'file']
-endif
-" }}}
-
 " Ultisnips {{{
 let g:UltiSnipsExpandTrigger="<c-j>"
 let g:UltiSnipsJumpForwardTrigger="<c-j>"
@@ -541,23 +530,6 @@ if s:has_plug('YouCompleteMe')
   nnoremap <leader>mgd :YcmCompleter GoToDefinition<CR>
   nnoremap <leader>mgh :YcmCompleter GoToDeclaration<CR>
   nnoremap <leader>mht :YcmCompleter GetType<CR>
-endif
-" }}}
-
-" Neocomplete: {{{
-if s:has_plug('neocomplete.vim')
-  let g:neocomplete#enable_at_startup = 1
-
-  " For smart TAB completion.
-  inoremap <expr><TAB>  pumvisible() ? "\<C-n>" :
-         \ <SID>check_back_space() ? "\<TAB>" :
-         \ neocomplete#start_manual_complete()
-  function! s:check_back_space()
-    let col = col('.') - 1
-    return !col || getline('.')[col - 1]  =~ '\s'
-  endfunction
-
-  imap <C-k>  <Plug>(neocomplete_start_unite_complete)
 endif
 " }}}
 
@@ -866,15 +838,7 @@ if s:has_plug('slimux')
 endif
 "}}}
 
-" PaperColor: {{{
-if s:has_plug('papercolor-theme')
-  let g:PaperColor_Dark_Override={'cursorline' : 'NONE'}
-  let g:PaperColor_Light_Override={'cursorline' : 'NONE'}
-  colorscheme PaperColor
-endif
-" }}}
-
-" gruvbox: {{{
+" " gruvbox: {{{
 if s:has_plug('gruvbox')
   if s:is_gui
     let g:gruvbox_invert_selection=0
@@ -1220,18 +1184,3 @@ endfunction
 " }}}
 
 "}}}
-
-" Windows console vim {{{
-if s:is_wincon
-  " tidy up the colors when running in Windows console.
-  colorscheme default
-  highlight Comment ctermfg=8
-  highlight Folded ctermfg=0 ctermbg=8
-  highlight CursorLine ctermbg=NONE cterm=NONE
-  highlight LineNr ctermfg=7
-  highlight CursorLineNr ctermfg=14
-  highlight MatchParen ctermbg=NONE ctermfg=NONE cterm=reverse
-  highlight Pmenu ctermbg=7 ctermfg=0
-  highlight PmenuSel ctermbg=8 ctermfg=15
-endif
-" }}}
