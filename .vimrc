@@ -1,6 +1,9 @@
 " vim: foldlevel=0 foldmethod=marker shiftwidth=2
 
 " Environment: {{{
+let g:loaded_vimballPlugin = 1
+let g:did_install_default_menus = 1
+
 set nocompatible
 set encoding=utf8
 set background=dark
@@ -11,8 +14,10 @@ endif
 " Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
 let s:is_gui = has('gui_running')
-let s:is_wincon = !has('nvim') && !s:is_gui && s:is_win
 if s:is_win
+  set shellslash
+  " set shell=powershell.exe\ -noninteractive\ -executionpolicy\ remotesigned\ -noprofile
+  " set shellcmdflag=-Command
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
   set packpath=$HOME/.vim
@@ -211,7 +216,7 @@ augroup end
 
 " GUI Settings: {{{
 if exists('+guioptions')
-  set guioptions=gtc
+  set guioptions=c
   set linespace=0
   set lines=50
   set columns=120
@@ -554,6 +559,7 @@ endif
 if s:has_plug('vim-dirvish')
   nnoremap <leader>fj :Dirvish %<CR>
   nnoremap <leader>pe :Dirvish<CR>
+
   function! s:dirvish_grep()
     let pattern = input('pattern: ')
     if pattern == ''
@@ -561,12 +567,41 @@ if s:has_plug('vim-dirvish')
     endif
     execute('grep ' . pattern . ' %')
   endfunction
+
+  let s:dirvish_dir_search = '[\\\/]$'
+
+  function! s:dirvish_next()
+    let pos = getcurpos()
+    let nextline = search(s:dirvish_dir_search)
+    if nextline == pos[1]
+      normal! j
+      let nextline = search(s:dirvish_dir_search)
+    endif
+    if nextline == 0
+      call setpos('.', pos)
+      return
+    endif
+    normal! 0
+  endfunction
+
+  function! s:dirvish_previous()
+    let pos = getcurpos()
+    let nextline = search(s:dirvish_dir_search, 'b')
+    if nextline == 0
+      call setpos('.', pos)
+      return
+    endif
+    normal! 0
+  endfunction
+
   function! s:dirvish_settings()
     nmap <silent> <buffer> h <Plug>(dirvish_up)
-    nnoremap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
-    nnoremap <silent> <buffer> gh :keeppatterns g@\v[\/]\.[^\/]+[\/]?$@d<CR>
-    nnoremap <silent> <buffer> gr :call <sid>dirvish_grep()<CR>
-    nnoremap <silent> <buffer> gd :sort r /[^\/]$/<CR>
+    nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
+    nmap <silent> <buffer> J :call <sid>dirvish_next()<CR>
+    nmap <silent> <buffer> K :call <sid>dirvish_previous()<CR>
+    nmap <silent> <buffer> gh :keeppatterns g@\v[\/]\.[^\/]+[\/]?$@d<CR>
+    nmap <silent> <buffer> gr :call <sid>dirvish_grep()<CR>
+    nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
     call fugitive#detect(@%)
   endfunction
   augroup vimrc_dirvish
@@ -695,7 +730,7 @@ if (s:has_plug('lightline.vim'))
   let g:lightline = {
     \ 'active': {
     \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ], [ 'arglist' ] ],
-    \   'right': [ [ 'lineinfo' ], [ 'fugitive', 'fileencoding', 'fileformat' ] ],
+    \   'right': [ [ 'lineinfo' ], [ 'fugitive', 'fileencoding', 'fileformat', 'spell' ] ],
     \ },
     \ 'inactive': {
     \   'left': [ [ 'mode' ], [ 'filename', ], [ 'modified' ] ],
@@ -838,7 +873,7 @@ if s:has_plug('slimux')
 endif
 "}}}
 
-" " gruvbox: {{{
+" gruvbox: {{{
 if s:has_plug('gruvbox')
   if s:is_gui
     let g:gruvbox_invert_selection=0
