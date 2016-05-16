@@ -1,12 +1,19 @@
 " vim: foldlevel=0 foldmethod=marker shiftwidth=2
 
 " Environment: {{{
+
+augroup vimrc
+  autocmd!
+augroup END
+
 let g:loaded_vimballPlugin = 1
 let g:did_install_default_menus = 1
 
-set nocompatible
-set encoding=utf8
-set background=dark
+if !has('nvim') && has('vim_starting')
+    set nocompatible
+    set encoding=utf-8
+endif
+
 if &shell =~# 'fish$'
   set shell=bash
 endif
@@ -102,29 +109,34 @@ Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'elmcast/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
-" Plug 'racer-rust/vim-racer', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
 Plug 'cespare/vim-toml', {'for': 'toml'}
 Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
 
-if has('mac')
-  if has('nvim')
-    Plug 'benekastah/neomake'
-  else
-    Plug 'scrooloose/syntastic'
-    Plug 'jszakmeister/vim-togglecursor'
-  endif
+if executable('tmux')
+  Plug 'tpope/vim-tbone'
+  Plug 'wellle/tmux-complete.vim' 
   Plug 'tmux-plugins/vim-tmux-focus-events'
   Plug 'christoomey/vim-tmux-navigator'
   Plug 'tmux-plugins/vim-tmux'
   Plug 'epeli/slimux'
+endif
+
+if executable('fish')
   Plug 'dag/vim-fish', {'for': 'fish'}
+endif
+
+if has('nvim')
+  Plug 'benekastah/neomake'
 else
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
+if has('mac') && !has('gui_running')
+  Plug 'jszakmeister/vim-togglecursor'
+endif
 
 call plug#end()
 
@@ -136,7 +148,7 @@ endfunction
 " General: {{{
 set mouse=a
 
-set shortmess=aIoOtTx
+set shortmess+=Im
 set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
 set virtualedit=onemore         " allow for cursor beyond last character
 set history=1000
@@ -145,6 +157,7 @@ set hidden
 set foldopen+=jump
 set breakindent
 set smartcase
+set nojoinspaces
 
 set backup
 set backupdir=~/.vim/backup//
@@ -168,6 +181,7 @@ endif
 " Vim UI: {{{
 set noshowmode
 set noshowcmd
+set lazyredraw
 
 if has('cmdline_info')
   set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%)
@@ -194,27 +208,31 @@ set linebreak
 set list
 set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
+set splitright
+
 set tags=./tags;/,~/.vimtags
 
+set background=dark
+
 let g:myvimrc_manage_cursorline=0
-augroup vimrc_ui
-  autocmd!
+" Show CursorLine in active window only
+if g:myvimrc_manage_cursorline
+  set cursorline
+  autocmd vimrc WinEnter * set cursorline
+  autocmd vimrc WinLeave * set nocursorline
+endif
 
-  " Show CursorLine in active window only
-  if g:myvimrc_manage_cursorline
-    set cursorline
-    autocmd WinEnter * set cursorline
-    autocmd WinLeave * set nocursorline
-  endif
-
-  " Opens quick fix window when there are items, close it when empty
-  autocmd QuickFixCmdPost [^l]* nested cwindow
-  autocmd QuickFixCmdPost    l* nested lwindow
-augroup end
+" Opens quick fix window when there are items, close it when empty
+autocmd vimrc QuickFixCmdPost [^l]* nested cwindow
+autocmd vimrc QuickFixCmdPost    l* nested lwindow
 
 "}}}
 
 " GUI Settings: {{{
+if exists('+termguicolors')
+  set termguicolors
+endif
+
 if exists('+guioptions')
   set guioptions=c
   set linespace=0
@@ -374,57 +392,92 @@ vnoremap <leader>V :g//d<CR>
 "}}}
 
 " Filetypes: {{{
-augroup vimrc_filetypes
-  autocmd!
 
-  " log: {{{
-  autocmd BufNewFile,BufRead *.log setfiletype log4net
-  autocmd BufNewFile,BufRead *.log.? setfiletype log4net
-  " }}}
+" log: {{{
+autocmd vimrc BufNewFile,BufRead *.log setfiletype log4net
+autocmd vimrc BufNewFile,BufRead *.log.? setfiletype log4net
+" }}}
 
-  " json: {{{
-  autocmd FileType json setlocal equalprg=python\ -m\ json.tool
-  autocmd FileType json setlocal shiftwidth=2
-  " }}}
+" json: {{{
+autocmd vimrc FileType json setlocal equalprg=python\ -m\ json.tool
+autocmd vimrc FileType json setlocal shiftwidth=2
+" }}}
 
-  " xml: {{{
-  let g:xml_syntax_folding=1
-  autocmd BufNewFile,BufRead *.config setfiletype xml
-  autocmd BufNewFile,BufRead *.*proj setfiletype xml
-  autocmd BufNewFile,BufRead *.xaml setfiletype xml
+" xml: {{{
+let g:xml_syntax_folding=1
+autocmd vimrc BufNewFile,BufRead *.config setfiletype xml
+autocmd vimrc BufNewFile,BufRead *.*proj setfiletype xml
+autocmd vimrc BufNewFile,BufRead *.xaml setfiletype xml
 
-  autocmd FileType xml call s:xml_filetype_settings()
-  function! s:xml_filetype_settings()
-    setlocal foldmethod=syntax
-    setlocal equalprg=xmllint\ --format\ --recover\ -
-    setlocal shiftwidth=2
-    " the xml highlighting can be broken on large files, so we
-    " increase the max num of lines that the highlighting examines
-    syntax sync maxlines=10000
-  endfunction
-  " }}}
+autocmd vimrc FileType xml call s:xml_filetype_settings()
+function! s:xml_filetype_settings()
+  setlocal foldmethod=syntax
+  setlocal equalprg=xmllint\ --format\ --recover\ -
+  setlocal shiftwidth=2
+  " the xml highlighting can be broken on large files, so we
+  " increase the max num of lines that the highlighting examines
+  syntax sync maxlines=10000
+endfunction
+" }}}
 
-  " fsharp: {{{
-  if executable('fantomas')
-    autocmd FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
-  endif
-  autocmd FileType fsharp setlocal shiftwidth=2
-  " }}}
+" fsharp: {{{
+if executable('fantomas')
+  autocmd vimrc FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
+endif
+autocmd vimrc FileType fsharp setlocal shiftwidth=2
+" }}}
 
-  " help: {{{
-  autocmd FileType help call s:help_filetype_settings()
-  function! s:help_filetype_settings()
-    nnoremap <buffer> q :wincmd c<CR>
-  endfunction
-  " }}}
-
-augroup end
+" help: {{{
+autocmd vimrc FileType help call s:help_filetype_settings()
+function! s:help_filetype_settings()
+  nnoremap <buffer> q :wincmd c<CR>
+endfunction
+" }}}
 "}}}
 
 " Plugins config: {{{
 
 " Vimproc: {{{
 let g:vimproc#download_windows_dll=1
+" }}}
+
+" Surround: {{{
+let g:surround_no_insert_mappings = 1
+" }}}
+
+" TBone: {{{
+" trun from justinmk/config
+xnoremap <silent> R   :<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
+nnoremap <silent> yrr V:<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
+function! s:tmux_run_operator(type, ...)
+  let sel_save = &selection
+  let &selection = "inclusive"
+  let isvisual = a:0
+
+  let lines = isvisual ? getline("'<", "'>") : getline("'[", "']")
+  if a:type !=# 'line' && a:type !=# 'V'
+    let startcol  = isvisual ? col("'<") : col("'[")
+    let endcol    = isvisual ? col("'>")-2 : col("']")
+    let lines[0]  = lines[0][startcol-1 : ]
+    let lines[-1] = lines[-1][ : endcol-1]
+  endif
+
+  call s:tmux_run(join(lines))
+
+  let &selection = sel_save
+endf
+
+function! s:tmux_run(creatnew, run, cmd) abort
+  "Create a new pane if demanded or if we are _in_ the target pane.
+  if a:creatnew || tbone#pane_id(".") == tbone#pane_id("bottom-right")
+    Tmux split-window -d -p 33
+  endif
+  call tbone#send_keys("bottom-right",
+	\"\<c-e>\<c-u>".a:cmd.(a:run ? "\<cr>" : ""))
+endf
+
+command! -nargs=? -bang Trun call s:tmux_run(<bang>0, 1, <q-args>)
+
 " }}}
 
 " Projectionist: {{{
@@ -454,10 +507,7 @@ let g:projectionist_heuristics = {
 if s:has_plug('omnisharp-vim')
   " let g:OmniSharp_server_type = 'roslyn'
   if s:has_plug('neocomplete-vim')
-    augroup vimrc_omnisharp_neocomplete
-      autocmd!
-      autocmd FileType cs call s:omnisharp_neocomplete_cs()
-    augroup END
+    autocmd vimrc FileType cs call s:omnisharp_neocomplete_cs()
     function! s:omnisharp_neocomplete_cs()
       let g:neocomplete#sources#omni#input_patterns.cs = '.*[^=\);]'
       let g:neocomplete#sources.cs = ['omni']
@@ -470,10 +520,7 @@ endif
 " FSharp: {{{
 if s:has_plug('vim-fsharp')
   let g:fsharpbinding_debug=1
-  augroup vimrc_fsharpbinding_settings
-    autocmd!
-    autocmd FileType fsharp call s:fsharpbinding_settings()
-  augroup END
+  autocmd vimrc FileType fsharp call s:fsharpbinding_settings()
   function! s:fsharpbinding_settings()
     setlocal include=^#load\
     setlocal complete+=i
@@ -604,10 +651,7 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
     call fugitive#detect(@%)
   endfunction
-  augroup vimrc_dirvish
-    autocmd!
-    autocmd FileType dirvish :call s:dirvish_settings()
-  augroup END
+  autocmd vimrc FileType dirvish :call s:dirvish_settings()
 endif
 " }}}
 
@@ -692,7 +736,7 @@ if s:has_plug('unite.vim')
   nnoremap <silent> [unite]o :<C-u>Unite -split -vertical -winwidth=30 outline<CR>
 
   " Custom mappings for the unite buffer
-  autocmd FileType unite call s:unite_settings()
+  autocmd vimrc FileType unite call s:unite_settings()
   function! s:unite_settings()
     imap <buffer> <C-j>   <Plug>(unite_select_next_line)
     imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
@@ -850,11 +894,8 @@ endif
 
 "{{{ Slimux
 if s:has_plug('slimux')
-  augroup slimux-settings
-    autocmd!
-    autocmd FileType scheme call s:slimux_scheme_settings()
-    autocmd FileType fsharp call s:slimux_fsharp_settings()
-  augroup END
+  autocmd vimrc FileType scheme call s:slimux_scheme_settings()
+  autocmd vimrc FileType fsharp call s:slimux_fsharp_settings()
   function! s:slimux_scheme_settings()
     nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
     nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
@@ -947,13 +988,10 @@ if s:has_plug('gruvbox')
   endif
   endfunction
   "}}}
-  augroup vimrc_gruvbox
-    autocmd!
-    autocmd ColorScheme gruvbox
-      \ :call s:setGruvboxLightlineColors(0)
-    autocmd OptionSet background
-      \ :call s:setGruvboxLightlineColors(1)
-  augroup end
+  autocmd vimrc ColorScheme gruvbox
+    \ :call s:setGruvboxLightlineColors(0)
+  autocmd vimrc OptionSet background
+    \ :call s:setGruvboxLightlineColors(1)
   colorscheme gruvbox
   call s:setGruvboxLightlineColors(0)
 endif
@@ -966,9 +1004,32 @@ if s:has_plug('seoul256.vim')
 endif
 "}}}
 
+" Tmux Navigator: {{{
+if has('nvim')
+  " <C-H> is seen as <BS> with some terms
+  nmap <BS> :TmuxNavigateLeft<CR>
+endif
+" }}}
 "}}}
 
 " Functions: {{{
+
+" Vertical move to next line with char at cursor column
+" https://www.reddit.com/r/vim/comments/4j4duz/a/d33s213
+function! s:VerticalMoveDown()
+  return (search('\%' . virtcol('.') . 'v.*\n^\(.*\%' . virtcol('.') . 'v.\)\@!.*$', 'nW') - line('.')) . 'j'
+endfunction
+
+function! s:VerticalMoveUp()
+  return (line('.') - search('^\(.*\%' . virtcol('.') . 'v.\)\@!.*$\n.*\zs\%' . virtcol('.') . 'v', 'bnW')) . 'k'
+endfunction
+
+nnoremap <expr> 1j <SID>VerticalMoveDown()
+nnoremap <expr> 1k <SID>VerticalMoveUp()
+xnoremap <expr> 1j <SID>VerticalMoveDown()
+xnoremap <expr> 1k <SID>VerticalMoveUp()
+onoremap <expr> 1j <SID>VerticalMoveDown()
+onoremap <expr> 1k <SID>VerticalMoveUp()
 
 " vp doesn't replace paste buffer {{{
 function! RestoreRegister()
@@ -1071,11 +1132,8 @@ endfunction
 command! -bang -bar -nargs=0 -range VimEvaluate
       \ call VimEvaluate_linewise(<line1>, <line2>, '<bang>' != '!')
 
-augroup vimrc_vim_evaluate
-  autocmd!
-  autocmd FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
-        \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
-augroup end
+autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
+      \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
 "}}}
 
 " slash replacements {{{
@@ -1102,10 +1160,7 @@ command! ReloadDos :e ++ff=dos<CR>
 " Visual Markers {{{
 nnoremap <expr> <leader>m ToggleVisualMarker()
 
-augroup VisualMarkers
-  autocmd!
-  autocmd TextChanged,TextChangedI * :call s:update_visual_markers()
-augroup END
+autocmd vimrc TextChanged,TextChangedI * :call s:update_visual_markers()
 
 let g:myvimrc_visual_marks_groups = [
       \ 'GruvboxBlueSign',  'GruvboxGreenSign', 'GruvboxRedSign',
@@ -1191,11 +1246,8 @@ endfunction
 " based on https://github.com/thoughtstream/Damian-Conway-s-Vim-Setup/blob/master/plugin/undowarnings.vim
 nnoremap <expr> u  VerifyUndo()
 
-augroup UndoWarnings
-  autocmd!
-  autocmd BufReadPost  *  :call s:remember_undo_start(0)
-  autocmd BufWritePost *  :call s:remember_undo_start(1)
-augroup END
+autocmd vimrc BufReadPost  *  :call s:remember_undo_start(0)
+autocmd vimrc BufWritePost *  :call s:remember_undo_start(1)
 
 function! s:remember_undo_start(reset)
   let undo_now = undotree().seq_cur
