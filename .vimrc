@@ -158,6 +158,7 @@ set foldopen+=jump
 set breakindent
 set smartcase
 set nojoinspaces
+set formatoptions+=n1
 
 set backup
 set backupdir=~/.vim/backup//
