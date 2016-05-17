@@ -255,6 +255,8 @@ set softtabstop=0
 "}}}
 
 " Key Mappings: {{{
+nnoremap \b :set nomore<bar>:ls<bar>:set more<CR>:buffer<space>
+xnoremap / <Esc>/\%V
 
 " disable exmode maps
 nmap Q <Nop>
@@ -279,6 +281,9 @@ nmap <leader><leader> :
 vmap <leader><leader> :
 
 nnoremap <leader>fs :update<CR>
+nnoremap <leader>fn :vnew<CR>
+nnoremap <leader>fN :enew<CR>
+
 
 " switch to alternate buffer
 nnoremap <leader><tab> :b#<CR>
@@ -1244,6 +1249,7 @@ endfunction
 
 " Warn when persistent undo moves into previous sessions {{{
 " based on https://github.com/thoughtstream/Damian-Conway-s-Vim-Setup/blob/master/plugin/undowarnings.vim
+
 nnoremap <expr> u  VerifyUndo()
 
 autocmd vimrc BufReadPost  *  :call s:remember_undo_start(0)
