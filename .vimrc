@@ -65,6 +65,7 @@ Plug 'tommcdo/vim-exchange'
 Plug 'matchit.zip'
 Plug 'wellle/targets.vim'
 Plug 'haya14busa/incsearch.vim'
+Plug 'AndrewRadev/splitjoin.vim'
 
 " Tools
 Plug 'tpope/vim-fugitive'
@@ -75,6 +76,7 @@ Plug 'Valloric/YouCompleteMe'
 Plug 'Shougo/neopairs.vim'
 Plug 'cohama/lexima.vim'
 Plug 'justinmk/vim-dirvish'
+Plug 'chrisbra/unicode.vim'
 
 " Unite
 Plug 'Shougo/unite.vim'
@@ -307,6 +309,9 @@ nnoremap <leader>wsl :rightbelow vsp<CR>
 nnoremap <leader>wsk     :leftabove  sp<CR>
 nnoremap <leader>wsj   :rightbelow sp<CR>
 
+nnoremap <tab> <c-w>w
+nnoremap <s-tab> <c-w>W
+
 " Wrapped lines goes down/up to next row, rather than next line in file.
 nnoremap j gj
 nnoremap k gk
@@ -366,13 +371,17 @@ nnoremap vv ^vg_
 " select last changed/yanked
 nnoremap gV `[v`]
 
-" <alt-j> <alt-k> move line
+" ⇅
 nnoremap <M-j> :m+<CR>
 nnoremap <M-k> :m-2<CR>
-inoremap <M-j> <Esc>:m+<CR>
-inoremap <M-k> <Esc>:m-2<CR>
-vnoremap <M-j> :m'>+<<CR>gv
-vnoremap <M-k> :m-2<CR>gv
+xnoremap <M-j> :m'>+<<CR>gv
+xnoremap <M-k> :m-2<CR>gv
+
+" ⇄
+nnoremap <M-h> <<
+nnoremap <M-l> >>
+xnoremap <M-h> <gv
+xnoremap <M-l> >gv
 
 " Move to start/end of text in line
 nnoremap H ^
@@ -443,6 +452,25 @@ endfunction
 
 " Plugins config: {{{
 
+" VimPlug: {{{
+function! s:plug_gx()
+  let line = getline('.')
+  let sha  = matchstr(line, '^  \zs[0-9a-f]\{7}\ze ')
+  let name = empty(sha) ? matchstr(line, '^[-x+] \zs[^:]\+\ze:')
+                      \ : getline(search('^- .*:$', 'bn'))[2:-2]
+  let uri  = get(get(g:plugs, name, {}), 'uri', '')
+  if uri !~ 'github.com'
+    return
+  endif
+  let repo = matchstr(uri, '[^:/]*/'.name)
+  let url  = empty(sha) ? 'https://github.com/'.repo
+                      \ : printf('https://github.com/%s/commit/%s', repo, sha)
+  call netrw#BrowseX(url, 0)
+endfunction
+
+autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
+" }}}
+
 " Vimproc: {{{
 let g:vimproc#download_windows_dll=1
 " }}}
@@ -452,37 +480,42 @@ let g:surround_no_insert_mappings = 1
 " }}}
 
 " TBone: {{{
-" trun from justinmk/config
-xnoremap <silent> R   :<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
-nnoremap <silent> yrr V:<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
-function! s:tmux_run_operator(type, ...)
-  let sel_save = &selection
-  let &selection = "inclusive"
-  let isvisual = a:0
+" trun originally from justinmk/config
 
-  let lines = isvisual ? getline("'<", "'>") : getline("'[", "']")
-  if a:type !=# 'line' && a:type !=# 'V'
-    let startcol  = isvisual ? col("'<") : col("'[")
-    let endcol    = isvisual ? col("'>")-2 : col("']")
-    let lines[0]  = lines[0][startcol-1 : ]
-    let lines[-1] = lines[-1][ : endcol-1]
-  endif
+if s:has_plug('vim-tbone')
+  function! s:tmux_run_operator(type, ...)
+    let sel_save = &selection
+    let &selection = "inclusive"
+    let isvisual = a:0
 
-  call s:tmux_run(join(lines))
+    let lines = isvisual ? getline("'<", "'>") : getline("'[", "']")
+    if a:type !=# 'line' && a:type !=# 'V'
+      let startcol  = isvisual ? col("'<") : col("'[")
+      let endcol    = isvisual ? col("'>")-2 : col("']")
+      let lines[0]  = lines[0][startcol-1 : ]
+      let lines[-1] = lines[-1][ : endcol-1]
+    endif
 
-  let &selection = sel_save
-endf
+    call s:tmux_run(0, 1, join(lines))
 
-function! s:tmux_run(creatnew, run, cmd) abort
-  "Create a new pane if demanded or if we are _in_ the target pane.
-  if a:creatnew || tbone#pane_id(".") == tbone#pane_id("bottom-right")
-    Tmux split-window -d -p 33
-  endif
-  call tbone#send_keys("bottom-right",
-	\"\<c-e>\<c-u>".a:cmd.(a:run ? "\<cr>" : ""))
-endf
+    let &selection = sel_save
+  endf
 
-command! -nargs=? -bang Trun call s:tmux_run(<bang>0, 1, <q-args>)
+  nnoremap <silent> yrr V:<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
+  xnoremap <silent> R   :<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
+  nnoremap <silent> yr :set opfunc=<sid>tmux_run_operator<CR>g@
+
+  function! s:tmux_run(creatnew, run, cmd) abort
+    "Create a new pane if demanded or if we are _in_ the target pane.
+    if a:creatnew || tbone#pane_id(".") == tbone#pane_id("bottom-right")
+      Tmux split-window -d -p 33
+    endif
+    call tbone#send_keys("bottom-right",
+          \"\<c-e>\<c-u>".a:cmd.(a:run ? "\<cr>" : ""))
+  endf
+
+  command! -nargs=? -bang Trun call s:tmux_run(<bang>0, 1, <q-args>)
+endif
 
 " }}}
 
@@ -502,11 +535,11 @@ let g:projectionist_heuristics = {
 " }}}
 
 " Targets: {{{
-  " add curly braces
-  let g:targets_argOpening = '[({[]'
-  let g:targets_argClosing = '[]})]'
-  " args separated by , and ;
-  let g:targets_argSeparator = '[,;]'
+" add curly braces
+let g:targets_argOpening = '[({[]'
+let g:targets_argClosing = '[]})]'
+" args separated by , and ;
+let g:targets_argSeparator = '[,;]'
 " }}}
 
 " Omnisharp: {{{
@@ -528,7 +561,7 @@ if s:has_plug('vim-fsharp')
   let g:fsharpbinding_debug=1
   autocmd vimrc FileType fsharp call s:fsharpbinding_settings()
   function! s:fsharpbinding_settings()
-    setlocal include=^#load\
+    setlocal include=^#load\ 
     setlocal complete+=i
 
     nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
@@ -657,6 +690,7 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
     call fugitive#detect(@%)
   endfunction
+
   autocmd vimrc FileType dirvish :call s:dirvish_settings()
 endif
 " }}}
@@ -827,6 +861,7 @@ if (s:has_plug('lightline.vim'))
          \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
          \ strlen(fname) ? fname : '[no name]'
   endfunction
+
   function! LightLineArglist()
     if s:is_small_win() || argc() <= 1 || argv(argidx()) != expand('%')
       return ''
@@ -989,11 +1024,13 @@ if s:has_plug('gruvbox')
 
     exe 'highlight StatusLine gui=NONE guibg=' . s:bg3[0] . ' guifg=' . s:fg1[0]
     exe 'highlight StatusLineNC gui=NONE guibg=' . s:bg2[0] . ' guifg=' . s:bg4[0]
+
     if a:update
       call lightline#colorscheme()
-  endif
+    endif
   endfunction
   "}}}
+
   autocmd vimrc ColorScheme gruvbox
     \ :call s:setGruvboxLightlineColors(0)
   autocmd vimrc OptionSet background
@@ -1016,6 +1053,13 @@ if has('nvim')
   nmap <BS> :TmuxNavigateLeft<CR>
 endif
 " }}}
+
+" Unicode: {{{
+if s:has_plug('unicode.vim')
+  nnoremap ga :UnicodeName<CR>
+endif
+" }}}
+
 "}}}
 
 " Functions: {{{
@@ -1212,6 +1256,7 @@ function! ToggleVisualMarker()
 
   let c = getchar()
   let rc = nr2char(c)
+
   if rc !~ '[a-zA-Z]'
     if rc == ' '
       for [k,v] in items(b:myvimrc_visual_marks)
@@ -1223,6 +1268,7 @@ function! ToggleVisualMarker()
   endif
 
   let curr_line = line('.')
+
   let toggled_off = 0
   for [k,v] in items(b:myvimrc_visual_marks)
     let [m,l] = v
