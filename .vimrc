@@ -229,180 +229,6 @@ endif
 autocmd vimrc QuickFixCmdPost [^l]* nested cwindow
 autocmd vimrc QuickFixCmdPost    l* nested lwindow
 
-" Statusline: {{{
-function! s:is_basic_file()
-    return &filetype !~? 'dirvish\|help\|unite\|qf'
-endfunction
-
-function! s:is_small_win()
-    return winwidth(0) < 60
-endfunction
-
-function! StatusLineFilename()
-  let fname = expand('%:t:~:.')
-  let maxPathLen = winwidth(0) - 30
-  if strlen(fname) > maxPathLen
-    let fname = pathshorten(fname)
-  endif
-  return &filetype == 'dirvish' ? expand('%:~') :
-       \ &filetype == 'unite' ? unite#get_status_string() :
-       \ &filetype == 'help' ? expand('%:t:r') :
-       \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
-       \ strlen(fname) ? fname : '[no name]'
-endfunction
-
-function! StatusLinePath()
-  if !s:is_basic_file()
-    return ''
-  endif
-  if empty(expand('%'))
-    return ''
-  endif
-  let path = expand('%:h:~:.')
-  let maxPathLen = winwidth(0) - 30
-  if strlen(path) > maxPathLen
-    let path = pathshorten(path)
-  endif
-  return path.'/'
-endfunction
-
-function! StatusLineArglist()
-  if s:is_small_win() || argc() <= 1 || argv(argidx()) != expand('%')
-    return ''
-  else
-    return (argidx() + 1) . ' of ' . argc()
-  endif
-endfunction
-
-function! StatusLineFileFormat()
-  if !s:is_basic_file() || s:is_small_win()
-    return ''
-  endif
-  return &binary ? 'binary' : &fileformat == substitute(&fileformats, ",.*$", "", "") ? '' : &fileformat
-endfunction
-
-function! StatusLineFileEncoding()
-  if !s:is_basic_file() || s:is_small_win()
-    return ''
-  endif
-  return &binary ? '' : &fileencoding == 'utf-8' ? '' : &fileencoding
-endfunction
-
-function! StatusLineModified()
-  if !s:is_basic_file()
-    return ''
-  endif
-  let modified = &modified ? '+' : ''
-  let readonly = &readonly ? '🔒' : ''
-  return modified . readonly
-endfunction
-
-function! StatusLineFugitive()
-  if !s:is_basic_file() || s:is_small_win()
-    return ''
-  endif
-  try
-    if exists('*fugitive#head')
-      let mark = ''
-      let head = fugitive#head()
-      return strlen(head) ? mark . head : ''
-    endif
-  catch
-  endtry
-  return ''
-endfunction
-
-function! StatusLineMode()
-  if winwidth(0) < 60
-    return ''
-  endif
-  return &previewwindow ? "preview" :
-    \ &ft == "dirvish" ? "dir" :
-    \ &ft
-endfunction
-
-function! s:get_colour(higroup, attr)
-    let attr = a:attr
-    if synIDattr(hlID(a:higroup), 'reverse')
-      let attr = attr == 'fg' ? 'bg' : attr == 'bg' ? 'fg' : attr
-    endif
-    return synIDattr(hlID(a:higroup), attr, 'gui')
-endfunction
-
-function! s:lerp_colours(c1, c2, s)
-    let r1 = str2nr(a:c1[1:2], 16)
-    let g1 = str2nr(a:c1[3:4], 16)
-    let b1 = str2nr(a:c1[5:6], 16)
-    let r2 = str2nr(a:c2[1:2], 16)
-    let g2 = str2nr(a:c2[3:4], 16)
-    let b2 = str2nr(a:c2[5:6], 16)
-
-    let r = r1 + a:s * (r2 - r1)
-    let g = g1 + a:s * (g2 - g1)
-    let b = b1 + a:s * (b2 - b1)
-
-    return '#'.printf('%02x', float2nr(r)).printf('%02x', float2nr(g)).printf('%02x', float2nr(b))
-endfunction
-
-function! s:SetStatusLineColours()
-  if exists('g:colors_name') && g:colors_name == 'gruvbox'
-    let bg2 = s:get_colour('GruvboxBg3','fg')
-    let fg1 = s:get_colour('GruvboxFg1','fg')
-    execute 'highlight StatusLine gui=bold guibg='.bg2.' guifg='.fg1
-  endif
-
-  let hl = s:get_colour('Special', 'fg')
-  let bg = s:get_colour('StatusLine', 'bg')
-  let fg = s:get_colour('StatusLine', 'fg')
-  let dfg = s:lerp_colours(bg, fg, 0.8)
-  let dbg = s:lerp_colours(bg, fg, 0.2)
-  execute 'highlight User1 guifg='.fg.' guibg='.dbg
-  execute 'highlight User2 guifg='.hl.' guibg='.bg
-  execute 'highlight User3 guifg='.dfg.' guibg='.bg
-endfunction
-
-function! Status(winnum)
-  let active = a:winnum == winnr()
-  if active
-    let sl =[
-     \ '%1*',
-     \ '%( %{StatusLineMode()} %)',
-     \ '%3*',
-     \ '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)',
-     \ '%2*',
-     \ '%( %{StatusLineModified()} %)',
-     \ '%3*',
-     \ '%( %{StatusLineArglist()} %)',
-     \ '%=',
-     \ '%( %{StatusLineFileEncoding()} %)',
-     \ '%( %{StatusLineFileFormat()} %)',
-     \ '%( %{&spell?&spelllang:''''} %)',
-     \ '%2*',
-     \ '%( %{StatusLineFugitive()} %)',
-     \ '%1*',
-     \ '%( %4l:%-3c %3p%% %)' ]
-    return join(sl, '')
-  else
-    let sl =[
-    \ '%( %{StatusLineMode()} %)',
-    \ '%( %{StatusLinePath()}%{StatusLineFilename()} %)',
-    \ '%( %{StatusLineModified()} %)']
-    return join(sl, '')
-  endif
-endfunction
-
-function! s:RefreshStatus()
-  for nr in range(1, winnr('$'))
-    call setwinvar(nr, '&statusline', '%!Status(' . nr . ')')
-  endfor
-endfunction
-
-autocmd vimrc ColorScheme * call <SID>SetStatusLineColours()
-autocmd vimrc VimEnter,WinEnter,BufWinEnter * call <SID>RefreshStatus()
-
-let g:unite_force_overwrite_statusline = 0
-" }}}
-
 "}}}
 
 " GUI Settings: {{{
@@ -616,6 +442,11 @@ if executable('fantomas')
   autocmd vimrc FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
 endif
 autocmd vimrc FileType fsharp setlocal shiftwidth=2
+autocmd vimrc FileType fsharp let b:end_trun_str = ';;'
+" }}}
+
+" vim: {{{
+autocmd vimrc FileType vim setlocal keywordprg=:help
 " }}}
 
 " help: {{{
@@ -672,7 +503,7 @@ if s:has_plug('vim-tbone')
       let lines[-1] = lines[-1][ : endcol-1]
     endif
 
-    call s:tmux_run(0, 1, join(lines))
+    call s:tmux_run(0, 1, join(lines, "\<cr>"))
 
     let &selection = sel_save
   endf
@@ -687,7 +518,7 @@ if s:has_plug('vim-tbone')
       Tmux split-window -d -p 33
     endif
     call tbone#send_keys("bottom-right",
-          \ a:cmd.(a:run ? "\<cr>" : ""))
+          \ a:cmd.get(b:, 'end_trun_str', '').(a:run ? "\<cr>" : ""))
   endf
 
   command! -nargs=? -bang Trun call s:tmux_run(<bang>0, 1, <q-args>)
@@ -1027,8 +858,6 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
-
-  colorscheme gruvbox
 endif
 "}}}
 
@@ -1316,3 +1145,194 @@ endfunction
 " }}}
 
 "}}}
+
+" Statusline: {{{
+function! s:is_basic_file()
+    return &filetype !~? 'dirvish\|help\|unite\|qf'
+endfunction
+
+function! s:is_small_win()
+    return winwidth(0) < 60
+endfunction
+
+function! StatusLineFilename()
+  let fname = expand('%:t:~:.')
+  let maxPathLen = winwidth(0) - 30
+  if strlen(fname) > maxPathLen
+    let fname = pathshorten(fname)
+  endif
+  return &filetype == 'dirvish' ? expand('%:~') :
+       \ &filetype == 'unite' ? unite#get_status_string() :
+       \ &filetype == 'help' ? expand('%:t:r') :
+       \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
+       \ strlen(fname) ? fname : '[no name]'
+endfunction
+
+function! StatusLinePath()
+  if !s:is_basic_file()
+    return ''
+  endif
+  if empty(expand('%'))
+    return ''
+  endif
+  let path = expand('%:h:~:.')
+  let maxPathLen = winwidth(0) - 30
+  if strlen(path) > maxPathLen
+    let path = pathshorten(path)
+  endif
+  return path.'/'
+endfunction
+
+function! StatusLineArglist()
+  if s:is_small_win() || argc() <= 1 || argv(argidx()) != expand('%')
+    return ''
+  else
+    return (argidx() + 1) . ' of ' . argc()
+  endif
+endfunction
+
+function! StatusLineFileFormat()
+  if !s:is_basic_file() || s:is_small_win()
+    return ''
+  endif
+  return &binary ? 'binary' : &fileformat == substitute(&fileformats, ",.*$", "", "") ? '' : &fileformat
+endfunction
+
+function! StatusLineFileEncoding()
+  if !s:is_basic_file() || s:is_small_win()
+    return ''
+  endif
+  return &binary ? '' : &fileencoding == 'utf-8' ? '' : &fileencoding
+endfunction
+
+function! StatusLineModified()
+  if !s:is_basic_file()
+    return ''
+  endif
+  let modified = &modified ? '+' : ''
+  let readonly = &readonly ? '🔒' : ''
+  return modified . readonly
+endfunction
+
+function! StatusLineFugitive()
+  if !s:is_basic_file() || s:is_small_win()
+    return ''
+  endif
+  try
+    if exists('*fugitive#head')
+      let mark = ''
+      let head = fugitive#head()
+      return strlen(head) ? mark . head : ''
+    endif
+  catch
+  endtry
+  return ''
+endfunction
+
+function! StatusLineMode()
+  if winwidth(0) < 60
+    return ''
+  endif
+  return &previewwindow ? "preview" :
+    \ &ft == "dirvish" ? "dir" :
+    \ &ft
+endfunction
+
+function! s:get_colour(higroup, attr)
+    let attr = a:attr
+    if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse', 'gui') == 1
+      let attr = attr == 'fg' ? 'bg' : attr == 'bg' ? 'fg' : attr
+    endif
+    let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr, 'gui')
+    if colour =~ '^[bf]g$' && a:higroup != 'Normal'
+      return s:get_colour('Normal', attr)
+    elseif colour[0] != '#'
+      throw 'bad colour for '.a:higroup.'/'.a:attr.': '.colour
+    endif
+    return colour
+endfunction
+
+function! s:lerp_colours(c1, c2, s)
+    let r1 = str2nr(a:c1[1:2], 16)
+    let g1 = str2nr(a:c1[3:4], 16)
+    let b1 = str2nr(a:c1[5:6], 16)
+    let r2 = str2nr(a:c2[1:2], 16)
+    let g2 = str2nr(a:c2[3:4], 16)
+    let b2 = str2nr(a:c2[5:6], 16)
+
+    let r = r1 + a:s * (r2 - r1)
+    let g = g1 + a:s * (g2 - g1)
+    let b = b1 + a:s * (b2 - b1)
+
+    return '#'.printf('%02x', float2nr(r)).printf('%02x', float2nr(g)).printf('%02x', float2nr(b))
+endfunction
+
+function! s:SetStatusLineColours()
+  try
+    if exists('g:colors_name') && g:colors_name == 'gruvbox'
+      let bg2 = s:get_colour('GruvboxBg3','fg')
+      let fg1 = s:get_colour('GruvboxFg1','fg')
+      execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg2.' guifg='.fg1
+    endif
+
+    let hl = s:get_colour('Special', 'fg')
+    let bg = s:get_colour('StatusLine', 'bg')
+    let fg = s:get_colour('StatusLine', 'fg')
+    let dfg = s:lerp_colours(bg, fg, 0.8)
+    let dbg = s:lerp_colours(bg, fg, 0.2)
+    execute 'highlight User1 guifg='.fg.' guibg='.dbg
+    execute 'highlight User2 guifg='.hl.' guibg='.bg
+    execute 'highlight User3 guifg='.dfg.' guibg='.bg
+  catch
+    echomsg 'Failed to set custom StatusLine colours, reverting: '.v:exception
+    highlight! link User1 StatusLine
+    highlight! link User2 StatusLine
+    highlight! link User3 StatusLine
+  endtry
+endfunction
+
+function! Status(winnum)
+  let active = a:winnum == winnr()
+  if active
+    let sl =[
+     \ '%1*',
+     \ '%( %{StatusLineMode()} %)',
+     \ '%3*',
+     \ '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)',
+     \ '%2*',
+     \ '%( %{StatusLineModified()} %)',
+     \ '%3*',
+     \ '%( %{StatusLineArglist()} %)',
+     \ '%=',
+     \ '%( %{StatusLineFileEncoding()} %)',
+     \ '%( %{StatusLineFileFormat()} %)',
+     \ '%( %{&spell?&spelllang:''''} %)',
+     \ '%2*',
+     \ '%( %{StatusLineFugitive()} %)',
+     \ '%1*',
+     \ '%( %4l:%-3c %3p%% %)' ]
+    return join(sl, '')
+  else
+    let sl =[
+    \ '%( %{StatusLineMode()} %)',
+    \ '%( %{StatusLinePath()}%{StatusLineFilename()} %)',
+    \ '%( %{StatusLineModified()} %)']
+    return join(sl, '')
+  endif
+endfunction
+
+function! s:RefreshStatus()
+  for nr in range(1, winnr('$'))
+    call setwinvar(nr, '&statusline', '%!Status(' . nr . ')')
+  endfor
+endfunction
+
+if has('gui_running') || (has('termguicolors') && &termguicolors)
+  autocmd vimrc VimEnter,ColorScheme * call <SID>SetStatusLineColours()
+endif
+autocmd vimrc VimEnter,WinEnter,BufWinEnter * call <SID>RefreshStatus()
+
+let g:unite_force_overwrite_statusline = 0
+" }}}
+
+colorscheme gruvbox
