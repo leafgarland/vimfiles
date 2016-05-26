@@ -51,8 +51,8 @@ Plug 'Shougo/vimproc'
 " Colour schemes and pretty things
 Plug 'morhetz/gruvbox/'
 Plug 'NLKNguyen/papercolor-theme'
-Plug 'itchyny/lightline.vim'
 Plug 'justinmk/molokai'
+Plug 'lifepillar/vim-solarized8'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -136,7 +136,7 @@ else
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
-if has('mac') && !has('gui_running')
+if has('mac') && !has('gui_running') && !has('nvim')
   Plug 'jszakmeister/vim-togglecursor'
 endif
 
@@ -228,6 +228,180 @@ endif
 " Opens quick fix window when there are items, close it when empty
 autocmd vimrc QuickFixCmdPost [^l]* nested cwindow
 autocmd vimrc QuickFixCmdPost    l* nested lwindow
+
+" Statusline: {{{
+function! s:is_basic_file()
+    return &filetype !~? 'dirvish\|help\|unite\|qf'
+endfunction
+
+function! s:is_small_win()
+    return winwidth(0) < 60
+endfunction
+
+function! StatusLineFilename()
+  let fname = expand('%:t:~:.')
+  let maxPathLen = winwidth(0) - 30
+  if strlen(fname) > maxPathLen
+    let fname = pathshorten(fname)
+  endif
+  return &filetype == 'dirvish' ? expand('%:~') :
+       \ &filetype == 'unite' ? unite#get_status_string() :
+       \ &filetype == 'help' ? expand('%:t:r') :
+       \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
+       \ strlen(fname) ? fname : '[no name]'
+endfunction
+
+function! StatusLinePath()
+  if !s:is_basic_file()
+    return ''
+  endif
+  if empty(expand('%'))
+    return ''
+  endif
+  let path = expand('%:h:~:.')
+  let maxPathLen = winwidth(0) - 30
+  if strlen(path) > maxPathLen
+    let path = pathshorten(path)
+  endif
+  return path.'/'
+endfunction
+
+function! StatusLineArglist()
+  if s:is_small_win() || argc() <= 1 || argv(argidx()) != expand('%')
+    return ''
+  else
+    return (argidx() + 1) . ' of ' . argc()
+  endif
+endfunction
+
+function! StatusLineFileFormat()
+  if !s:is_basic_file() || s:is_small_win()
+    return ''
+  endif
+  return &binary ? 'binary' : &fileformat == substitute(&fileformats, ",.*$", "", "") ? '' : &fileformat
+endfunction
+
+function! StatusLineFileEncoding()
+  if !s:is_basic_file() || s:is_small_win()
+    return ''
+  endif
+  return &binary ? '' : &fileencoding == 'utf-8' ? '' : &fileencoding
+endfunction
+
+function! StatusLineModified()
+  if !s:is_basic_file()
+    return ''
+  endif
+  let modified = &modified ? '+' : ''
+  let readonly = &readonly ? '🔒' : ''
+  return modified . readonly
+endfunction
+
+function! StatusLineFugitive()
+  if !s:is_basic_file() || s:is_small_win()
+    return ''
+  endif
+  try
+    if exists('*fugitive#head')
+      let mark = ''
+      let head = fugitive#head()
+      return strlen(head) ? mark . head : ''
+    endif
+  catch
+  endtry
+  return ''
+endfunction
+
+function! StatusLineMode()
+  if winwidth(0) < 60
+    return ''
+  endif
+  return &previewwindow ? "preview" :
+    \ &ft == "dirvish" ? "dir" :
+    \ &ft
+endfunction
+
+function! s:get_colour(higroup, attr)
+    let attr = a:attr
+    if synIDattr(hlID(a:higroup), 'reverse')
+      let attr = attr == 'fg' ? 'bg' : attr == 'bg' ? 'fg' : attr
+    endif
+    return synIDattr(hlID(a:higroup), attr, 'gui')
+endfunction
+
+function! s:lerp_colours(c1, c2, s)
+    let r1 = str2nr(a:c1[1:2], 16)
+    let g1 = str2nr(a:c1[3:4], 16)
+    let b1 = str2nr(a:c1[5:6], 16)
+    let r2 = str2nr(a:c2[1:2], 16)
+    let g2 = str2nr(a:c2[3:4], 16)
+    let b2 = str2nr(a:c2[5:6], 16)
+
+    let r = r1 + a:s * (r2 - r1)
+    let g = g1 + a:s * (g2 - g1)
+    let b = b1 + a:s * (b2 - b1)
+
+    return '#'.printf('%02x', float2nr(r)).printf('%02x', float2nr(g)).printf('%02x', float2nr(b))
+endfunction
+
+function! s:SetStatusLineColours()
+  if exists('g:colors_name') && g:colors_name == 'gruvbox'
+    let bg2 = s:get_colour('GruvboxBg3','fg')
+    let fg1 = s:get_colour('GruvboxFg1','fg')
+    execute 'highlight StatusLine gui=bold guibg='.bg2.' guifg='.fg1
+  endif
+
+  let hl = s:get_colour('Special', 'fg')
+  let bg = s:get_colour('StatusLine', 'bg')
+  let fg = s:get_colour('StatusLine', 'fg')
+  let dfg = s:lerp_colours(bg, fg, 0.8)
+  let dbg = s:lerp_colours(bg, fg, 0.2)
+  execute 'highlight User1 guifg='.fg.' guibg='.dbg
+  execute 'highlight User2 guifg='.hl.' guibg='.bg
+  execute 'highlight User3 guifg='.dfg.' guibg='.bg
+endfunction
+
+function! Status(winnum)
+  let active = a:winnum == winnr()
+  if active
+    let sl =[
+     \ '%1*',
+     \ '%( %{StatusLineMode()} %)',
+     \ '%3*',
+     \ '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)',
+     \ '%2*',
+     \ '%( %{StatusLineModified()} %)',
+     \ '%3*',
+     \ '%( %{StatusLineArglist()} %)',
+     \ '%=',
+     \ '%( %{StatusLineFileEncoding()} %)',
+     \ '%( %{StatusLineFileFormat()} %)',
+     \ '%( %{&spell?&spelllang:''''} %)',
+     \ '%2*',
+     \ '%( %{StatusLineFugitive()} %)',
+     \ '%1*',
+     \ '%( %4l:%-3c %3p%% %)' ]
+    return join(sl, '')
+  else
+    let sl =[
+    \ '%( %{StatusLineMode()} %)',
+    \ '%( %{StatusLinePath()}%{StatusLineFilename()} %)',
+    \ '%( %{StatusLineModified()} %)']
+    return join(sl, '')
+  endif
+endfunction
+
+function! s:RefreshStatus()
+  for nr in range(1, winnr('$'))
+    call setwinvar(nr, '&statusline', '%!Status(' . nr . ')')
+  endfor
+endfunction
+
+autocmd vimrc ColorScheme * call <SID>SetStatusLineColours()
+autocmd vimrc VimEnter,WinEnter,BufWinEnter * call <SID>RefreshStatus()
+
+let g:unite_force_overwrite_statusline = 0
+" }}}
 
 "}}}
 
@@ -326,13 +500,15 @@ nnoremap <leader>j i<CR><Esc>
 nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
 
 "clearing highlighted search
-nnoremap <silent> <leader>/ :nohlsearch<CR>
+nnoremap <silent> <leader>/ :nohlsearch<bar>redraw<CR>
 
 " Change Working Directory to that of the current file
 cnoremap cd. cd %:p:h
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
 cnoremap <C-p> <Up>
 cnoremap <C-n> <Down>
+cnoremap <C-e> <End>
+cnoremap <C-a> <Home>
 
 " visual shifting (does not exit Visual mode)
 vnoremap < <gv
@@ -511,7 +687,7 @@ if s:has_plug('vim-tbone')
       Tmux split-window -d -p 33
     endif
     call tbone#send_keys("bottom-right",
-          \"\<c-e>\<c-u>".a:cmd.(a:run ? "\<cr>" : ""))
+          \ a:cmd.(a:run ? "\<cr>" : ""))
   endf
 
   command! -nargs=? -bang Trun call s:tmux_run(<bang>0, 1, <q-args>)
@@ -809,118 +985,6 @@ if s:has_plug('butane.vim')
 endif
 "}}}
 
-" Lightline: {{{
-if (s:has_plug('lightline.vim'))
-  let g:lightline = {
-    \ 'active': {
-    \   'left': [ [ 'mode' ], [ 'filename' ], [ 'modified' ], [ 'arglist' ] ],
-    \   'right': [ [ 'lineinfo' ], [ 'fugitive', 'fileencoding', 'fileformat', 'spell' ] ],
-    \ },
-    \ 'inactive': {
-    \   'left': [ [ 'mode' ], [ 'filename', ], [ 'modified' ] ],
-    \   'right': []
-    \ },
-    \ 'component_function': {
-    \   'fileencoding': 'LightLineFileEncoding',
-    \   'fileformat': 'LightLineFileFormat',
-    \   'filename': 'LightLineFilename',
-    \   'fugitive': 'LightLineFugitive',
-    \   'mode': 'LightLineMode',
-    \   'modified': 'LightLineModified',
-    \   'arglist': 'LightLineArglist',
-    \ },
-    \ 'component': {
-    \   'lineinfo': '%4l:%-3c %3p%%'
-    \ },
-    \ 'separator': { 'left': '', 'right': '' },
-    \ 'subseparator': { 'left': '', 'right': '' },
-    \ 'mode_map': {
-    \   'n': 'N ', 'i': 'I ', 'R': 'R ', 'v': 'V ',
-    \   'V': 'VL', 'c': 'C ', "\<C-v>": 'VB', 's': 'S ',
-    \   'S': 'SL', "\<C-s>": 'SB', 't': 'T ', '?': '  '
-    \ }
-    \ }
-
-  function! s:is_basic_file()
-      return &filetype !~? 'help\|unite\|qf'
-  endfunction
-
-  function! s:is_small_win()
-      return winwidth(0) < 60
-  endfunction
-
-  function! LightLineFilename()
-    let fname = expand('%:~:.')
-    let maxPathLen = winwidth(0) - 30
-    if strlen(fname) > maxPathLen
-      let fname = pathshorten(fname)
-    endif
-    return &filetype == 'dirvish' ? expand('%:~') :
-         \ &filetype == 'unite' ? unite#get_status_string() :
-         \ &filetype == 'help' ? expand('%:t:r') :
-         \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
-         \ strlen(fname) ? fname : '[no name]'
-  endfunction
-
-  function! LightLineArglist()
-    if s:is_small_win() || argc() <= 1 || argv(argidx()) != expand('%')
-      return ''
-    else
-      return (argidx() + 1) . ' of ' . argc()
-    endif
-  endfunction
-
-  function! LightLineFileFormat()
-    if !s:is_basic_file() || s:is_small_win()
-      return ''
-    endif
-    return &binary ? 'binary' : &fileformat == substitute(&fileformats, ",.*$", "", "") ? '' : &fileformat
-  endfunction
-
-  function! LightLineFileEncoding()
-    if !s:is_basic_file() || s:is_small_win()
-      return ''
-    endif
-    return &binary ? '' : &fileencoding == 'utf-8' ? '' : &fileencoding
-  endfunction
-
-  function! LightLineModified()
-    if !s:is_basic_file()
-      return ''
-    endif
-    let modified = &modified ? '+' : ''
-    let readonly = &readonly ? '' : ''
-    return modified . readonly
-  endfunction
-
-  function! LightLineFugitive()
-    if !s:is_basic_file() || s:is_small_win()
-      return ''
-    endif
-    try
-      if exists('*fugitive#head')
-        let mark = ''
-        let head = fugitive#head()
-        return strlen(head) ? mark . head : ''
-      endif
-    catch
-    endtry
-    return ''
-  endfunction
-
-  function! LightLineMode()
-    if winwidth(0) < 60
-      return ''
-    endif
-    return &previewwindow ? "preview" :
-      \ &ft == "dirvish" ? "dir" :
-      \ &ft
-  endfunction
-
-  let g:unite_force_overwrite_statusline = 0
-endif
-" }}}
-
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
   nnoremap <silent> <leader>gs :Gstatus<CR>
@@ -964,79 +1028,7 @@ if s:has_plug('gruvbox')
   endif
   let g:gruvbox_italic=0
 
-  " Lightline gruvbox colorscheme: {{{
-  function! s:getGruvColor(group)
-    let guiColor = synIDattr(hlID(a:group), "fg", "gui") 
-    let termColor = synIDattr(hlID(a:group), "fg", "cterm") 
-    return [ guiColor, termColor ]
-  endfunction
-
-  function! s:setGruvboxLightlineColors(update)
-    if !exists('g:lightline') || g:colors_name != 'gruvbox'
-      return
-    endif
-
-    let s:bg0  = s:getGruvColor('GruvboxBg0')
-    let s:bg1  = s:getGruvColor('GruvboxBg1')
-    let s:bg2  = s:getGruvColor('GruvboxBg2')
-    let s:bg3  = s:getGruvColor('GruvboxBg3')
-    let s:bg4  = s:getGruvColor('GruvboxBg4')
-    " let s:bg4  = s:getGruvColor('GruvboxGray')
-    let s:fg0  = s:getGruvColor('GruvboxFg0')
-    let s:fg1  = s:getGruvColor('GruvboxFg1')
-    let s:fg2  = s:getGruvColor('GruvboxFg2')
-    let s:fg3  = s:getGruvColor('GruvboxFg3')
-    let s:fg4  = s:getGruvColor('GruvboxFg4')
-
-    let s:aqua   = s:getGruvColor('GruvboxAqua')
-    let s:blue   = s:getGruvColor('GruvboxBlue')
-    let s:green = s:getGruvColor('GruvboxGreen')
-    let s:orange = s:getGruvColor('GruvboxOrange')
-    let s:purple = s:getGruvColor('GruvboxPurple')
-    let s:red = s:getGruvColor('GruvboxRed')
-    let s:yellow = s:getGruvColor('GruvboxYellow')
-
-    let s:p = {'normal':{}, 'inactive':{}, 'insert':{}, 'replace':{}, 'visual':{}, 'tabline':{}}
-
-    let s:p.normal.left = [ [ s:fg3, s:bg3], [ s:fg0, s:bg3], [ s:orange, s:bg3 ] ]
-    let s:p.normal.right = [ [ s:fg3, s:bg3], [ s:fg4 , s:bg3] ]
-    let s:p.normal.middle = [ [ s:fg3, s:bg3] ]
-
-    let s:p.inactive.left = [ [ s:bg4, s:bg2], [ s:fg3 , s:bg2], [ s:bg4, s:bg2 ] ]
-    let s:p.inactive.right = [ [ s:bg4, s:bg2], [ s:bg4 , s:bg2] ]
-    let s:p.inactive.middle = [ [ s:bg4, s:bg2] ]
-
-    let s:p.insert = deepcopy(s:p.normal)
-    let s:p.insert.left[0] = [ s:green, s:bg3 ]
-    let s:p.visual = deepcopy(s:p.normal)
-    let s:p.visual.left[0] = [ s:orange, s:bg3 ]
-
-    let s:p.tabline.left = [ [ s:fg2, s:bg2 ] ]
-    let s:p.tabline.tabsel = [ [ s:yellow, s:bg3 ] ]
-    let s:p.tabline.middle = [ [ s:bg4, s:bg1 ] ]
-    let s:p.tabline.right = [ [ s:orange, s:bg2 ] ]
-
-    let s:p.normal.error = [ [ s:bg0, s:orange ] ]
-    let s:p.normal.warning = [ [ s:bg2, s:yellow ] ]
-
-    let g:lightline#colorscheme#mygruvbox#palette = lightline#colorscheme#flatten(s:p)
-    let g:lightline.colorscheme = 'mygruvbox'
-
-    exe 'highlight StatusLine gui=NONE guibg=' . s:bg3[0] . ' guifg=' . s:fg1[0]
-    exe 'highlight StatusLineNC gui=NONE guibg=' . s:bg2[0] . ' guifg=' . s:bg4[0]
-
-    if a:update
-      call lightline#colorscheme()
-    endif
-  endfunction
-  "}}}
-
-  autocmd vimrc ColorScheme gruvbox
-    \ :call s:setGruvboxLightlineColors(0)
-  autocmd vimrc OptionSet background
-    \ :call s:setGruvboxLightlineColors(1)
   colorscheme gruvbox
-  call s:setGruvboxLightlineColors(0)
 endif
 "}}}
 
