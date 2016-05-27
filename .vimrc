@@ -53,6 +53,7 @@ Plug 'morhetz/gruvbox/'
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'justinmk/molokai'
 Plug 'lifepillar/vim-solarized8'
+Plug 'tejr/sahara'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -208,7 +209,7 @@ set foldnestmax=10
 
 set linebreak
 
-set list
+set nolist
 set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
 set splitright
@@ -547,6 +548,8 @@ let g:targets_argOpening = '[({[]'
 let g:targets_argClosing = '[]})]'
 " args separated by , and ;
 let g:targets_argSeparator = '[,;]'
+let g:targets_pairs = '()b {}B []q <>v'
+let g:targets_quotes = '"d '' `'
 " }}}
 
 " Omnisharp: {{{
@@ -1210,7 +1213,7 @@ function! StatusLineModified()
     return ''
   endif
   let modified = &modified ? '+' : ''
-  let readonly = &readonly ? '🔒' : ''
+  let readonly = &readonly ? '' : ''
   return modified . readonly
 endfunction
 
