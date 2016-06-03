@@ -75,7 +75,7 @@ Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'Valloric/YouCompleteMe'
 Plug 'Shougo/neopairs.vim'
-Plug 'cohama/lexima.vim'
+" Plug 'cohama/lexima.vim'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 
@@ -244,7 +244,7 @@ if exists('+guioptions')
   set columns=120
   set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
   if exists('+renderoptions')
-    set renderoptions=type:directx,renmode:4,taamode:1,geom:1
+    set renderoptions=type:directx,taamode:1,renmode:5,geom:1
   endif
 endif
 "}}}
@@ -463,7 +463,7 @@ endfunction
 " VimPlug: {{{
 function! s:plug_gx()
   let line = getline('.')
-  let sha  = matchstr(line, '^  \zs[0-9a-f]\{7}\ze ')
+  let sha  = matchstr(line, '^  [*|\/\\ ]*\zs[0-9a-f]\{7\}\ze ')
   let name = empty(sha) ? matchstr(line, '^[-x+] \zs[^:]\+\ze:')
                       \ : getline(search('^- .*:$', 'bn'))[2:-2]
   let uri  = get(get(g:plugs, name, {}), 'uri', '')
@@ -653,7 +653,7 @@ endif
 
 " Dirvish: {{{
 if s:has_plug('vim-dirvish')
-  nnoremap <leader>fj :Dirvish %<CR>
+  nnoremap <leader>fj :Dirvish %:p:h<CR>
   nnoremap <leader>pe :Dirvish<CR>
 
   function! s:dirvish_grep()
@@ -714,6 +714,7 @@ endif
 " Unite: {{{
 if s:has_plug('unite.vim')
 
+  let g:neomru#do_validate = 0
   let g:unite_source_tag_max_fname_length = 70
   let g:unite_source_history_yank_enable = 1
 
@@ -1165,7 +1166,7 @@ function! StatusLineFilename()
     let fname = pathshorten(fname)
   endif
   return &filetype == 'dirvish' ? expand('%:~') :
-       \ &filetype == 'unite' ? unite#get_status_string() :
+       \ &filetype == 'unite' ? unite#view#_get_status_plane_string() :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ strlen(fname) ? fname : '[no name]'
@@ -1244,7 +1245,7 @@ endfunction
 function! s:get_colour(higroup, attr)
     let attr = a:attr
     if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse', 'gui') == 1
-      let attr = attr == 'fg' ? 'bg' : attr == 'bg' ? 'fg' : attr
+      let attr = attr == 'fg#' ? 'bg#' : attr == 'bg#' ? 'fg#' : attr
     endif
     let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr, 'gui')
     if colour =~ '^[bf]g$' && a:higroup != 'Normal'
@@ -1272,17 +1273,18 @@ endfunction
 
 function! s:SetStatusLineColours()
   try
-    if exists('g:colors_name') && g:colors_name == 'gruvbox'
-      let bg2 = s:get_colour('GruvboxBg3','fg')
-      let fg1 = s:get_colour('GruvboxFg1','fg')
+    if get(g:, 'colors_name', '') == 'gruvbox'
+      let bg2 = s:get_colour('GruvboxBg3','fg#')
+      let fg1 = s:get_colour('GruvboxFg1','fg#')
       execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg2.' guifg='.fg1
     endif
 
-    let hl = s:get_colour('Special', 'fg')
-    let bg = s:get_colour('StatusLine', 'bg')
-    let fg = s:get_colour('StatusLine', 'fg')
+    let hl = s:get_colour('Special', 'fg#')
+    let bg = s:get_colour('StatusLine', 'bg#')
+    let fg = s:get_colour('StatusLine', 'fg#')
+    let nbg = s:get_colour('Normal', 'bg#')
     let dfg = s:lerp_colours(bg, fg, 0.8)
-    let dbg = s:lerp_colours(bg, fg, 0.2)
+    let dbg = s:lerp_colours(nbg, bg, 0.8)
     execute 'highlight User1 guifg='.fg.' guibg='.dbg
     execute 'highlight User2 guifg='.hl.' guibg='.bg
     execute 'highlight User3 guifg='.dfg.' guibg='.bg
