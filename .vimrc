@@ -75,7 +75,6 @@ Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'Valloric/YouCompleteMe'
 Plug 'Shougo/neopairs.vim'
-" Plug 'cohama/lexima.vim'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 
@@ -268,10 +267,6 @@ nmap gQ <Nop>
 
 if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
-  tnoremap <C-h> <C-\><C-n><C-w>h
-  tnoremap <C-j> <C-\><C-n><C-w>j
-  tnoremap <C-k> <C-\><C-n><C-w>k
-  tnoremap <C-l> <C-\><C-n><C-w>l
 endif
 
 " Show syntax groups under cursor
@@ -287,7 +282,6 @@ vmap <leader><leader> :
 nnoremap <leader>fs :update<CR>
 nnoremap <leader>fn :vnew<CR>
 nnoremap <leader>fN :enew<CR>
-
 
 " switch to alternate buffer
 nnoremap <leader><tab> :b#<CR>
