@@ -151,9 +151,9 @@ endfunction
 set mouse=a
 
 set shortmess+=Im
-set viewoptions=folds,options,cursor,unix,slash " better unix / windows compatibility
-set virtualedit=onemore         " allow for cursor beyond last character
-set history=1000
+set viewoptions=folds,options,cursor,unix,slash
+set virtualedit=onemore,block
+set history=10000
 set hidden
 
 set foldopen+=jump
@@ -182,13 +182,10 @@ endif
 "}}}
 
 " Vim UI: {{{
-set noshowmode
+set cmdheight=2
+set showmode
 set noshowcmd
 set lazyredraw
-
-if has('cmdline_info')
-  set rulerformat=%30(%=\:b%n%y%m%r%w\ %l,%c%V\ %P%)
-endif
 
 set sidescroll=1
 set sidescrolloff=5
@@ -197,9 +194,9 @@ set scrolloff=5
 set wildmode=longest:full,full
 set number
 set hlsearch
-set winminheight=0              " windows can be 0 line high
+set winminheight=0
 set ignorecase
-set whichwrap=b,s,h,l,<,>,[,]   " backspace and cursor keys wrap to
+set whichwrap=b,s,h,l,<,>,[,]
 
 set foldenable
 set foldmethod=syntax
@@ -692,6 +689,7 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> gh :keeppatterns g@\v[\/]\.[^\/]+[\/]?$@d<CR>
     nmap <silent> <buffer> gr :call <sid>dirvish_grep()<CR>
     nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
+    nmap <silent> <buffer> gP :cd %<CR>
     call fugitive#detect(@%)
   endfunction
 
@@ -1279,9 +1277,14 @@ function! s:SetStatusLineColours()
     let nbg = s:get_colour('Normal', 'bg#')
     let dfg = s:lerp_colours(bg, fg, 0.8)
     let dbg = s:lerp_colours(nbg, bg, 0.8)
+
     execute 'highlight User1 guifg='.fg.' guibg='.dbg
     execute 'highlight User2 guifg='.hl.' guibg='.bg
     execute 'highlight User3 guifg='.dfg.' guibg='.bg
+
+    highlight! link TabLineFill StatusLineNC
+    highlight! link TabLineSel StatusLine
+    highlight! link TabLine StatusLineNC
   catch
     echomsg 'Failed to set custom StatusLine colours, reverting: '.v:exception
     highlight! link User1 StatusLine
