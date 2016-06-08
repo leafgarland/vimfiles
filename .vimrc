@@ -210,6 +210,7 @@ set nolist
 set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 
 set splitright
+set switchbuf=useopen
 
 set tags=./tags;/,~/.vimtags
 
