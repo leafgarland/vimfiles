@@ -116,6 +116,7 @@ Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
 Plug 'cespare/vim-toml', {'for': 'toml'}
 Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
+Plug 'OrangeT/vim-csharp', {'for': 'cs'}
 
 if executable('tmux')
   Plug 'tpope/vim-tbone'
@@ -236,9 +237,11 @@ endif
 if exists('+guioptions')
   set guioptions=c
   set linespace=0
-  set lines=50
-  set columns=120
-  set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
+  if has('vim_starting')
+    set lines=50
+    set columns=120
+      set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
+  endif
   if exists('+renderoptions')
     set renderoptions=type:directx,taamode:1,renmode:5,geom:1
   endif
@@ -339,6 +342,7 @@ noremap zl 20zl
 noremap zh 20zh
 
 noremap <leader>fed :e $MYVIMRC<CR>
+noremap <leader>fer :source $MYVIMRC<CR>
 
 " copy/paste from system
 nnoremap <C-y> "*y
@@ -936,8 +940,8 @@ if exists('+guifont')
     endif
   endfunction
 
-  nnoremap coz :<C-U>call <sid>ChangeZoom(-2)<CR>
-  nnoremap coZ :<C-U>call <sid>ChangeZoom(2)<CR>
+  nnoremap coz :<C-U>call <sid>ChangeZoom(-1)<CR>
+  nnoremap coZ :<C-U>call <sid>ChangeZoom(1)<CR>
 
   let s:maximised=0
   let s:restoreLines=0
@@ -1176,7 +1180,7 @@ function! StatusLinePath()
   if strlen(path) > maxPathLen
     let path = pathshorten(path)
   endif
-  return path.'/'
+  return path == '.' ? '' : path.'/'
 endfunction
 
 function! StatusLineArglist()
@@ -1205,7 +1209,7 @@ function! StatusLineModified()
   if !s:is_basic_file()
     return ''
   endif
-  let modified = &modified ? '+' : ''
+  let modified = &modified ? '*' : ''
   let readonly = &readonly ? '' : ''
   return modified . readonly
 endfunction
@@ -1265,10 +1269,10 @@ endfunction
 
 function! s:SetStatusLineColours()
   try
-    if get(g:, 'colors_name', '') == 'gruvbox'
-      let bg2 = s:get_colour('GruvboxBg3','fg#')
-      let fg1 = s:get_colour('GruvboxFg1','fg#')
-      execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg2.' guifg='.fg1
+    if get(g:, 'colors_name', '') =~ 'gruvbox\|PaperColor'
+      let fg = s:get_colour('Normal','fg#')
+      let bg = s:get_colour('StatusLine','bg#')
+      execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg.' guifg='.fg
     endif
 
     let hl = s:get_colour('Special', 'fg#')
@@ -1337,4 +1341,8 @@ autocmd vimrc VimEnter,WinEnter,BufWinEnter * call <SID>RefreshStatus()
 let g:unite_force_overwrite_statusline = 0
 " }}}
 
-colorscheme gruvbox
+if has('vim_starting')
+  colorscheme gruvbox
+else
+  call s:SetStatusLineColours()
+endif
