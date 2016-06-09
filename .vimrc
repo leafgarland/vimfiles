@@ -65,10 +65,11 @@ Plug 'tpope/vim-abolish'
 Plug 'tommcdo/vim-exchange'
 Plug 'matchit.zip'
 Plug 'wellle/targets.vim'
-Plug 'haya14busa/incsearch.vim'
 Plug 'AndrewRadev/splitjoin.vim'
+Plug 'justinmk/vim-sneak'
 
 " Tools
+
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
@@ -77,13 +78,14 @@ Plug 'Valloric/YouCompleteMe'
 Plug 'Shougo/neopairs.vim'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
+Plug 'romainl/vim-tinyMRU'
+Plug 'romainl/vim-cool'
 
 " Unite
 Plug 'Shougo/unite.vim'
 Plug 'Shougo/neomru.vim'
 Plug 'Shougo/unite-outline'
 Plug 'tsukkee/unite-tag'
-Plug 'thinca/vim-ref'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -193,6 +195,8 @@ set sidescrolloff=5
 set scrolloff=5
 
 set wildmode=longest:full,full
+set wildignorecase
+set wildoptions=tagfile
 set number
 set hlsearch
 set winminheight=0
@@ -283,6 +287,7 @@ vmap <leader><leader> :
 nnoremap <leader>fs :update<CR>
 nnoremap <leader>fn :vnew<CR>
 nnoremap <leader>fN :enew<CR>
+nnoremap <leader>fo :f **/*
 
 " switch to alternate buffer
 nnoremap <leader><tab> :b#<CR>
@@ -473,6 +478,13 @@ function! s:plug_gx()
 endfunction
 
 autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
+" }}}
+
+" tinyMRU: {{{
+if s:has_plug('vim-tinyMRU')
+  nnoremap <leader>fr :ME <C-z>
+  nnoremap <leader>fR :ME <C-r>=getcwd()<CR><C-z>
+endif
 " }}}
 
 " Vimproc: {{{
@@ -773,9 +785,9 @@ if s:has_plug('unite.vim')
   nnoremap <silent> <leader>bb :<C-u>Unite -no-split buffer<CR>
   nnoremap <silent> <leader>pf :<C-u>Unite -no-split -resume -buffer-name=project -no-restore -input= -start-insert -hide-source-names -unique file directory file_rec/async<CR>
   nnoremap <silent> <leader>ff :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
-  nnoremap <silent> <leader>fR :<C-u>Unite -no-split neomru/file<CR>
+  nnoremap <silent> <leader>uR :<C-u>Unite -no-split neomru/file<CR>
   nnoremap <silent> <leader>pp :<C-u>Unite -no-split neomru/directory<CR>
-  nnoremap <silent> <leader>fr :<C-u>Unite -no-split -profile-name=match_project_files neomru/file<CR>
+  nnoremap <silent> <leader>ur :<C-u>Unite -no-split -profile-name=match_project_files neomru/file<CR>
 
   nnoremap <silent> [unite]u :<C-u>UniteResume<CR>
   nnoremap <silent> ]u :<C-u>UniteNext<CR>
@@ -803,82 +815,82 @@ if s:has_plug('unite.vim')
     let g:unite_source_grep_default_opts = '--vimgrep'
     let g:unite_source_grep_recursive_opt = ''
     let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g', '.']
-  endif
+endif
 
 endif
 "}}}
 
 " Butane: {{{
 if s:has_plug('butane.vim')
-  noremap <leader>bd :Bclose<CR>
-  noremap <leader>bD :Bclose!<CR>
-  noremap <leader>br :Breset<CR>
-  noremap <leader>bR :Breset!<CR>
+    noremap <leader>bd :Bclose<CR>
+    noremap <leader>bD :Bclose!<CR>
+    noremap <leader>br :Breset<CR>
+    noremap <leader>bR :Breset!<CR>
 endif
 "}}}
 
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
-  nnoremap <silent> <leader>gs :Gstatus<CR>
-  nnoremap <silent> <leader>gd :Gdiff<CR>
-  nnoremap <silent> <leader>gc :Gcommit<CR>
-  nnoremap <silent> <leader>gb :Gblame<CR>
-  nnoremap <silent> <leader>gl :Glog<CR>
-  nnoremap <silent> <leader>gp :Git pull<CR>
-  nnoremap <silent> <leader>gP :Git push<CR>
+    nnoremap <silent> <leader>gs :Gstatus<CR>
+    nnoremap <silent> <leader>gd :Gdiff<CR>
+    nnoremap <silent> <leader>gc :Gcommit<CR>
+    nnoremap <silent> <leader>gb :Gblame<CR>
+    nnoremap <silent> <leader>gl :Glog<CR>
+    nnoremap <silent> <leader>gp :Git pull<CR>
+    nnoremap <silent> <leader>gP :Git push<CR>
 endif
 "}}}
 
 "{{{ Slimux
 if s:has_plug('slimux')
-  autocmd vimrc FileType scheme call s:slimux_scheme_settings()
-  autocmd vimrc FileType fsharp call s:slimux_fsharp_settings()
-  function! s:slimux_scheme_settings()
-    nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
-    nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
-    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
-  endfunction
-  function! s:slimux_fsharp_settings()
-    nnoremap <buffer> <silent> <leader>l :SlimuxREPLSendBuffer<CR>
-    nnoremap <buffer> <silent> <leader>i :SlimuxREPLSendLine<CR>
-    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
-  endfunction
-  " Add ;; to the end of the fsharp sent text
-  function! SlimuxPost_fsharp(target_pane)
-    call system('tmux send-keys -t ' . a:target_pane . ' \\\; \\\; C-m')
-  endfunction
-  let g:slimux_scheme_keybindings=1
+    autocmd vimrc FileType scheme call s:slimux_scheme_settings()
+    autocmd vimrc FileType fsharp call s:slimux_fsharp_settings()
+    function! s:slimux_scheme_settings()
+        nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
+        nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
+        vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+    endfunction
+    function! s:slimux_fsharp_settings()
+        nnoremap <buffer> <silent> <leader>l :SlimuxREPLSendBuffer<CR>
+        nnoremap <buffer> <silent> <leader>i :SlimuxREPLSendLine<CR>
+        vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+    endfunction
+    " Add ;; to the end of the fsharp sent text
+    function! SlimuxPost_fsharp(target_pane)
+        call system('tmux send-keys -t ' . a:target_pane . ' \\\; \\\; C-m')
+    endfunction
+    let g:slimux_scheme_keybindings=1
 endif
 "}}}
 
 " gruvbox: {{{
 if s:has_plug('gruvbox')
-  if s:is_gui
-    let g:gruvbox_invert_selection=0
-    let g:gruvbox_contrast_dark='medium'
-    let g:gruvbox_contrast_light='hard'
-  endif
-  let g:gruvbox_italic=0
+    if s:is_gui
+        let g:gruvbox_invert_selection=0
+        let g:gruvbox_contrast_dark='medium'
+        let g:gruvbox_contrast_light='hard'
+    endif
+    let g:gruvbox_italic=0
 endif
 "}}}
 
 " seoul: {{{
 if s:has_plug('seoul256.vim')
-  " darker background (233-239)
-  let g:seoul256_background = 234
+    " darker background (233-239)
+    let g:seoul256_background = 234
 endif
 "}}}
 
 " Tmux Navigator: {{{
-if has('nvim')
-  " <C-H> is seen as <BS> with some terms
-  nmap <BS> :TmuxNavigateLeft<CR>
+if has('nvim') && s:has_plug('vim-tmux-navigator')
+    " <C-H> is seen as <BS> with some terms
+    nmap <BS> :TmuxNavigateLeft<CR>
 endif
 " }}}
 
 " Unicode: {{{
 if s:has_plug('unicode.vim')
-  nnoremap ga :UnicodeName<CR>
+    nnoremap ga :UnicodeName<CR>
 endif
 " }}}
 
@@ -889,7 +901,7 @@ endif
 " Vertical move to next line with char at cursor column
 " https://www.reddit.com/r/vim/comments/4j4duz/a/d33s213
 function! s:VerticalMoveDown()
-  return (search('\%' . virtcol('.') . 'v.*\n^\(.*\%' . virtcol('.') . 'v.\)\@!.*$', 'nW') - line('.')) . 'j'
+    return (search('\%' . virtcol('.') . 'v.*\n^\(.*\%' . virtcol('.') . 'v.\)\@!.*$', 'nW') - line('.'>])) . 'j'
 endfunction
 
 function! s:VerticalMoveUp()
@@ -1270,7 +1282,7 @@ endfunction
 
 function! s:SetStatusLineColours()
   try
-    if get(g:, 'colors_name', '') =~ 'gruvbox\|PaperColor'
+    if get(g:, 'colors_name', '') =~ 'gruvbox'
       let fg = s:get_colour('Normal','fg#')
       let bg = s:get_colour('StatusLine','bg#')
       execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg.' guifg='.fg
