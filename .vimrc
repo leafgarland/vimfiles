@@ -69,7 +69,6 @@ Plug 'AndrewRadev/splitjoin.vim'
 Plug 'justinmk/vim-sneak'
 
 " Tools
-
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
@@ -642,23 +641,6 @@ if s:has_plug('YouCompleteMe')
 endif
 " }}}
 
-" IncSearch: {{{
-if s:has_plug('incsearch.vim')
-  " let g:incsearch#magic = '\v' " very magic
-  let g:incsearch#do_not_save_error_message_history = 1
-  let g:incsearch#auto_nohlsearch = 1
-  map n  <Plug>(incsearch-nohl-n)
-  map N  <Plug>(incsearch-nohl-N)
-  map *  <Plug>(incsearch-nohl-*)
-  map #  <Plug>(incsearch-nohl-#)
-  map g* <Plug>(incsearch-nohl-g*)
-  map g# <Plug>(incsearch-nohl-g#)
-  map /  <Plug>(incsearch-forward)
-  map ?  <Plug>(incsearch-backward)
-  map g/ <Plug>(incsearch-stay)
-endif
-" }}}
-
 " Dirvish: {{{
 if s:has_plug('vim-dirvish')
   nnoremap <leader>fj :Dirvish %:p:h<CR>
@@ -815,82 +797,82 @@ if s:has_plug('unite.vim')
     let g:unite_source_grep_default_opts = '--vimgrep'
     let g:unite_source_grep_recursive_opt = ''
     let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g', '.']
-endif
+  endif
 
 endif
 "}}}
 
 " Butane: {{{
 if s:has_plug('butane.vim')
-    noremap <leader>bd :Bclose<CR>
-    noremap <leader>bD :Bclose!<CR>
-    noremap <leader>br :Breset<CR>
-    noremap <leader>bR :Breset!<CR>
+  noremap <leader>bd :Bclose<CR>
+  noremap <leader>bD :Bclose!<CR>
+  noremap <leader>br :Breset<CR>
+  noremap <leader>bR :Breset!<CR>
 endif
 "}}}
 
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
-    nnoremap <silent> <leader>gs :Gstatus<CR>
-    nnoremap <silent> <leader>gd :Gdiff<CR>
-    nnoremap <silent> <leader>gc :Gcommit<CR>
-    nnoremap <silent> <leader>gb :Gblame<CR>
-    nnoremap <silent> <leader>gl :Glog<CR>
-    nnoremap <silent> <leader>gp :Git pull<CR>
-    nnoremap <silent> <leader>gP :Git push<CR>
+  nnoremap <silent> <leader>gs :Gstatus<CR>
+  nnoremap <silent> <leader>gd :Gdiff<CR>
+  nnoremap <silent> <leader>gc :Gcommit<CR>
+  nnoremap <silent> <leader>gb :Gblame<CR>
+  nnoremap <silent> <leader>gl :Glog<CR>
+  nnoremap <silent> <leader>gp :Git pull<CR>
+  nnoremap <silent> <leader>gP :Git push<CR>
 endif
 "}}}
 
 "{{{ Slimux
 if s:has_plug('slimux')
-    autocmd vimrc FileType scheme call s:slimux_scheme_settings()
-    autocmd vimrc FileType fsharp call s:slimux_fsharp_settings()
-    function! s:slimux_scheme_settings()
-        nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
-        nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
-        vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
-    endfunction
-    function! s:slimux_fsharp_settings()
-        nnoremap <buffer> <silent> <leader>l :SlimuxREPLSendBuffer<CR>
-        nnoremap <buffer> <silent> <leader>i :SlimuxREPLSendLine<CR>
-        vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
-    endfunction
-    " Add ;; to the end of the fsharp sent text
-    function! SlimuxPost_fsharp(target_pane)
-        call system('tmux send-keys -t ' . a:target_pane . ' \\\; \\\; C-m')
-    endfunction
-    let g:slimux_scheme_keybindings=1
+  autocmd vimrc FileType scheme call s:slimux_scheme_settings()
+  autocmd vimrc FileType fsharp call s:slimux_fsharp_settings()
+  function! s:slimux_scheme_settings()
+    nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
+    nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
+    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+  endfunction
+  function! s:slimux_fsharp_settings()
+    nnoremap <buffer> <silent> <leader>l :SlimuxREPLSendBuffer<CR>
+    nnoremap <buffer> <silent> <leader>i :SlimuxREPLSendLine<CR>
+    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+  endfunction
+  " Add ;; to the end of the fsharp sent text
+  function! SlimuxPost_fsharp(target_pane)
+    call system('tmux send-keys -t ' . a:target_pane . ' \\\; \\\; C-m')
+  endfunction
+  let g:slimux_scheme_keybindings=1
 endif
 "}}}
 
 " gruvbox: {{{
 if s:has_plug('gruvbox')
-    if s:is_gui
-        let g:gruvbox_invert_selection=0
-        let g:gruvbox_contrast_dark='medium'
-        let g:gruvbox_contrast_light='hard'
-    endif
-    let g:gruvbox_italic=0
+  if s:is_gui
+    let g:gruvbox_invert_selection=0
+    let g:gruvbox_contrast_dark='medium'
+    let g:gruvbox_contrast_light='hard'
+  endif
+  let g:gruvbox_italic=0
 endif
 "}}}
 
 " seoul: {{{
 if s:has_plug('seoul256.vim')
-    " darker background (233-239)
-    let g:seoul256_background = 234
+  " darker background (233-239)
+  let g:seoul256_background = 234
 endif
 "}}}
 
 " Tmux Navigator: {{{
 if has('nvim') && s:has_plug('vim-tmux-navigator')
-    " <C-H> is seen as <BS> with some terms
-    nmap <BS> :TmuxNavigateLeft<CR>
+  " <C-H> is seen as <BS> with some terms
+  nmap <BS> :TmuxNavigateLeft<CR>
 endif
 " }}}
 
 " Unicode: {{{
 if s:has_plug('unicode.vim')
-    nnoremap ga :UnicodeName<CR>
+  nnoremap ga :UnicodeName<CR>
 endif
 " }}}
 
@@ -901,7 +883,7 @@ endif
 " Vertical move to next line with char at cursor column
 " https://www.reddit.com/r/vim/comments/4j4duz/a/d33s213
 function! s:VerticalMoveDown()
-    return (search('\%' . virtcol('.') . 'v.*\n^\(.*\%' . virtcol('.') . 'v.\)\@!.*$', 'nW') - line('.'>])) . 'j'
+  return (search('\%' . virtcol('.') . 'v.*\n^\(.*\%' . virtcol('.') . 'v.\)\@!.*$', 'nW') - line('.')) . 'j'
 endfunction
 
 function! s:VerticalMoveUp()
@@ -1282,7 +1264,7 @@ endfunction
 
 function! s:SetStatusLineColours()
   try
-    if get(g:, 'colors_name', '') =~ 'gruvbox'
+    if get(g:, 'colors_name', '') =~ 'gruvbox\|PaperColor'
       let fg = s:get_colour('Normal','fg#')
       let bg = s:get_colour('StatusLine','bg#')
       execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg.' guifg='.fg
