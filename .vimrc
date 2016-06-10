@@ -54,6 +54,7 @@ Plug 'NLKNguyen/papercolor-theme'
 Plug 'justinmk/molokai'
 Plug 'lifepillar/vim-solarized8'
 Plug 'tejr/sahara'
+Plug 'romainl/Apprentice'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -196,6 +197,7 @@ set scrolloff=5
 set wildmode=longest:full,full
 set wildignorecase
 set wildoptions=tagfile
+set wildcharm=<C-z>
 set number
 set hlsearch
 set winminheight=0
@@ -203,7 +205,7 @@ set ignorecase
 set whichwrap=b,s,h,l,<,>,[,]
 
 set foldenable
-set foldmethod=syntax
+set foldmethod=indent
 set foldlevelstart=9
 set foldnestmax=10
 
@@ -241,13 +243,15 @@ endif
 if exists('+guioptions')
   set guioptions=c
   set linespace=0
+  if exists('+renderoptions')
+    set renderoptions=type:directx,taamode:1,renmode:5,geom:1
+  endif
+
   if has('vim_starting')
     set lines=50
     set columns=120
-      set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
-  endif
-  if exists('+renderoptions')
-    set renderoptions=type:directx,taamode:1,renmode:5,geom:1
+    set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
+    colorscheme gruvbox
   endif
 endif
 "}}}
@@ -262,7 +266,6 @@ set softtabstop=0
 "}}}
 
 " Key Mappings: {{{
-nnoremap \b :set nomore<bar>:ls<bar>:set more<CR>:buffer<space>
 xnoremap / <Esc>/\%V
 
 " disable exmode maps
@@ -278,100 +281,72 @@ map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans
 \ . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
 \ . synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"<CR>
 
-" the button is sooo big, i must hit it lots
 let mapleader = "\<space>"
-nmap <leader><leader> :
-vmap <leader><leader> :
+nnoremap <leader><leader> :
+xnoremap <leader><leader> :
 
 nnoremap <leader>fs :update<CR>
 nnoremap <leader>fn :vnew<CR>
 nnoremap <leader>fN :enew<CR>
 nnoremap <leader>fo :f **/*
-
-" switch to alternate buffer
-nnoremap <leader><tab> :b#<CR>
-nnoremap <leader>bd :bdelete<CR>
-nnoremap <leader>bD :bdelete!<CR>
-
-" Easier moving in tabs and windows
-nnoremap <C-J> <C-W>j
-nnoremap <C-K> <C-W>k
-nnoremap <C-L> <C-W>l
-nnoremap <C-H> <C-W>h
-" windows cmds under <leader>w
-nmap <leader>w <C-w>
-nnoremap <leader>ww <C-w>p
-" close all preview windows and quickfix|location lists
-nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
-" Create a split on the given side.
-nnoremap <leader>wsh   :leftabove  vsp<CR>
-nnoremap <leader>wsl :rightbelow vsp<CR>
-nnoremap <leader>wsk     :leftabove  sp<CR>
-nnoremap <leader>wsj   :rightbelow sp<CR>
-
-nnoremap <tab> <c-w>w
-nnoremap <s-tab> <c-w>W
-
-" Wrapped lines goes down/up to next row, rather than next line in file.
-nnoremap j gj
-nnoremap k gk
-
-" get out of insert quickly
-inoremap jk <esc>
-
-" split line
-nnoremap <leader>j i<CR><Esc>
-
-" folding options
-nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
-
-"clearing highlighted search
-nnoremap <silent> <leader>/ :nohlsearch<bar>redraw<CR>
-
-" Change Working Directory to that of the current file
-cnoremap cd. cd %:p:h
-cnoremap %% <C-R>=expand('%:h').'/'<cr>
-cnoremap <C-p> <Up>
-cnoremap <C-n> <Down>
-cnoremap <C-e> <End>
-cnoremap <C-a> <Home>
-
-" visual shifting (does not exit Visual mode)
-vnoremap < <gv
-vnoremap > >gv
-
-noremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
-
-" Easier horizontal scrolling
-noremap zl 20zl
-noremap zh 20zh
-
-noremap <leader>fed :e $MYVIMRC<CR>
-noremap <leader>fer :source $MYVIMRC<CR>
-
-" copy/paste from system
-nnoremap <C-y> "*y
-vnoremap <C-y> "*y
-nnoremap <C-p> :set paste<CR>"*]p:set nopaste<CR>
-nnoremap <C-P> :set paste<CR>"*]P:set nopaste<CR>
-vnoremap <C-p> :<C-U>set paste<CR>"*]p:set nopaste<CR>
-vnoremap <C-P> :<C-U>set paste<CR>"*]P:set nopaste<CR>
-
-" move to end of copy/paste
-vnoremap y y`]
-vnoremap p p`]
-nnoremap p p`]
-
-" duplicate visual selection
-vnoremap D y'>p
+nnoremap <leader>fed :e $MYVIMRC<CR>
+nnoremap <leader>fer :source $MYVIMRC<CR>
 
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
+nnoremap <leader>bb :set nomore<bar>:ls<bar>:set more<CR>:buffer<space>
+nnoremap <leader><tab> :b#<CR>
+nnoremap <leader>bd :bdelete<CR>
+nnoremap <leader>bD :bdelete!<CR>
 
-" select current line, no whitespace
+nnoremap <C-J> <C-W>j
+nnoremap <C-K> <C-W>k
+nnoremap <C-L> <C-W>l
+nnoremap <C-H> <C-W>h
+
+nmap <leader>w <C-w>
+nnoremap <leader>ww <C-w>p
+
+nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
+
+nnoremap <leader>wsh :leftabove vsp<CR>
+nnoremap <leader>wsl :rightbelow vsp<CR>
+nnoremap <leader>wsk :leftabove sp<CR>
+nnoremap <leader>wsj :rightbelow sp<CR>
+
+nnoremap <tab> <c-w>w
+nnoremap <s-tab> <c-w>W
+
+nnoremap j gj
+nnoremap k gk
+
+nnoremap <leader>j i<CR><Esc>
+
+nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
+
+nnoremap <silent> <leader>/ :nohlsearch<bar>redraw<CR>
+
+xnoremap < <gv
+xnoremap > >gv
+
+noremap zl 20zl
+noremap zh 20zh
+
+nnoremap <C-y> "*y
+xnoremap <C-y> "*y
+nnoremap <C-p> :set paste<CR>"*]p:set nopaste<CR>
+nnoremap <C-P> :set paste<CR>"*]P:set nopaste<CR>
+xnoremap <C-p> :<C-U>set paste<CR>"*]p:set nopaste<CR>
+xnoremap <C-P> :<C-U>set paste<CR>"*]P:set nopaste<CR>
+
+xnoremap y y`]
+xnoremap p p`]
+nnoremap p p`]
+
+xnoremap D y'>p
+
 nnoremap vv ^vg_
-" select last changed/yanked
 nnoremap gV `[v`]
 
 " ⇅
@@ -386,26 +361,29 @@ nnoremap <M-l> >>
 xnoremap <M-h> <gv
 xnoremap <M-l> >gv
 
-" Move to start/end of text in line
 nnoremap H ^
 nnoremap L $
-vnoremap H ^
-vnoremap L g_
+xnoremap H ^
+xnoremap L g_
 
-" move to last change
 nnoremap gI `.
 
-" search for word under cursor in current file using vimgrep
 nnoremap <leader>8 :lvimgrep <cword> % \| lopen<CR>
-vnoremap <leader>8 y:<C-U>lvimgrep /<C-R>"/ % \| lopen<CR>gv
+xnoremap <leader>8 y:<C-U>lvimgrep /<C-R>"/ % \| lopen<CR>gv
 
-" delete all non-matching/matching lines using last used search
 nnoremap <leader>v :v//d<CR>
 nnoremap <leader>V :g//d<CR>
+xnoremap <leader>v :v//d<CR>
+xnoremap <leader>V :g//d<CR>
 
-" same as above but only within selected lines
-vnoremap <leader>v :v//d<CR>
-vnoremap <leader>V :g//d<CR>
+inoremap jk <esc>
+
+cnoremap cd. cd %:p:h
+cnoremap %% <C-R>=expand('%:h').'/'<cr>
+cnoremap <C-p> <Up>
+cnoremap <C-n> <Down>
+cnoremap <C-e> <End>
+cnoremap <C-a> <Home>
 
 "}}}
 
@@ -559,20 +537,6 @@ let g:targets_pairs = '()b {}B []q <>v'
 let g:targets_quotes = '"d '' `'
 " }}}
 
-" Omnisharp: {{{
-if s:has_plug('omnisharp-vim')
-  " let g:OmniSharp_server_type = 'roslyn'
-  if s:has_plug('neocomplete-vim')
-    autocmd vimrc FileType cs call s:omnisharp_neocomplete_cs()
-    function! s:omnisharp_neocomplete_cs()
-      let g:neocomplete#sources#omni#input_patterns.cs = '.*[^=\);]'
-      let g:neocomplete#sources.cs = ['omni']
-      setlocal omnifunc=OmniSharp#Complete
-    endfunction
-  endif
-endif
-" }}}
-
 " FSharp: {{{
 if s:has_plug('vim-fsharp')
   let g:fsharpbinding_debug=1
@@ -633,6 +597,7 @@ if s:has_plug('YouCompleteMe')
 
   let g:ycm_semantic_triggers =  {
     \   'elm' : ['.'],
+    \   'fsharp' : ['.'],
     \ }
 
   nnoremap <leader>mgd :YcmCompleter GoToDefinition<CR>
@@ -705,6 +670,7 @@ endif
 " Unite: {{{
 if s:has_plug('unite.vim')
 
+  let g:unite_force_overwrite_statusline = 0
   let g:neomru#do_validate = 0
   let g:unite_source_tag_max_fname_length = 70
   let g:unite_source_history_yank_enable = 1
@@ -764,7 +730,7 @@ if s:has_plug('unite.vim')
   nnoremap <silent> [unite]G :<C-u>UniteResume grep<CR>
   nnoremap <silent> [unite]t :<C-u>Unite -no-split -input= tag<CR>
   nnoremap <silent> [unite]y :<C-u>Unite history/yank<CR>
-  nnoremap <silent> <leader>bb :<C-u>Unite -no-split buffer<CR>
+  nnoremap <silent> [unite]b :<C-u>Unite -no-split buffer<CR>
   nnoremap <silent> <leader>pf :<C-u>Unite -no-split -resume -buffer-name=project -no-restore -input= -start-insert -hide-source-names -unique file directory file_rec/async<CR>
   nnoremap <silent> <leader>ff :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
   nnoremap <silent> <leader>uR :<C-u>Unite -no-split neomru/file<CR>
@@ -802,15 +768,6 @@ if s:has_plug('unite.vim')
 endif
 "}}}
 
-" Butane: {{{
-if s:has_plug('butane.vim')
-  noremap <leader>bd :Bclose<CR>
-  noremap <leader>bD :Bclose!<CR>
-  noremap <leader>br :Breset<CR>
-  noremap <leader>bR :Breset!<CR>
-endif
-"}}}
-
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
   nnoremap <silent> <leader>gs :Gstatus<CR>
@@ -830,12 +787,12 @@ if s:has_plug('slimux')
   function! s:slimux_scheme_settings()
     nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
     nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
-    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+    xnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
   endfunction
   function! s:slimux_fsharp_settings()
     nnoremap <buffer> <silent> <leader>l :SlimuxREPLSendBuffer<CR>
     nnoremap <buffer> <silent> <leader>i :SlimuxREPLSendLine<CR>
-    vnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
+    xnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
   endfunction
   " Add ;; to the end of the fsharp sent text
   function! SlimuxPost_fsharp(target_pane)
@@ -853,13 +810,6 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
-endif
-"}}}
-
-" seoul: {{{
-if s:has_plug('seoul256.vim')
-  " darker background (233-239)
-  let g:seoul256_background = 234
 endif
 "}}}
 
@@ -999,7 +949,7 @@ command! -bang -bar -nargs=0 -range VimEvaluate
       \ call VimEvaluate_linewise(<line1>, <line2>, '<bang>' != '!')
 
 autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
-      \ vnoremap <buffer> <leader>xe :VimEvaluate<CR>
+      \ xnoremap <buffer> <leader>xe :VimEvaluate<CR>
 "}}}
 
 " slash replacements {{{
@@ -1151,16 +1101,12 @@ function! s:is_small_win()
 endfunction
 
 function! StatusLineFilename()
-  let fname = expand('%:t:~:.')
-  let maxPathLen = winwidth(0) - 30
-  if strlen(fname) > maxPathLen
-    let fname = pathshorten(fname)
-  endif
+  let fname = expand('%:t')
   return &filetype == 'dirvish' ? expand('%:~') :
        \ &filetype == 'unite' ? unite#view#_get_status_plane_string() :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
-       \ strlen(fname) ? fname : '[no name]'
+       \ empty(fname) ? '[no name]' : fname 
 endfunction
 
 function! StatusLinePath()
@@ -1171,18 +1117,40 @@ function! StatusLinePath()
     return ''
   endif
   let path = expand('%:h:~:.')
+  if path == '.'
+    return ''
+  endif
   let maxPathLen = winwidth(0) - 30
   if strlen(path) > maxPathLen
     let path = pathshorten(path)
   endif
-  return path == '.' ? '' : path.'/'
+  return path.'/'
 endfunction
 
 function! StatusLineArglist()
-  if s:is_small_win() || argc() <= 1 || argv(argidx()) != expand('%')
+  if s:is_small_win() || argc() < 1
     return ''
+  endif
+
+  let bufIdx = -1
+  let bufName = expand('%')
+  let i = 0
+  while i < argc()
+    if bufName == argv(i)
+      let bufIdx = i
+      break
+    endif
+    let i = i + 1
+  endwhile
+
+  if bufIdx == -1
+    " buffer is not in args list
+    return '('. (argidx()+1) . ' of ' . argc() . ')'
+  elseif bufIdx == argidx()
+    " buffer is in args list and is the current index
+    return argidx()+1 . ' of ' . argc()
   else
-    return (argidx() + 1) . ' of ' . argc()
+    return '(' . (argidx()+1) . ') of ' . argc()
   endif
 endfunction
 
@@ -1226,23 +1194,41 @@ endfunction
 
 function! StatusLineMode()
   if winwidth(0) < 60
-    return ''
+    return 'none'
   endif
   return &previewwindow ? "preview" :
     \ &ft == "dirvish" ? "dir" :
-    \ &ft
+    \ empty(&ft) ? 'none' : &ft
+endfunction
+
+function! s:get_rgb_colour(higroup, attr)
+    let attr = a:attr .'#'
+    if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse') == 1
+      let attr = attr == 'fg#' ? 'bg#' :
+            \    attr == 'bg#' ? 'fg#' :
+            \    attr
+    endif
+    let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr)
+    if colour =~ '^[bf]g$' && a:higroup != 'Normal'
+      return s:get_rgb_colour('Normal', attr)
+    elseif colour[0] != '#'
+      throw 'get_rgb_colour: bad colour for '.a:higroup.'/'.a:attr.': ['.colour.']'
+    endif
+    return colour
 endfunction
 
 function! s:get_colour(higroup, attr)
     let attr = a:attr
-    if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse', 'gui') == 1
-      let attr = attr == 'fg#' ? 'bg#' : attr == 'bg#' ? 'fg#' : attr
+    if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse') == 1
+      let attr = attr == 'fg' ? 'bg' :
+            \    attr == 'bg' ? 'fg' :
+            \    attr
     endif
-    let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr, 'gui')
-    if colour =~ '^[bf]g$' && a:higroup != 'Normal'
+    let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr)
+    if colour =~ '[bf]g' && a:higroup != 'Normal'
       return s:get_colour('Normal', attr)
-    elseif colour[0] != '#'
-      throw 'bad colour for '.a:higroup.'/'.a:attr.': '.colour
+    elseif empty(colour)
+      throw 'get_colour: bad colour for '.a:higroup.'/'.a:attr.': ['.colour.']'
     endif
     return colour
 endfunction
@@ -1262,24 +1248,63 @@ function! s:lerp_colours(c1, c2, s)
     return '#'.printf('%02x', float2nr(r)).printf('%02x', float2nr(g)).printf('%02x', float2nr(b))
 endfunction
 
-function! s:SetStatusLineColours()
+function! s:SetStatusLineColoursRGB()
   try
-    if get(g:, 'colors_name', '') =~ 'gruvbox\|PaperColor'
-      let fg = s:get_colour('Normal','fg#')
-      let bg = s:get_colour('StatusLine','bg#')
+    let s:separator = ''
+
+    if get(g:, 'colors_name', '') =~ 'gruvbox'
+      let fg = s:get_rgb_colour('Normal','fg')
+      let bg = s:get_rgb_colour('StatusLine','bg')
       execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg.' guifg='.fg
     endif
 
-    let hl = s:get_colour('Special', 'fg#')
-    let bg = s:get_colour('StatusLine', 'bg#')
-    let fg = s:get_colour('StatusLine', 'fg#')
-    let nbg = s:get_colour('Normal', 'bg#')
+    let wmbg = s:get_rgb_colour('WildMenu', 'bg')
+    let bg = s:get_rgb_colour('StatusLine', 'bg')
+    let fg = s:get_rgb_colour('StatusLine', 'fg')
+    let nbg = s:get_rgb_colour('Normal', 'bg')
     let dfg = s:lerp_colours(bg, fg, 0.8)
     let dbg = s:lerp_colours(nbg, bg, 0.8)
+    let hbg = s:lerp_colours(wmbg, bg, 0.5)
 
     execute 'highlight User1 guifg='.fg.' guibg='.dbg
-    execute 'highlight User2 guifg='.hl.' guibg='.bg
+    execute 'highlight User2 guifg='.fg.' guibg='.hbg
     execute 'highlight User3 guifg='.dfg.' guibg='.bg
+
+    highlight! link TabLineFill StatusLineNC
+    highlight! link TabLineSel StatusLine
+    highlight! link TabLine StatusLineNC
+  catch
+    echomsg 'Failed to set custom StatusLine colours, reverting: '.v:exception
+    highlight! link User1 StatusLine
+    highlight! link User2 StatusLine
+    highlight! link User3 StatusLine
+  endtry
+endfunction
+
+function! s:SetHiColour(group, fg, bg, attrs)
+  let gui = 'gui='.a:attrs.' guifg='.a:fg.' guibg='.a:bg
+  let cterm = a:fg[0] != '#' && a:bg[0] != '#' ?
+        \ 'cterm='.a:attrs.' ctermfg='.a:fg.' ctermbg='.a:bg :
+        \ ''
+  execute 'highlight '.a:group.' '.gui.' '.cterm
+endfunction
+
+function! s:SetStatusLineColours()
+  try
+    let s:separator = '%4*│%0*'
+    let wmbg = s:get_colour('WildMenu', 'bg')
+    let wmfg = s:get_colour('WildMenu', 'fg')
+    let ncbg = s:get_colour('StatusLineNC', 'bg')
+    let ncfg = s:get_colour('StatusLineNC', 'fg')
+    let bg = s:get_colour('StatusLine', 'bg')
+    let fg = s:get_colour('StatusLine', 'fg')
+    let nbg = s:get_colour('Normal', 'bg')
+
+    call s:SetHiColour('StatusLine', fg, bg, 'bold')
+    call s:SetHiColour('User1', fg, bg, 'NONE')
+    call s:SetHiColour('User2', wmfg, wmbg, 'NONE')
+    call s:SetHiColour('User3', fg, bg, 'NONE')
+    call s:SetHiColour('User4', nbg, bg, 'NONE')
 
     highlight! link TabLineFill StatusLineNC
     highlight! link TabLineSel StatusLine
@@ -1295,24 +1320,25 @@ endfunction
 function! Status(winnum)
   let active = a:winnum == winnr()
   if active
-    let sl =[
-     \ '%1*',
-     \ '%( %{StatusLineMode()} %)',
-     \ '%3*',
-     \ '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)',
-     \ '%2*',
-     \ '%( %{StatusLineModified()} %)',
-     \ '%3*',
-     \ '%( %{StatusLineArglist()} %)',
-     \ '%=',
-     \ '%( %{StatusLineFileEncoding()} %)',
-     \ '%( %{StatusLineFileFormat()} %)',
-     \ '%( %{&spell?&spelllang:''''} %)',
-     \ '%2*',
-     \ '%( %{StatusLineFugitive()} %)',
-     \ '%1*',
-     \ '%( %4l:%-3c %3p%% %)' ]
-    return join(sl, '')
+    let sl = '%1*'
+    let sl.= '%( %{StatusLineMode()} %)'
+    let sl.= s:separator
+    let sl.= '%3*'
+    let sl.= '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)'
+    let sl.= '%2*'
+    let sl.= '%( %{StatusLineModified()} %)'
+    let sl.= '%3*'
+    let sl.= '%( %{StatusLineArglist()} %)'
+    let sl.= '%='
+    let sl.= '%( %{StatusLineFileEncoding()} %)'
+    let sl.= '%( %{StatusLineFileFormat()} %)'
+    let sl.= '%( %{&spell?&spelllang:''''} %)'
+    let sl.= '%2*'
+    let sl.= '%( %{StatusLineFugitive()} %)'
+    let sl.= s:separator
+    let sl.= '%1*'
+    let sl.= '%( %4l:%-3c %3p%% %)'
+    return sl
   else
     let sl =[
     \ '%( %{StatusLineMode()} %)',
@@ -1328,16 +1354,15 @@ function! s:RefreshStatus()
   endfor
 endfunction
 
-if has('gui_running') || (has('termguicolors') && &termguicolors)
-  autocmd vimrc VimEnter,ColorScheme * call <SID>SetStatusLineColours()
-endif
-autocmd vimrc VimEnter,WinEnter,BufWinEnter * call <SID>RefreshStatus()
+if !get(g:,'prettylittlestatus_disable', 0)
+  if has('gui_running') || (has('termguicolors') && &termguicolors)
+    autocmd vimrc VimEnter,ColorScheme * call <SID>SetStatusLineColoursRGB()
+  else
+    autocmd vimrc VimEnter,ColorScheme * call <SID>SetStatusLineColours()
+  endif
 
-let g:unite_force_overwrite_statusline = 0
+  autocmd vimrc VimEnter,WinEnter,BufWinEnter * call <SID>RefreshStatus()
+endif
+
 " }}}
 
-if has('vim_starting')
-  colorscheme gruvbox
-else
-  call s:SetStatusLineColours()
-endif
