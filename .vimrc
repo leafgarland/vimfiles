@@ -236,7 +236,7 @@ autocmd vimrc QuickFixCmdPost    l* nested lwindow
 "}}}
 
 " GUI Settings: {{{
-if exists('+termguicolors')
+if exists('+termguicolors') && !has('gui_running') && !has('win32')
   set termguicolors
 endif
 
@@ -1225,10 +1225,12 @@ function! s:get_colour(higroup, attr)
             \    attr
     endif
     let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr)
-    if colour =~ '[bf]g' && a:higroup != 'Normal'
+    if (empty(colour) || colour =~ '[bf]g') && a:higroup != 'Normal'
       return s:get_colour('Normal', attr)
-    elseif empty(colour)
-      throw 'get_colour: bad colour for '.a:higroup.'/'.a:attr.': ['.colour.']'
+    elseif empty(colour) && attr == 'fg'
+      return 15
+    elseif empty(colour) && attr == 'bg'
+      return 0
     endif
     return colour
 endfunction
@@ -1282,7 +1284,9 @@ function! s:SetStatusLineColoursRGB()
 endfunction
 
 function! s:SetHiColour(group, fg, bg, attrs)
-  let gui = 'gui='.a:attrs.' guifg='.a:fg.' guibg='.a:bg
+  let gui = has('gui_running') ?
+        \ 'gui='.a:attrs.' guifg='.a:fg.' guibg='.a:bg :
+        \ ''
   let cterm = a:fg[0] != '#' && a:bg[0] != '#' ?
         \ 'cterm='.a:attrs.' ctermfg='.a:fg.' ctermbg='.a:bg :
         \ ''
@@ -1354,6 +1358,7 @@ function! s:RefreshStatus()
   endfor
 endfunction
 
+let g:prettylittlestatus_disable=0
 if !get(g:,'prettylittlestatus_disable', 0)
   if has('gui_running') || (has('termguicolors') && &termguicolors)
     autocmd vimrc VimEnter,ColorScheme * call <SID>SetStatusLineColoursRGB()
