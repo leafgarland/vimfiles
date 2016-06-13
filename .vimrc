@@ -52,13 +52,11 @@ Plug 'Shougo/vimproc'
 Plug 'morhetz/gruvbox/'
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'justinmk/molokai'
-Plug 'lifepillar/vim-solarized8'
-Plug 'tejr/sahara'
 Plug 'romainl/Apprentice'
+Plug 'romainl/flattened'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
-Plug 'kana/vim-textobj-entire'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-unimpaired'
@@ -251,7 +249,6 @@ if exists('+guioptions')
     set lines=50
     set columns=120
     set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
-    colorscheme gruvbox
   endif
 endif
 "}}}
@@ -266,10 +263,21 @@ set softtabstop=0
 "}}}
 
 " Key Mappings: {{{
+let mapleader = "\<space>"
+
+nnoremap <leader><leader> :
+xnoremap <leader><leader> :
+
 xnoremap / <Esc>/\%V
+nnoremap <leader>sg :g//#<left><left>
+xnoremap . :normal .<CR>
+
+" buffer text object
+onoremap ae :<C-u>normal vae<CR>
+xnoremap ae GoggV
 
 " disable exmode maps
-nmap Q <Nop>
+nnoremap Q @q
 nmap gQ <Nop>
 
 if has('nvim')
@@ -281,15 +289,11 @@ map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans
 \ . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
 \ . synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"<CR>
 
-let mapleader = "\<space>"
-nnoremap <leader><leader> :
-xnoremap <leader><leader> :
-
 nnoremap <leader>fs :update<CR>
 nnoremap <leader>fn :vnew<CR>
 nnoremap <leader>fN :enew<CR>
-nnoremap <leader>fo :f **/*
-nnoremap <leader>fed :e $MYVIMRC<CR>
+nnoremap <leader>fo :edit **/*
+nnoremap <leader>fed :edit $MYVIMRC<CR>
 nnoremap <leader>fer :source $MYVIMRC<CR>
 
 nnoremap <leader>bo :b#<CR>
@@ -380,6 +384,7 @@ inoremap jk <esc>
 
 cnoremap cd. cd %:p:h
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
+cnoremap <C-r><C-l> <C-r>=getline('.')<CR>
 cnoremap <C-p> <Up>
 cnoremap <C-n> <Down>
 cnoremap <C-e> <End>
@@ -810,6 +815,20 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
+
+  function! s:Gruvbox_VimEnter()
+    autocmd vimrc ColorScheme gruvbox :call <SID>Gruvbox_ColorScheme()
+    call s:Gruvbox_ColorScheme()
+  endfunction
+
+  function! s:Gruvbox_ColorScheme()
+    let fg = s:get_colour('Normal','fg')
+    let bg = s:get_colour('StatusLine','bg')
+    call s:SetHiColour('StatusLine', fg, bg, 'bold')
+  endfunction
+
+  autocmd vimrc VimEnter * call <SID>Gruvbox_VimEnter()
+
 endif
 "}}}
 
@@ -830,22 +849,12 @@ endif
 
 " Functions: {{{
 
-" Vertical move to next line with char at cursor column
-" https://www.reddit.com/r/vim/comments/4j4duz/a/d33s213
-function! s:VerticalMoveDown()
-  return (search('\%' . virtcol('.') . 'v.*\n^\(.*\%' . virtcol('.') . 'v.\)\@!.*$', 'nW') - line('.')) . 'j'
-endfunction
-
-function! s:VerticalMoveUp()
-  return (line('.') - search('^\(.*\%' . virtcol('.') . 'v.\)\@!.*$\n.*\zs\%' . virtcol('.') . 'v', 'bnW')) . 'k'
-endfunction
-
-nnoremap <expr> 1j <SID>VerticalMoveDown()
-nnoremap <expr> 1k <SID>VerticalMoveUp()
-xnoremap <expr> 1j <SID>VerticalMoveDown()
-xnoremap <expr> 1k <SID>VerticalMoveUp()
-onoremap <expr> 1j <SID>VerticalMoveDown()
-onoremap <expr> 1k <SID>VerticalMoveUp()
+" yank ring {{{
+if exists('#TextYankPost')
+  autocmd TextYankPost * let g:yankring=get(g:,'yankring',[])
+    \|call add(g:yankring, deepcopy(v:event))|if len(g:yankring)>50|call remove(g:yankring, 0, 1)|endif
+endif
+" }}}
 
 " vp doesn't replace paste buffer {{{
 function! RestoreRegister()
@@ -1091,7 +1100,8 @@ endfunction
 
 "}}}
 
-" Statusline: {{{
+" PrettyLittleStatus: {{{
+
 function! s:is_basic_file()
     return &filetype !~? 'dirvish\|help\|unite\|qf'
 endfunction
@@ -1228,9 +1238,9 @@ function! s:get_colour(higroup, attr)
     if (empty(colour) || colour =~ '[bf]g') && a:higroup != 'Normal'
       return s:get_colour('Normal', attr)
     elseif empty(colour) && attr == 'fg'
-      return 15
+      let colour = 15
     elseif empty(colour) && attr == 'bg'
-      return 0
+      let colour = 0
     endif
     return colour
 endfunction
@@ -1254,13 +1264,8 @@ function! s:SetStatusLineColoursRGB()
   try
     let s:separator = ''
 
-    if get(g:, 'colors_name', '') =~ 'gruvbox'
-      let fg = s:get_rgb_colour('Normal','fg')
-      let bg = s:get_rgb_colour('StatusLine','bg')
-      execute 'highlight StatusLine cterm=bold gui=bold guibg='.bg.' guifg='.fg
-    endif
-
     let wmbg = s:get_rgb_colour('WildMenu', 'bg')
+    let wmfg = s:get_rgb_colour('WildMenu', 'fg')
     let bg = s:get_rgb_colour('StatusLine', 'bg')
     let fg = s:get_rgb_colour('StatusLine', 'fg')
     let nbg = s:get_rgb_colour('Normal', 'bg')
@@ -1269,7 +1274,7 @@ function! s:SetStatusLineColoursRGB()
     let hbg = s:lerp_colours(wmbg, bg, 0.5)
 
     execute 'highlight User1 guifg='.fg.' guibg='.dbg
-    execute 'highlight User2 guifg='.fg.' guibg='.hbg
+    execute 'highlight User2 guifg='.wmfg.' guibg='.hbg
     execute 'highlight User3 guifg='.dfg.' guibg='.bg
 
     highlight! link TabLineFill StatusLineNC
@@ -1284,18 +1289,18 @@ function! s:SetStatusLineColoursRGB()
 endfunction
 
 function! s:SetHiColour(group, fg, bg, attrs)
-  let gui = has('gui_running') ?
+  let gui = has('gui_running') || &termguicolors ?
         \ 'gui='.a:attrs.' guifg='.a:fg.' guibg='.a:bg :
-        \ ''
+        \ 'gui='.a:attrs
   let cterm = a:fg[0] != '#' && a:bg[0] != '#' ?
         \ 'cterm='.a:attrs.' ctermfg='.a:fg.' ctermbg='.a:bg :
-        \ ''
+        \ 'cterm='.a:attrs
   execute 'highlight '.a:group.' '.gui.' '.cterm
 endfunction
 
 function! s:SetStatusLineColours()
   try
-    let s:separator = '%4*│%0*'
+    let s:separator = '│'
     let wmbg = s:get_colour('WildMenu', 'bg')
     let wmfg = s:get_colour('WildMenu', 'fg')
     let ncbg = s:get_colour('StatusLineNC', 'bg')
@@ -1309,6 +1314,7 @@ function! s:SetStatusLineColours()
     call s:SetHiColour('User2', wmfg, wmbg, 'NONE')
     call s:SetHiColour('User3', fg, bg, 'NONE')
     call s:SetHiColour('User4', nbg, bg, 'NONE')
+    call s:SetHiColour('User5', nbg, ncbg, 'NONE')
 
     highlight! link TabLineFill StatusLineNC
     highlight! link TabLineSel StatusLine
@@ -1326,7 +1332,7 @@ function! Status(winnum)
   if active
     let sl = '%1*'
     let sl.= '%( %{StatusLineMode()} %)'
-    let sl.= s:separator
+    let sl.= '%'.(active ? 4 : 5).'*'.s:separator
     let sl.= '%3*'
     let sl.= '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)'
     let sl.= '%2*'
@@ -1339,16 +1345,17 @@ function! Status(winnum)
     let sl.= '%( %{&spell?&spelllang:''''} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
-    let sl.= s:separator
+    let sl.= '%'.(active ? 4 : 5).'*'.s:separator
     let sl.= '%1*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
   else
-    let sl =[
-    \ '%( %{StatusLineMode()} %)',
-    \ '%( %{StatusLinePath()}%{StatusLineFilename()} %)',
-    \ '%( %{StatusLineModified()} %)']
-    return join(sl, '')
+    let sl = '%( %{StatusLineMode()} %)'
+    let sl.= '%'.(active ? 4 : 5).'*'.s:separator
+    let sl.= '%0*'
+    let sl.= '%( %{StatusLinePath()}%{StatusLineFilename()} %)'
+    let sl.= '%( %{StatusLineModified()} %)'
+    return sl
   endif
 endfunction
 
@@ -1359,15 +1366,34 @@ function! s:RefreshStatus()
 endfunction
 
 let g:prettylittlestatus_disable=0
-if !get(g:,'prettylittlestatus_disable', 0)
-  if has('gui_running') || (has('termguicolors') && &termguicolors)
-    autocmd vimrc VimEnter,ColorScheme * call <SID>SetStatusLineColoursRGB()
-  else
-    autocmd vimrc VimEnter,ColorScheme * call <SID>SetStatusLineColours()
+let g:prettylittlestatus_fancy=0
+
+function! PrettyLittleStatus()
+  augroup PrettyLittleStatus
+    autocmd!
+  augroup END
+
+  if get(g:,'prettylittlestatus_disable', 0)
+    return
   endif
 
-  autocmd vimrc VimEnter,WinEnter,BufWinEnter * call <SID>RefreshStatus()
-endif
+  if get(g:, 'prettylittlestatus_fancy', 0) &&
+        \ (has('gui_running') || (has('termguicolors') && &termguicolors))
+    autocmd PrettyLittleStatus ColorScheme * call <SID>SetStatusLineColoursRGB()
+    call s:SetStatusLineColoursRGB()
+  else
+    autocmd PrettyLittleStatus ColorScheme * call <SID>SetStatusLineColours()
+    call s:SetStatusLineColours()
+  endif
 
+  autocmd PrettyLittleStatus WinEnter,BufWinEnter * call <SID>RefreshStatus()
+  call s:RefreshStatus()
+endfunction
+
+autocmd vimrc VimEnter * call PrettyLittleStatus()
 " }}}
+
+if has('vim_starting')
+  colorscheme gruvbox
+endif
 
