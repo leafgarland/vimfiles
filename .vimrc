@@ -6,8 +6,11 @@ augroup vimrc
   autocmd!
 augroup END
 
+" quicker startup
+if exists('+guioptions')
+  set guioptions=M
+endif
 let g:loaded_vimballPlugin = 1
-let g:did_install_default_menus = 1
 
 if !has('nvim') && has('vim_starting')
     set nocompatible
@@ -53,7 +56,9 @@ Plug 'morhetz/gruvbox/'
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
-Plug 'romainl/flattened'
+Plug 'robertmeta/nofrils'
+Plug 'w0ng/vim-hybrid'
+Plug 'guns/xterm-color-table.vim'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -239,7 +244,7 @@ if exists('+termguicolors') && !has('gui_running') && !has('win32')
 endif
 
 if exists('+guioptions')
-  set guioptions=c
+  set guioptions+=c
   set linespace=0
   if exists('+renderoptions')
     set renderoptions=type:directx,taamode:1,renmode:5,geom:1
@@ -288,10 +293,14 @@ endif
 map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<'
 \ . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
 \ . synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"<CR>
+map <silent> <F11> :for id in synstack(line("."), col("."))<bar>
+      \ echo synIDattr(id, "name").' '<bar> execute 'echohl '.synIDattr(synIDtrans(id), "name") <bar> echon synIDattr(synIDtrans(id), "name") <bar> echohl None <bar>
+      \ endfor<CR>
 
 nnoremap <leader>fs :update<CR>
 nnoremap <leader>fn :vnew<CR>
 nnoremap <leader>fN :enew<CR>
+nnoremap <leader>fL :enew<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bufnr('%')<CR><bar>setf log4net<CR>
 nnoremap <leader>fo :edit **/*
 nnoremap <leader>fed :edit $MYVIMRC<CR>
 nnoremap <leader>fer :source $MYVIMRC<CR>
@@ -605,6 +614,21 @@ if s:has_plug('YouCompleteMe')
     \   'fsharp' : ['.'],
     \ }
 
+  let g:ycm_filetype_blacklist = {
+        \ 'tagbar' : 1,
+        \ 'qf' : 1,
+        \ 'notes' : 1,
+        \ 'markdown' : 1,
+        \ 'unite' : 1,
+        \ 'text' : 1,
+        \ 'vimwiki' : 1,
+        \ 'pandoc' : 1,
+        \ 'infolog' : 1,
+        \ 'mail' : 1,
+        \ 'dirvish' : 1,
+        \ 'log4net' : 1
+        \}
+
   nnoremap <leader>mgd :YcmCompleter GoToDefinition<CR>
   nnoremap <leader>mgh :YcmCompleter GoToDeclaration<CR>
   nnoremap <leader>mht :YcmCompleter GetType<CR>
@@ -832,6 +856,13 @@ if s:has_plug('gruvbox')
 endif
 "}}}
 
+" nofrils: {{{
+if s:has_plug('nofrils')
+  let g:nofrils_strbackgrounds = 1
+  autocmd vimrc ColorScheme nofrils-light :highlight! link Folded String
+endif
+" }}}
+
 " Tmux Navigator: {{{
 if has('nvim') && s:has_plug('vim-tmux-navigator')
   " <C-H> is seen as <BS> with some terms
@@ -900,7 +931,7 @@ if exists('+guifont')
   let s:maximised=0
   let s:restoreLines=0
   let s:restoreCols=0
-  function! s:ToggleMaximise()
+  function! s:ToggleMaximise(vertical)
     if s:maximised
       let s:maximised=0
       let &lines=s:restoreLines
@@ -910,11 +941,14 @@ if exists('+guifont')
       let s:restoreLines=&lines
       let s:restoreCols=&columns
       let &lines=999
-      let &columns=999
+      if !a:vertical
+        let &columns=999
+      endif
     endif
   endfunction
 
-  nnoremap com :<C-U>call <sid>ToggleMaximise()<CR>
+  nnoremap com :<C-U>call <sid>ToggleMaximise(0)<CR>
+  nnoremap coM :<C-U>call <sid>ToggleMaximise(1)<CR>
 endif
 " }}}
 
@@ -1211,22 +1245,6 @@ function! StatusLineMode()
     \ empty(&ft) ? 'none' : &ft
 endfunction
 
-function! s:get_rgb_colour(higroup, attr)
-    let attr = a:attr .'#'
-    if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse') == 1
-      let attr = attr == 'fg#' ? 'bg#' :
-            \    attr == 'bg#' ? 'fg#' :
-            \    attr
-    endif
-    let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr)
-    if colour =~ '^[bf]g$' && a:higroup != 'Normal'
-      return s:get_rgb_colour('Normal', attr)
-    elseif colour[0] != '#'
-      throw 'get_rgb_colour: bad colour for '.a:higroup.'/'.a:attr.': ['.colour.']'
-    endif
-    return colour
-endfunction
-
 function! s:get_colour(higroup, attr)
     let attr = a:attr
     if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse') == 1
@@ -1245,49 +1263,6 @@ function! s:get_colour(higroup, attr)
     return colour
 endfunction
 
-function! s:lerp_colours(c1, c2, s)
-    let r1 = str2nr(a:c1[1:2], 16)
-    let g1 = str2nr(a:c1[3:4], 16)
-    let b1 = str2nr(a:c1[5:6], 16)
-    let r2 = str2nr(a:c2[1:2], 16)
-    let g2 = str2nr(a:c2[3:4], 16)
-    let b2 = str2nr(a:c2[5:6], 16)
-
-    let r = r1 + a:s * (r2 - r1)
-    let g = g1 + a:s * (g2 - g1)
-    let b = b1 + a:s * (b2 - b1)
-
-    return '#'.printf('%02x', float2nr(r)).printf('%02x', float2nr(g)).printf('%02x', float2nr(b))
-endfunction
-
-function! s:SetStatusLineColoursRGB()
-  try
-    let s:separator = ''
-
-    let wmbg = s:get_rgb_colour('WildMenu', 'bg')
-    let wmfg = s:get_rgb_colour('WildMenu', 'fg')
-    let bg = s:get_rgb_colour('StatusLine', 'bg')
-    let fg = s:get_rgb_colour('StatusLine', 'fg')
-    let nbg = s:get_rgb_colour('Normal', 'bg')
-    let dfg = s:lerp_colours(bg, fg, 0.8)
-    let dbg = s:lerp_colours(nbg, bg, 0.8)
-    let hbg = s:lerp_colours(wmbg, bg, 0.5)
-
-    execute 'highlight User1 guifg='.fg.' guibg='.dbg
-    execute 'highlight User2 guifg='.wmfg.' guibg='.hbg
-    execute 'highlight User3 guifg='.dfg.' guibg='.bg
-
-    highlight! link TabLineFill StatusLineNC
-    highlight! link TabLineSel StatusLine
-    highlight! link TabLine StatusLineNC
-  catch
-    echomsg 'Failed to set custom StatusLine colours, reverting: '.v:exception
-    highlight! link User1 StatusLine
-    highlight! link User2 StatusLine
-    highlight! link User3 StatusLine
-  endtry
-endfunction
-
 function! s:SetHiColour(group, fg, bg, attrs)
   let gui = has('gui_running') || &termguicolors ?
         \ 'gui='.a:attrs.' guifg='.a:fg.' guibg='.a:bg :
@@ -1299,6 +1274,8 @@ function! s:SetHiColour(group, fg, bg, attrs)
 endfunction
 
 function! s:SetStatusLineColours()
+  redraw
+
   try
     let s:separator = '│'
     let wmbg = s:get_colour('WildMenu', 'bg')
@@ -1312,9 +1289,8 @@ function! s:SetStatusLineColours()
     call s:SetHiColour('StatusLine', fg, bg, 'bold')
     call s:SetHiColour('User1', fg, bg, 'NONE')
     call s:SetHiColour('User2', wmfg, wmbg, 'NONE')
-    call s:SetHiColour('User3', fg, bg, 'NONE')
-    call s:SetHiColour('User4', nbg, bg, 'NONE')
-    call s:SetHiColour('User5', nbg, ncbg, 'NONE')
+    call s:SetHiColour('User3', nbg, bg, 'NONE')
+    call s:SetHiColour('User4', nbg, ncbg, 'NONE')
 
     highlight! link TabLineFill StatusLineNC
     highlight! link TabLineSel StatusLine
@@ -1324,7 +1300,10 @@ function! s:SetStatusLineColours()
     highlight! link User1 StatusLine
     highlight! link User2 StatusLine
     highlight! link User3 StatusLine
+    highlight! link User4 StatusLine
   endtry
+
+  redrawstatus!
 endfunction
 
 function! Status(winnum)
@@ -1332,12 +1311,12 @@ function! Status(winnum)
   if active
     let sl = '%1*'
     let sl.= '%( %{StatusLineMode()} %)'
-    let sl.= '%'.(active ? 4 : 5).'*'.s:separator
-    let sl.= '%3*'
+    let sl.= '%3*'.s:separator
+    let sl.= '%1*'
     let sl.= '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineModified()} %)'
-    let sl.= '%3*'
+    let sl.= '%1*'
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
     let sl.= '%( %{StatusLineFileEncoding()} %)'
@@ -1345,13 +1324,13 @@ function! Status(winnum)
     let sl.= '%( %{&spell?&spelllang:''''} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
-    let sl.= '%'.(active ? 4 : 5).'*'.s:separator
+    let sl.= '%3*'.s:separator
     let sl.= '%1*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
   else
     let sl = '%( %{StatusLineMode()} %)'
-    let sl.= '%'.(active ? 4 : 5).'*'.s:separator
+    let sl.= '%#User4#'.s:separator
     let sl.= '%0*'
     let sl.= '%( %{StatusLinePath()}%{StatusLineFilename()} %)'
     let sl.= '%( %{StatusLineModified()} %)'
@@ -1366,7 +1345,6 @@ function! s:RefreshStatus()
 endfunction
 
 let g:prettylittlestatus_disable=0
-let g:prettylittlestatus_fancy=0
 
 function! PrettyLittleStatus()
   augroup PrettyLittleStatus
@@ -1377,14 +1355,8 @@ function! PrettyLittleStatus()
     return
   endif
 
-  if get(g:, 'prettylittlestatus_fancy', 0) &&
-        \ (has('gui_running') || (has('termguicolors') && &termguicolors))
-    autocmd PrettyLittleStatus ColorScheme * call <SID>SetStatusLineColoursRGB()
-    call s:SetStatusLineColoursRGB()
-  else
-    autocmd PrettyLittleStatus ColorScheme * call <SID>SetStatusLineColours()
-    call s:SetStatusLineColours()
-  endif
+  autocmd PrettyLittleStatus ColorScheme * call <SID>SetStatusLineColours()
+  call s:SetStatusLineColours()
 
   autocmd PrettyLittleStatus WinEnter,BufWinEnter * call <SID>RefreshStatus()
   call s:RefreshStatus()
