@@ -62,6 +62,7 @@ Plug 'guns/xterm-color-table.vim'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
+Plug 'Julian/vim-textobj-variable-segment'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-unimpaired'
@@ -440,6 +441,7 @@ autocmd vimrc FileType fsharp let b:end_trun_str = ';;'
 
 " vim: {{{
 autocmd vimrc FileType vim setlocal keywordprg=:help
+autocmd vimrc FileType vim setlocal omnifunc=syntaxcomplete#Complete
 " }}}
 
 " help: {{{
@@ -1256,9 +1258,11 @@ function! s:get_colour(higroup, attr)
     if (empty(colour) || colour =~ '[bf]g') && a:higroup != 'Normal'
       return s:get_colour('Normal', attr)
     elseif empty(colour) && attr == 'fg'
-      let colour = 15
+      let colour = 'fg'
     elseif empty(colour) && attr == 'bg'
-      let colour = 0
+      let colour = 'bg'
+    elseif colour == -1
+      echom "get_colour: -1 ".a:higroup.' '.a:attr
     endif
     return colour
 endfunction
@@ -1281,7 +1285,6 @@ function! s:SetStatusLineColours()
     let wmbg = s:get_colour('WildMenu', 'bg')
     let wmfg = s:get_colour('WildMenu', 'fg')
     let ncbg = s:get_colour('StatusLineNC', 'bg')
-    let ncfg = s:get_colour('StatusLineNC', 'fg')
     let bg = s:get_colour('StatusLine', 'bg')
     let fg = s:get_colour('StatusLine', 'fg')
     let nbg = s:get_colour('Normal', 'bg')
@@ -1300,7 +1303,7 @@ function! s:SetStatusLineColours()
     highlight! link User1 StatusLine
     highlight! link User2 StatusLine
     highlight! link User3 StatusLine
-    highlight! link User4 StatusLine
+    highlight! link User4 StatusLineNC
   endtry
 
   redrawstatus!
@@ -1321,7 +1324,7 @@ function! Status(winnum)
     let sl.= '%='
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
-    let sl.= '%( %{&spell?&spelllang:''''} %)'
+    let sl.= '%( %{&spell ? &spelllang : ""} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
     let sl.= '%3*'.s:separator
