@@ -1320,7 +1320,6 @@ function! s:SetStatusLineColours()
     let bg = s:get_colour('StatusLine', 'bg')
     let fg = s:get_colour('StatusLine', 'fg')
     let nbg = s:get_colour('Normal', 'bg')
-    let nfg = s:get_colour('Normal', 'fg')
 
     call s:SetHiColour('StatusLine', fg, bg, 'bold')
     call s:SetHiColour('User1', fg, bg, 'NONE')
@@ -1349,20 +1348,17 @@ function! Status(winnum)
     let sl = '%1*'
     let sl.= '%( %{StatusLineMode()} %)'
     let sl.= '%3*'.separator
+    let sl.= '%( %1*%{StatusLinePath()}%0*%{StatusLineFilename()} %)'
+    let sl.= '%( %2*%{StatusLineModified()}%0* %)'
+    let sl.= '%( %1*%{StatusLineArglist()}%0* %)'
     let sl.= '%1*'
-    let sl.= '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)'
-    let sl.= '%2*'
-    let sl.= '%( %{StatusLineModified()} %)'
-    let sl.= '%1*'
-    let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
-    let sl.= '%2*'
-    let sl.= '%( %{StatusLineFugitive()} %)'
-    let sl.= '%1*'
-    let sl.= '%(☰ %4l:%-3c %3p%% %)'
+    let sl.= '%( %2*%{StatusLineFugitive()}%0* %)'
+    let sl.= '%3*'.separator
+    let sl.= '%( %1*%4l:%-3c %3p%% %)'
 
     return sl
   else
