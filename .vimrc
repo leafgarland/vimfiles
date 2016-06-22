@@ -25,18 +25,43 @@ endif
 let s:is_win = has('win32') || has('win64')
 let s:is_gui = has('gui_running')
 if s:is_win
-  set shellslash
-  " set shell=powershell.exe\ -noninteractive\ -executionpolicy\ remotesigned\ -noprofile
-  " set shellcmdflag=-Command
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
   set packpath=$HOME/.vim
+
   " On windows, if gvim.exe is executed from cygwin bash shell, the shell
   " needs to be changed to the shell most plugins expect on windows.
   " This does not change &shell inside cygwin or msys vim.
   if &shell =~# 'bash$'
     set shell=$COMSPEC
   endif
+
+  if has('vim_starting')
+    let g:shell_defaults = { 'shell':&shell, 'shellcmdflag':&shellcmdflag,
+          \ 'shellquote':&shellquote, 'shellxquote':&shellxquote,
+          \ 'shellpipe':&shellpipe, 'shellredir':&shellredir,
+          \ 'shellslash':&shellslash, 'shelltemp':&shelltemp }
+  endif
+  function! s:toggle_powershell()
+    if &shell ==# 'powershell'
+      let s = g:shell_defaults
+      let &shell=s.shell
+      let &shellquote=s.shellquote
+      let &shellpipe=s.shellpipe
+      let &shellredir=s.shellredir
+      let &shellcmdflag=s.shellcmdflag
+      let &shellxquote=s.shellxquote
+      let &shellslash=s.shellslash
+      let &shelltemp=s.shelltemp
+    else
+      set shell=powershell shellquote=\" shellpipe=\| shellredir=>
+      set shellcmdflag=\ -NonInteractive\ -WindowStyle\ Hidden\ -NoProfile\ -ExecutionPolicy\ RemoteSigned\ -Command
+      let &shellxquote=' '
+      set shellslash noshelltemp
+    endif
+  endfunction
+  nnoremap co! :call <SID>toggle_powershell()<CR>
+
 endif
 "}}}
 "}}}
@@ -62,7 +87,6 @@ Plug 'guns/xterm-color-table.vim'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
-Plug 'Julian/vim-textobj-variable-segment'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-unimpaired'
@@ -79,17 +103,9 @@ Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'Valloric/YouCompleteMe'
-Plug 'Shougo/neopairs.vim'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
-Plug 'romainl/vim-tinyMRU'
 Plug 'romainl/vim-cool'
-
-" Unite
-Plug 'Shougo/unite.vim'
-Plug 'Shougo/neomru.vim'
-Plug 'Shougo/unite-outline'
-Plug 'tsukkee/unite-tag'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -223,8 +239,6 @@ set switchbuf=useopen
 
 set tags=./tags;/,~/.vimtags
 
-set background=dark
-
 let g:myvimrc_manage_cursorline=0
 " Show CursorLine in active window only
 if g:myvimrc_manage_cursorline
@@ -309,7 +323,7 @@ nnoremap <leader>fer :source $MYVIMRC<CR>
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
-nnoremap <leader>bb :set nomore<bar>:ls<bar>:set more<CR>:buffer<space>
+nnoremap <leader>bb :set nomore<bar>ls<bar>set more<CR>:buffer<space>
 nnoremap <leader><tab> :b#<CR>
 nnoremap <leader>bd :bdelete<CR>
 nnoremap <leader>bD :bdelete!<CR>
@@ -392,13 +406,19 @@ xnoremap <leader>V :g//d<CR>
 
 inoremap jk <esc>
 
+inoremap (<CR> (<CR>)<Esc>O
+inoremap {<CR> {<CR>}<Esc>O
+inoremap {; {<CR>};<Esc>O
+inoremap {, {<CR>},<Esc>O
+inoremap [<CR> [<CR>]<Esc>O
+inoremap [; [<CR>];<Esc>O
+inoremap [, [<CR>],<Esc>O
+
 cnoremap cd. cd %:p:h
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
 cnoremap <C-r><C-l> <C-r>=getline('.')<CR>
 cnoremap <C-p> <Up>
 cnoremap <C-n> <Down>
-cnoremap <C-e> <End>
-cnoremap <C-a> <Home>
 
 "}}}
 
@@ -471,13 +491,6 @@ function! s:plug_gx()
 endfunction
 
 autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
-" }}}
-
-" tinyMRU: {{{
-if s:has_plug('vim-tinyMRU')
-  nnoremap <leader>fr :ME <C-z>
-  nnoremap <leader>fR :ME <C-r>=getcwd()<CR><C-z>
-endif
 " }}}
 
 " Vimproc: {{{
@@ -841,20 +854,6 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
-
-  function! s:Gruvbox_VimEnter()
-    autocmd vimrc ColorScheme gruvbox :call <SID>Gruvbox_ColorScheme()
-    call s:Gruvbox_ColorScheme()
-  endfunction
-
-  function! s:Gruvbox_ColorScheme()
-    let fg = s:get_colour('Normal','fg')
-    let bg = s:get_colour('StatusLine','bg')
-    call s:SetHiColour('StatusLine', fg, bg, 'bold')
-  endfunction
-
-  autocmd vimrc VimEnter * call <SID>Gruvbox_VimEnter()
-
 endif
 "}}}
 
@@ -881,6 +880,41 @@ endif
 "}}}
 
 " Functions: {{{
+
+" MRU: {{{
+function! s:UniqPath(list)
+  let i = 0
+  let seen = []
+  while i < len(a:list)
+    let key = a:list[i]
+    if index(seen, key) == -1
+      call add(seen, key)
+    endif
+    let i += 1
+  endwhile
+  return seen
+endfunction
+
+function! s:MRUDComplete(ArgLead, CmdLine, CursorPos)
+  let argLead = escape(a:ArgLead, '~')
+  return s:UniqPath(filter(map(copy(v:oldfiles), "fnamemodify(v:val, ':h')"), 'v:val =~ argLead && isdirectory(expand(v:val))'))
+endfunction
+
+function! s:MRUFComplete(ArgLead, CmdLine, CursorPos)
+  let argLead = escape(a:ArgLead, '~')
+  return filter(copy(v:oldfiles), 'v:val =~ argLead && !empty(glob(v:val))')
+endfunction
+
+function! s:MRU(command, arg)
+  execute a:command . " " . a:arg
+endfunction
+
+command! -nargs=1 -complete=customlist,<sid>MRUDComplete MD call <sid>MRU('cd', <f-args>)
+command! -nargs=1 -complete=customlist,<sid>MRUFComplete MF call <sid>MRU('edit', <f-args>)
+nnoremap <leader>pr :MD<space>
+nnoremap <leader>fr :MF <C-z>
+nnoremap <leader>fR :MF <C-r>=getcwd()<CR>/.*<C-z>
+" }}}
 
 " yank ring {{{
 if exists('#TextYankPost')
@@ -1162,7 +1196,7 @@ function! StatusLinePath()
   if empty(expand('%'))
     return ''
   endif
-  let path = expand('%:h:~:.')
+  let path = expand('%:~:.:h')
   if path == '.'
     return ''
   endif
@@ -1170,7 +1204,7 @@ function! StatusLinePath()
   if strlen(path) > maxPathLen
     let path = pathshorten(path)
   endif
-  return path.'/'
+  return path.(&shellslash ? '/' : '\')
 endfunction
 
 function! StatusLineArglist()
@@ -1262,7 +1296,7 @@ function! s:get_colour(higroup, attr)
     elseif empty(colour) && attr == 'bg'
       let colour = 'bg'
     elseif colour == -1
-      echom "get_colour: -1 ".a:higroup.' '.a:attr
+      throw "get_colour: -1 ".a:higroup.' '.a:attr
     endif
     return colour
 endfunction
@@ -1278,8 +1312,6 @@ function! s:SetHiColour(group, fg, bg, attrs)
 endfunction
 
 function! s:SetStatusLineColours()
-  redraw
-
   try
     let s:separator = '│'
     let wmbg = s:get_colour('WildMenu', 'bg')
@@ -1288,6 +1320,7 @@ function! s:SetStatusLineColours()
     let bg = s:get_colour('StatusLine', 'bg')
     let fg = s:get_colour('StatusLine', 'fg')
     let nbg = s:get_colour('Normal', 'bg')
+    let nfg = s:get_colour('Normal', 'fg')
 
     call s:SetHiColour('StatusLine', fg, bg, 'bold')
     call s:SetHiColour('User1', fg, bg, 'NONE')
@@ -1369,6 +1402,6 @@ autocmd vimrc VimEnter * call PrettyLittleStatus()
 " }}}
 
 if has('vim_starting')
-  colorscheme gruvbox
+  colorscheme apprentice
 endif
 
