@@ -698,6 +698,7 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> gr :call <sid>dirvish_grep()<CR>
     nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
     nmap <silent> <buffer> gP :cd %<CR>
+    cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+\/\ze[^\/]\+', '', '')<CR>
     call fugitive#detect(@%)
   endfunction
 
@@ -1313,7 +1314,6 @@ endfunction
 
 function! s:SetStatusLineColours()
   try
-    let s:separator = '│'
     let wmbg = s:get_colour('WildMenu', 'bg')
     let wmfg = s:get_colour('WildMenu', 'fg')
     let ncbg = s:get_colour('StatusLineNC', 'bg')
@@ -1344,10 +1344,11 @@ endfunction
 
 function! Status(winnum)
   let active = a:winnum == winnr()
+  let separator = '│'
   if active
     let sl = '%1*'
     let sl.= '%( %{StatusLineMode()} %)'
-    let sl.= '%3*'.s:separator
+    let sl.= '%3*'.separator
     let sl.= '%1*'
     let sl.= '%( %{StatusLinePath()}%0*%{StatusLineFilename()} %)'
     let sl.= '%2*'
@@ -1360,13 +1361,13 @@ function! Status(winnum)
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
-    let sl.= '%3*'.s:separator
     let sl.= '%1*'
-    let sl.= '%( %4l:%-3c %3p%% %)'
+    let sl.= '%(☰ %4l:%-3c %3p%% %)'
+
     return sl
   else
     let sl = '%( %{StatusLineMode()} %)'
-    let sl.= '%#User4#'.s:separator
+    let sl.= '%#User4#'.separator
     let sl.= '%0*'
     let sl.= '%( %{StatusLinePath()}%{StatusLineFilename()} %)'
     let sl.= '%( %{StatusLineModified()} %)'
