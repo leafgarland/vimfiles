@@ -323,7 +323,7 @@ nnoremap <leader>fer :source $MYVIMRC<CR>
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
-nnoremap <leader>bb :set nomore<bar>ls<bar>set more<CR>:buffer<space>
+nnoremap <leader>bb :set nomore<bar>call EchoBuffers()<bar>set more<CR>:buffer<space>
 nnoremap <leader><tab> :b#<CR>
 nnoremap <leader>bd :bdelete<CR>
 nnoremap <leader>bD :bdelete!<CR>
@@ -881,6 +881,42 @@ endif
 "}}}
 
 " Functions: {{{
+
+" Utils: {{{
+function! CaptureCommand(cmd) abort
+  if exists('*capture')
+    return capture(a:cmd)
+  else
+    let [save_verbose, save_verbosefile] = [&verbose, &verbosefile]
+    set verbose=0 verbosefile=
+    redir => res
+    silent! execute a:cmd
+    redir END
+    let [&verbose, &verbosefile] = [save_verbose, save_verbosefile]
+    return res
+  endif
+endfunction
+
+function! EchoBuffers() abort
+  let buffers = split(CaptureCommand('ls'), "\n")
+  echo "Buffers:\n"
+  for b in buffers
+    let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+\(".\+"\)\s\+line \(\d\+\)')
+    let [bnum, bflags, bname, bline] = ms[1:4]
+    echohl Number | echon bnum " "
+    echohl Special | echon bflags " "
+    if bflags[1] == '%'
+      echohl Type
+    elseif bflags[1] == '#'
+      echohl Function
+    else
+      echohl Statement
+    endif
+    echon bname " "
+    echohl None | echon "\n"
+  endfor
+endfunction
+" }}}
 
 " MRU: {{{
 function! s:UniqPath(list)
