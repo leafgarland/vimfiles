@@ -222,7 +222,6 @@ set number
 set hlsearch
 set winminheight=0
 set ignorecase
-set whichwrap=b,s,h,l,<,>,[,]
 
 set foldenable
 set foldmethod=indent
@@ -237,7 +236,7 @@ set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
 set splitright
 set switchbuf=useopen
 
-set tags=./tags;/,~/.vimtags
+set tags=./tags,~/.vimtags
 
 let g:myvimrc_manage_cursorline=0
 " Show CursorLine in active window only
@@ -861,7 +860,7 @@ endif
 " nofrils: {{{
 if s:has_plug('nofrils')
   let g:nofrils_strbackgrounds = 1
-  autocmd vimrc ColorScheme nofrils-light :highlight! link Folded String
+  autocmd vimrc ColorScheme nofrils-* :highlight! link Folded String
 endif
 " }}}
 
@@ -897,25 +896,109 @@ function! CaptureCommand(cmd) abort
   endif
 endfunction
 
+highlight link BufferNumber Number
+highlight link BufferFlags Special
+highlight link BufferCurrentName Type
+highlight link BufferAlternateName Function
+highlight link BufferName Statement
+
 function! EchoBuffers() abort
   let buffers = split(CaptureCommand('ls'), "\n")
   echo "Buffers:\n"
   for b in buffers
     let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+\(".\+"\)\s\+line \(\d\+\)')
     let [bnum, bflags, bname, bline] = ms[1:4]
-    echohl Number | echon bnum " "
-    echohl Special | echon bflags " "
+    echohl BufferNumber | echon printf('%2d',bnum) " "
+    echohl BufferFlags | echon bflags " "
     if bflags[1] == '%'
-      echohl Type
+      echohl BufferCurrentName
     elseif bflags[1] == '#'
-      echohl Function
+      echohl BufferAlternateName
     else
-      echohl Statement
+      echohl BufferName
     endif
-    echon bname " "
-    echohl None | echon "\n"
+    echon bname "\n"
+  endfor
+  echohl None
+endfunction
+
+function! EchoHighlights(...) abort
+  let groups = split(CaptureCommand('hi'), "\n")
+  let matchGroups = []
+  for group in groups
+    let grpName = ''
+    let grpAttrs = ''
+    let grpLink = ''
+    let ms = matchlist(group, '\(\S\+\)\s\+xxx\s\+\(\(\S\+=\S\+\s*\)\+\)')
+    if !empty(ms)
+      let [grpName, grpAttrs] = ms[1:2]
+    else
+      let ms = matchlist(group, '\(\S\+\)\s\+xxx\s\+links to \(\S\+\)')
+      if !empty(ms)
+        let [grpName, grpLink] = ms[1:2]
+      else
+        let ms = matchlist(group, '^\s\+links to \(\S\+\)')
+        if !empty(ms)
+          let grpLink = ms[1]
+          let matchGroups[-1][2] = grpLink
+          continue
+        else
+          let ms = matchlist(group, '\(\S\+\)\s\+xxx\s\+cleared')
+          if !empty(ms)
+            let grpName = ms[1]
+          endif
+        endif
+      endif
+    endif
+    call add(matchGroups, [grpName, grpAttrs, grpLink])
+  endfor
+
+  if a:0 == 1
+    call filter(matchGroups, 'match(v:val[0], a:1) >= 0')
+  elseif a:0 == 2
+    call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && match(v:val[1], a:2) >= 0')
+  endif
+
+  let maxWidth = 0
+  for group in matchGroups
+    let l = strlen(group[0])
+    if l > maxWidth
+      let maxWidth = l
+    endif
+  endfor
+
+  for group in matchGroups
+    let [grpName, grpAttrs, grpLink] = group
+    let fmt = '%-'.maxWidth.'s'
+    let grpName = printf(fmt, grpName)
+    if !empty(grpAttrs)
+      echon grpName " "
+      execute 'echohl ' . grpName | echon "xxx" | echohl None
+      let s = 0
+      let pattern = '\(\S\+\)=\(\S\+\)'
+      let ms = matchlist(grpAttrs, pattern, s)
+      while !empty(ms)
+        let s+= strlen(ms[0])
+        echohl Identifier | echon " " ms[1] | echohl None
+        echon "=" ms[2]
+        let ms = matchlist(grpAttrs, pattern, s)
+      endwhile
+      if !empty(grpLink)
+        echon " links to " grpLink "\n"
+      else
+        echon "\n"
+      endif
+    elseif !empty(grpLink)
+      echon grpName " "
+      execute 'echohl ' . grpName | echon "xxx" | echohl None
+      echon " links to " grpLink "\n"
+    else
+      echo grpName "xxx cleared\n"
+    endif
   endfor
 endfunction
+
+command! -complete=highlight -nargs=* Highlight :call EchoHighlights(<f-args>)
 " }}}
 
 " MRU: {{{
@@ -1026,51 +1109,21 @@ endif
 " }}}
 
 " Evaluate Vim code regions {{{
-" taken from kana/VimScratch
-function! VimEvaluate_linewise(line1, line2, adjust_cursorp)
-  let bufnr = bufnr('')
-  call VimEvaluate([bufnr, a:line1, 1, 0],
-        \                  [bufnr, a:line2, len(getline(a:line2)), 0],
-        \                  a:adjust_cursorp)
+function! ExecRange(line1, line2)
+  execute substitute(join(getline(a:line1, a:line2), "\n"), '\n\s*\\', ' ', 'g')
+  echom string(a:line2 - a:line1 + 1) . "L executed"
 endfunction
+command! -range ExecRange call ExecRange(<line1>, <line2>)
 
-function! VimEvaluate(range_head, range_tail, adjust_cursorp)
-  " Yank the script.
-  let original_pos = getpos('.')
-  let original_reg_a = @a
-  call setpos('.', a:range_head)
-  normal! v
-  call setpos('.', a:range_tail)
-  silent normal! "ay
-  let script = @a
-  let @a = original_reg_a
-
-  " Evaluate it.
-  execute substitute(script, '\n\s*\\', '', 'g')
-
-  if a:adjust_cursorp
-    " Move to the next line of the script (add new line if necessary).
-    call setpos('.', a:range_tail)
-    if line('.') == line('$')
-      put =''
-    else
-      normal! +
-    endif
-  else
-    call setpos('.', original_pos)
-  endif
-endfunction
-
-command! -bang -bar -nargs=0 -range VimEvaluate
-      \ call VimEvaluate_linewise(<line1>, <line2>, '<bang>' != '!')
-
-autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :VimEvaluate<CR> |
-      \ xnoremap <buffer> <leader>xe :VimEvaluate<CR>
+autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :ExecRange<CR>|
+                         \ xnoremap <buffer> <leader>xe :ExecRange<CR>
 "}}}
 
 " slash replacements {{{
 command! -range SlashForwards :<line1>,<line2>s/\\/\//g
 command! -range SlashBackwards :<line1>,<line2>s/\//\\/g
+nnoremap <silent> <leader>s/ :SlashForwards<CR>
+nnoremap <silent> <leader>s\ :SlashBackwards<CR>
 "}}}
 
 " copy to html {{{
@@ -1378,7 +1431,7 @@ function! s:SetStatusLineColours()
 endfunction
 
 function! Status(winnum)
-  let active = a:winnum == winnr()
+  let active = a:winnum == winnr() || winnr('$') == 1
   let separator = '│'
   if active
     let sl = '%1*'
@@ -1408,8 +1461,9 @@ function! Status(winnum)
 endfunction
 
 function! s:RefreshStatus()
-  for nr in range(1, winnr('$'))
-    call setwinvar(nr, '&statusline', '%!Status(' . nr . ')')
+  let winCount = winnr('$')
+  for nr in range(1, winCount)
+    call setwinvar(nr, '&statusline', '%!Status('. nr .')')
   endfor
 endfunction
 
