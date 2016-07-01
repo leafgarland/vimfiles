@@ -238,8 +238,8 @@ set switchbuf=useopen
 
 set tags=./tags,~/.vimtags
 
-let g:myvimrc_manage_cursorline=0
 " Show CursorLine in active window only
+let g:myvimrc_manage_cursorline=0
 if g:myvimrc_manage_cursorline
   set cursorline
   autocmd vimrc WinEnter * set cursorline
@@ -249,7 +249,6 @@ endif
 " Opens quick fix window when there are items, close it when empty
 autocmd vimrc QuickFixCmdPost [^l]* nested cwindow
 autocmd vimrc QuickFixCmdPost    l* nested lwindow
-
 "}}}
 
 " GUI Settings: {{{
@@ -295,13 +294,42 @@ xnoremap . :normal .<CR>
 onoremap ae :<C-u>normal vae<CR>
 xnoremap ae GoggV
 
+" in next/last word text objects
+onoremap inw :<C-u>normal vinw<CR>
+xnoremap inw wowiw
+onoremap ilw :<C-u>normal vilw<CR>
+xnoremap ilw geogeiw
+onoremap anw :<C-u>normal vanw<CR>
+xnoremap anw wowaw
+onoremap alw :<C-u>normal valw<CR>
+xnoremap alw geogeaw
+onoremap inW :<C-u>normal vinW<CR>
+xnoremap inW WoWiW
+onoremap ilW :<C-u>normal vilW<CR>
+xnoremap ilW gEogEiW
+onoremap anW :<C-u>normal vanW<CR>
+xnoremap anW WoWaW
+onoremap alW :<C-u>normal valW<CR>
+xnoremap alW gEogEaW
+
+onoremap inl :<C-u>normal vinl<CR>
+xnoremap inl jojV
+onoremap ill :<C-u>normal vill<CR>
+xnoremap ill kokV
+
 " disable exmode maps
-nnoremap Q @q
+nnoremap Q :bdelete<CR>
 nmap gQ <Nop>
 
 if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
 endif
+
+" Transpose on words either side of cursor.
+" Transpose words, preserving punctuation
+nnoremap <silent> gst :s,\v(\w+)(\W*%#\W*)(\w+),\3\2\1,<bar>nohl<CR>:normal! ``<CR>
+" Transpose WORDs, preserving whitespace
+nnoremap <silent> gsT :s,\v(\S+)(\s*\S*%#\S*\s*)(\S+),\3\2\1,<bar>nohl<CR>:normal! ``<CR>
 
 " Show syntax groups under cursor
 map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<'
@@ -367,6 +395,8 @@ nnoremap <C-P> :set paste<CR>"*]P:set nopaste<CR>
 xnoremap <C-p> :<C-U>set paste<CR>"*]p:set nopaste<CR>
 xnoremap <C-P> :<C-U>set paste<CR>"*]P:set nopaste<CR>
 
+xnoremap p "0p
+
 xnoremap y y`]
 xnoremap p p`]
 nnoremap p p`]
@@ -374,7 +404,6 @@ nnoremap p p`]
 xnoremap D y'>p
 
 nnoremap vv ^vg_
-nnoremap gV `[v`]
 
 " ⇅
 nnoremap <M-j> :m+<CR>
@@ -430,7 +459,7 @@ autocmd vimrc BufNewFile,BufRead *.log.? setfiletype log4net
 
 " json: {{{
 autocmd vimrc FileType json setlocal equalprg=python\ -m\ json.tool
-autocmd vimrc FileType json setlocal shiftwidth=2
+autocmd vimrc FileType json setlocal shiftwidth=2 | setlocal concealcursor=n
 " }}}
 
 " xml: {{{
@@ -906,7 +935,7 @@ function! EchoBuffers() abort
   let buffers = split(CaptureCommand('ls'), "\n")
   echo "Buffers:\n"
   for b in buffers
-    let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+\(".\+"\)\s\+line \(\d\+\)')
+    let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+"\(.\+\)"\s\+line \(\d\+\)')
     let [bnum, bflags, bname, bline] = ms[1:4]
     echohl BufferNumber | echon printf('%2d',bnum) " "
     echohl BufferFlags | echon bflags " "
@@ -917,7 +946,13 @@ function! EchoBuffers() abort
     else
       echohl BufferName
     endif
-    echon bname "\n"
+    echon bname
+    let bufIdx = s:bufferIndex(bname)
+    if argc() > 1 && bufIdx >= 0
+      echohl BufferArgList | echon " (" bufIdx+1 ")\n"
+    else
+      echon "\n"
+    endif
   endfor
   echohl None
 endfunction
@@ -957,6 +992,14 @@ function! EchoHighlights(...) abort
     call filter(matchGroups, 'match(v:val[0], a:1) >= 0')
   elseif a:0 == 2
     call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && match(v:val[1], a:2) >= 0')
+  elseif a:0 == 3
+    if a:3 == "cleared"
+      call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && empty(v:val[1]) && empty(v:val[2])')
+    elseif a:3 == "linked"
+      call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && !empty(v:val[2])')
+    elseif a:3 == "set"
+      call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && !empty(v:val[1])')
+    endif
   endif
 
   let maxWidth = 0
@@ -1036,27 +1079,6 @@ nnoremap <leader>fr :MF <C-z>
 nnoremap <leader>fR :MF <C-r>=getcwd()<CR>/.*<C-z>
 " }}}
 
-" yank ring {{{
-if exists('#TextYankPost')
-  autocmd TextYankPost * let g:yankring=get(g:,'yankring',[])
-    \|call add(g:yankring, deepcopy(v:event))|if len(g:yankring)>50|call remove(g:yankring, 0, 1)|endif
-endif
-" }}}
-
-" vp doesn't replace paste buffer {{{
-function! RestoreRegister()
-  let @" = s:restore_reg
-  return ''
-endfunction
-
-function! s:Repl()
-  let s:restore_reg = @"
-  return "p@=RestoreRegister()\<cr>"
-endfunction
-
-vmap <silent> <expr> p <sid>Repl()
-" }}}
-
 " Allow the use of * and # on a visual range. (from vimcasts) {{{
 function! s:VSetSearch(cmdtype)
   let temp = @s
@@ -1120,10 +1142,10 @@ autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :ExecRange<CR>|
 "}}}
 
 " slash replacements {{{
-command! -range SlashForwards :<line1>,<line2>s/\\/\//g
-command! -range SlashBackwards :<line1>,<line2>s/\//\\/g
-nnoremap <silent> <leader>s/ :SlashForwards<CR>
-nnoremap <silent> <leader>s\ :SlashBackwards<CR>
+nnoremap <silent> <leader>s/ :s,\\,/,g<CR>
+nnoremap <silent> <leader>s\ :s,/,\\,g<CR>
+xnoremap <silent> <leader>s/ :s,\%V\\,/,g<CR>
+xnoremap <silent> <leader>s\ :s,\%V/,\\,g<CR>
 "}}}
 
 " copy to html {{{
@@ -1297,22 +1319,23 @@ function! StatusLinePath()
   return path.(&shellslash ? '/' : '\')
 endfunction
 
-function! StatusLineArglist()
-  if s:is_small_win() || argc() < 1
-    return ''
-  endif
-
-  let bufIdx = -1
-  let bufName = expand('%')
+function! s:bufferIndex(bufName)
   let i = 0
   while i < argc()
-    if bufName == argv(i)
-      let bufIdx = i
-      break
+    if a:bufName == argv(i)
+      return i
     endif
     let i = i + 1
   endwhile
+  return -1
+endfunction
 
+function! StatusLineArglist()
+  if s:is_small_win() || argc() <= 1
+    return ''
+  endif
+
+  let bufIdx = s:bufferIndex(expand('%'))
   if bufIdx == -1
     " buffer is not in args list
     return '('. (argidx()+1) . ' of ' . argc() . ')'
@@ -1489,6 +1512,5 @@ autocmd vimrc VimEnter * call PrettyLittleStatus()
 " }}}
 
 if has('vim_starting')
-  colorscheme apprentice
+  colorscheme hybrid
 endif
-
