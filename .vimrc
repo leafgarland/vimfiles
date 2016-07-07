@@ -243,8 +243,8 @@ set tags=./tags,~/.vimtags
 let g:myvimrc_manage_cursorline=0
 if g:myvimrc_manage_cursorline
   set cursorline
-  autocmd vimrc WinEnter * set cursorline
-  autocmd vimrc WinLeave * set nocursorline
+  autocmd vimrc WinEnter,InsertLeave * set cursorline
+  autocmd vimrc WinLeave,InsertEnter * set nocursorline
 endif
 
 " Opens quick fix window when there are items, close it when empty
@@ -326,11 +326,10 @@ if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
 endif
 
-" Transpose on words either side of cursor.
-" Transpose words, preserving punctuation
-nnoremap <silent> gst :s,\v(\w+)(\W*%#\W*)(\w+),\3\2\1,<bar>nohl<CR>:normal! ``<CR>
-" Transpose WORDs, preserving whitespace
-nnoremap <silent> gsT :s,\v(\S+)(\s*\S*%#\S*\s*)(\S+),\3\2\1,<bar>nohl<CR>:normal! ``<CR>
+nnoremap <silent> <leader>s/ :s,\\,/,g<CR>
+nnoremap <silent> <leader>s\ :s,/,\\,g<CR>
+xnoremap <silent> <leader>s/ :s,\%V\\,/,g<CR>
+xnoremap <silent> <leader>s\ :s,\%V/,\\,g<CR>
 
 " Show syntax groups under cursor
 map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<'
@@ -1038,13 +1037,6 @@ command! -range ExecRange call ExecRange(<line1>, <line2>)
 
 autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :ExecRange<CR>|
                          \ xnoremap <buffer> <leader>xe :ExecRange<CR>
-"}}}
-
-" slash replacements {{{
-nnoremap <silent> <leader>s/ :s,\\,/,g<CR>
-nnoremap <silent> <leader>s\ :s,/,\\,g<CR>
-xnoremap <silent> <leader>s/ :s,\%V\\,/,g<CR>
-xnoremap <silent> <leader>s\ :s,\%V/,\\,g<CR>
 "}}}
 
 " copy to html {{{
