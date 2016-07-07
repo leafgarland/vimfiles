@@ -683,14 +683,6 @@ if s:has_plug('vim-dirvish')
   nnoremap <leader>fj :Dirvish %:p:h<CR>
   nnoremap <leader>pe :Dirvish<CR>
 
-  function! s:dirvish_grep()
-    let pattern = input('pattern: ')
-    if pattern == ''
-      return
-    endif
-    execute('grep ' . pattern . ' %')
-  endfunction
-
   let s:dirvish_dir_search = '[\\\/]$'
 
   function! s:dirvish_next()
@@ -723,10 +715,12 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> J :call <sid>dirvish_next()<CR>
     nmap <silent> <buffer> K :call <sid>dirvish_previous()<CR>
     nmap <silent> <buffer> gh :keeppatterns g@\v[\/]\.[^\/]+[\/]?$@d<CR>
-    nmap <silent> <buffer> gr :call <sid>dirvish_grep()<CR>
+    nnoremap <buffer> gR :grep  %<left><left>
+    nnoremap <buffer> gr :<cfile><C-b>grep  <left>
     nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
-    nmap <silent> <buffer> gP :cd %<CR>
-    cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+\/\ze[^\/]\+', '', '')<CR>
+    nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
+    nmap <silent> <buffer> gp :cd <cfile><bar>pwd<CR>
+    cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
     call fugitive#detect(@%)
   endfunction
 
@@ -908,7 +902,10 @@ endif
 
 "}}}
 
-" Functions: {{{
+" Commands & Functions: {{{
+
+command! DiffOrig vert new | set buftype=nofile | read ++edit # | 0d_
+      \ | diffthis | wincmd p | diffthis
 
 " Utils: {{{
 function! CaptureCommand(cmd) abort
@@ -933,11 +930,10 @@ highlight link BufferName Statement
 
 function! EchoBuffers() abort
   let buffers = split(CaptureCommand('ls'), "\n")
-  echo "Buffers:\n"
   for b in buffers
     let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+"\(.\+\)"\s\+line \(\d\+\)')
     let [bnum, bflags, bname, bline] = ms[1:4]
-    echohl BufferNumber | echon printf('%2d',bnum) " "
+    echohl BufferNumber | echon printf('%3d',bnum) " "
     echohl BufferFlags | echon bflags " "
     if bflags[1] == '%'
       echohl BufferCurrentName
@@ -1312,7 +1308,7 @@ function! StatusLinePath()
   if path == '.'
     return ''
   endif
-  let maxPathLen = winwidth(0) - 30
+  let maxPathLen = winwidth(0) - 50
   if strlen(path) > maxPathLen
     let path = pathshorten(path)
   endif
