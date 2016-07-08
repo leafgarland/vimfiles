@@ -231,7 +231,7 @@ set foldnestmax=10
 set linebreak
 
 set nolist
-set listchars=tab:>\ ,trail:-,extends:>,precedes:<,nbsp:+
+set listchars=tab:├─,trail:─,extends:❭,precedes:❬,nbsp:+
 
 set splitright
 set switchbuf=useopen
