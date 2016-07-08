@@ -206,6 +206,7 @@ endif
 "}}}
 
 " Vim UI: {{{
+set background=dark
 set cmdheight=2
 set showmode
 set noshowcmd
@@ -250,11 +251,33 @@ endif
 " Opens quick fix window when there are items, close it when empty
 autocmd vimrc QuickFixCmdPost [^l]* nested cwindow
 autocmd vimrc QuickFixCmdPost    l* nested lwindow
+
+if has('nvim')
+  autocmd vimrc BufEnter term://* :normal i<CR>
+endif
 "}}}
 
 " GUI Settings: {{{
 if exists('+termguicolors') && !has('gui_running') && !has('win32')
   set termguicolors
+  if has('nvim')
+    let g:terminal_color_0  = '#282828'
+    let g:terminal_color_1  = '#cc241d'
+    let g:terminal_color_2  = '#98971a'
+    let g:terminal_color_3  = '#d79921'
+    let g:terminal_color_4  = '#458588'
+    let g:terminal_color_5  = '#b16286'
+    let g:terminal_color_6  = '#689d6a'
+    let g:terminal_color_7  = '#a89984'
+    let g:terminal_color_8  = '#928374'
+    let g:terminal_color_9  = '#fb4934'
+    let g:terminal_color_10 = '#b8bb26'
+    let g:terminal_color_11 = '#fabd2f'
+    let g:terminal_color_12 = '#83a598'
+    let g:terminal_color_13 = '#d3869b'
+    let g:terminal_color_14 = '#83c07c'
+    let g:terminal_color_15 = '#ebdbb2'
+  endif
 endif
 
 if exists('+guioptions')
@@ -433,6 +456,7 @@ xnoremap <leader>v :v//d<CR>
 xnoremap <leader>V :g//d<CR>
 
 inoremap jk <esc>
+cnoremap jk <C-c> 
 
 inoremap (<CR> (<CR>)<Esc>O
 inoremap {<CR> {<CR>}<Esc>O
@@ -488,8 +512,7 @@ autocmd vimrc FileType fsharp let b:end_trun_str = ';;'
 " }}}
 
 " vim: {{{
-autocmd vimrc FileType vim setlocal keywordprg=:help
-autocmd vimrc FileType vim setlocal omnifunc=syntaxcomplete#Complete
+autocmd vimrc FileType vim setlocal keywordprg=:help | setlocal omnifunc=syntaxcomplete#Complete | setlocal shiftwidth=2
 " }}}
 
 " help: {{{
@@ -791,8 +814,12 @@ endif
 
 " Tmux Navigator: {{{
 if has('nvim') && s:has_plug('vim-tmux-navigator')
-  " <C-H> is seen as <BS> with some terms
-  nmap <BS> :TmuxNavigateLeft<CR>
+  " <C-H> is seen as <BS> with some terms.
+  " In ITerm map <c-h> to escape sequence [104;5u
+  tnoremap <C-h> <C-\><C-n>:TmuxNavigateLeft<CR>
+  tnoremap <C-j> <C-\><C-n>:TmuxNavigateDown<CR>
+  tnoremap <C-l> <C-\><C-n>:TmuxNavigateRight<CR>
+  tnoremap <C-k> <C-\><C-n>:TmuxNavigateUp<CR>
 endif
 " }}}
 
@@ -853,30 +880,31 @@ function! EchoBuffers() abort
     endif
   endfor
   echohl None
+  echon "\n"
 endfunction
 
 function! EchoHighlights(...) abort
   let groups = split(CaptureCommand('hi'), "\n")
   let matchGroups = []
-  for group in groups
+  for grp in groups
     let grpName = ''
     let grpAttrs = ''
     let grpLink = ''
-    let ms = matchlist(group, '\(\S\+\)\s\+xxx\s\+\(\(\S\+=\S\+\s*\)\+\)')
+    let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+\(\(\S\+=\S\+\s*\)\+\)')
     if !empty(ms)
       let [grpName, grpAttrs] = ms[1:2]
     else
-      let ms = matchlist(group, '\(\S\+\)\s\+xxx\s\+links to \(\S\+\)')
+      let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+links to \(\S\+\)')
       if !empty(ms)
         let [grpName, grpLink] = ms[1:2]
       else
-        let ms = matchlist(group, '^\s\+links to \(\S\+\)')
+        let ms = matchlist(grp, '^\s\+links to \(\S\+\)')
         if !empty(ms)
           let grpLink = ms[1]
           let matchGroups[-1][2] = grpLink
           continue
         else
-          let ms = matchlist(group, '\(\S\+\)\s\+xxx\s\+cleared')
+          let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+cleared')
           if !empty(ms)
             let grpName = ms[1]
           endif
@@ -973,7 +1001,7 @@ endfunction
 command! -nargs=1 -complete=customlist,<sid>MRUDComplete MD call <sid>MRU('cd', <f-args>)
 command! -nargs=1 -complete=customlist,<sid>MRUFComplete MF call <sid>MRU('edit', <f-args>)
 nnoremap <leader>pr :MD<space>
-nnoremap <leader>fr :MF <C-z>
+nnoremap <leader>fr :MF<space>
 nnoremap <leader>fR :MF <C-r>=getcwd()<CR>/.*<C-z>
 " }}}
 
