@@ -84,6 +84,7 @@ Plug 'romainl/Apprentice'
 Plug 'robertmeta/nofrils'
 Plug 'w0ng/vim-hybrid'
 Plug 'guns/xterm-color-table.vim'
+Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -734,107 +735,6 @@ if s:has_plug('syntastic')
 endif
 " }}}
 
-" Unite: {{{
-if s:has_plug('unite.vim')
-
-  let g:unite_force_overwrite_statusline = 0
-  let g:neomru#do_validate = 0
-  let g:unite_source_tag_max_fname_length = 70
-  let g:unite_source_history_yank_enable = 1
-
-  let s:sorter = has('ruby') ? 'sorter_selecta' : 'sorter_rank'
-  call unite#custom#source('file,directory,file_rec,file_rec/async,neomru/file,tag', 'sorters', [s:sorter])
-  call unite#custom#source('file,directory,file_rec,file_rec/async,neomru/file,tag', 'matchers',
-  \ ['converter_relative_word', 'matcher_fuzzy'])
-
-  call unite#custom#profile('match_project_files', 'matchers',
-  \ ['converter_relative_word', 'matcher_project_files', 'matcher_fuzzy'])
-
-  call unite#custom#profile('default', 'context', {
-  \ 'direction' : 'topleft',
-  \ 'prompt' : '  →  ',
-  \ })
-
-  call unite#custom#profile('source/grep', 'context', {
-  \ 'buffer_name' : 'grep',
-  \ 'no_quit' : 0
-  \ })
-
-  call unite#custom#profile('source/buffer', 'context', {
-  \ 'buffer_name' : 'buffer',
-  \ 'start_insert' : 1
-  \ })
-
-  call unite#custom#profile('source/tag', 'context', {
-  \ 'buffer_name' : 'tag',
-  \ 'start_insert' : 1,
-  \ 'resume' : 1,
-  \ 'input' : ''
-  \ })
-
-  call unite#custom#profile('source/neomru/file', 'context', {
-  \ 'buffer_name' : 'mru',
-  \ 'start_insert' : 1
-  \ })
-
-  call unite#custom#profile('source/neomru/directory', 'context', {
-  \ 'buffer_name' : 'dirs',
-  \ 'start_insert' : 1,
-  \ 'default_action' : 'cd'
-  \ })
-
-  call unite#custom#profile('source/outline', 'context', {
-  \ 'buffer_name' : 'outline',
-  \ 'start_insert' : 1,
-  \ 'auto_highlight' : 1,
-  \ })
-
-  nnoremap [unite] <Nop>
-  nmap <leader>u [unite]
-
-  nnoremap <silent> [unite]g :<C-u>UniteWithInput grep:.<CR>
-  nnoremap <silent> [unite]w :<C-u>UniteWithCursorWord -no-start-insert grep:.<CR>
-  nnoremap <silent> [unite]G :<C-u>UniteResume grep<CR>
-  nnoremap <silent> [unite]t :<C-u>Unite -no-split -input= tag<CR>
-  nnoremap <silent> [unite]y :<C-u>Unite history/yank<CR>
-  nnoremap <silent> [unite]b :<C-u>Unite -no-split buffer<CR>
-  nnoremap <silent> <leader>pf :<C-u>Unite -no-split -resume -buffer-name=project -no-restore -input= -start-insert -hide-source-names -unique file directory file_rec/async<CR>
-  nnoremap <silent> <leader>ff :<C-u>Unite -no-split -resume -buffer-name=file -no-restore -input= -start-insert -hide-source-names -unique file file/new<CR>
-  nnoremap <silent> <leader>uR :<C-u>Unite -no-split neomru/file<CR>
-  nnoremap <silent> <leader>pp :<C-u>Unite -no-split neomru/directory<CR>
-  nnoremap <silent> <leader>ur :<C-u>Unite -no-split -profile-name=match_project_files neomru/file<CR>
-
-  nnoremap <silent> [unite]u :<C-u>UniteResume<CR>
-  nnoremap <silent> ]u :<C-u>UniteNext<CR>
-  nnoremap <silent> [u :<C-u>UnitePrevious<CR>
-
-  nnoremap <silent> [unite]o :<C-u>Unite -split -vertical -winwidth=30 outline<CR>
-
-  " Custom mappings for the unite buffer
-  autocmd vimrc FileType unite call s:unite_settings()
-  function! s:unite_settings()
-    imap <buffer> <C-j>   <Plug>(unite_select_next_line)
-    imap <buffer> <C-k>   <Plug>(unite_select_previous_line)
-    imap <buffer> qq      <Plug>(unite_exit)
-  endfunction
-
-  " Use pt|ag for grep
-  if executable('pt')
-    let g:unite_source_grep_command = 'pt'
-    let g:unite_source_grep_default_opts = '--nogroup --nocolor'
-    let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_grep_encoding = 'utf-8'
-    let g:unite_source_rec_async_command = ['pt', '--nocolor', '--nogroup', '-g', '.', '']
-  elseif executable('ag')
-    let g:unite_source_grep_command = 'ag'
-    let g:unite_source_grep_default_opts = '--vimgrep'
-    let g:unite_source_grep_recursive_opt = ''
-    let g:unite_source_rec_async_command = ['ag', '--vimgrep', '-g', '.']
-  endif
-
-endif
-"}}}
-
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
   nnoremap <silent> <leader>gs :Gstatus<CR>
@@ -877,6 +777,9 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
+
+  autocmd vimrc ColorScheme gruvbox
+        \ :highlight VertSplit guibg=bg guifg=#3c3836
 endif
 "}}}
 
@@ -1508,5 +1411,5 @@ autocmd vimrc VimEnter * call PrettyLittleStatus()
 " }}}
 
 if has('vim_starting')
-  colorscheme hybrid
+  colorscheme gruvbox
 endif
