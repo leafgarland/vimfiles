@@ -253,7 +253,7 @@ autocmd vimrc QuickFixCmdPost [^l]* nested cwindow
 autocmd vimrc QuickFixCmdPost    l* nested lwindow
 
 if has('nvim')
-  autocmd vimrc BufEnter term://* :normal i<CR>
+  autocmd vimrc BufEnter term://* setfiletype term|startinsert
 endif
 "}}}
 
@@ -1204,7 +1204,7 @@ endfunction
 " PrettyLittleStatus: {{{
 
 function! s:is_basic_file()
-    return &filetype !~? 'dirvish\|help\|unite\|qf'
+    return &filetype !~? 'term\|dirvish\|help\|unite\|qf'
 endfunction
 
 function! s:is_small_win()
@@ -1217,6 +1217,7 @@ function! StatusLineFilename()
        \ &filetype == 'unite' ? unite#view#_get_status_plane_string() :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
+       \ &filetype == 'term' ? substitute(expand('%:t'), '^\d\+:', '', '')  :
        \ empty(fname) ? '[no name]' : fname 
 endfunction
 
@@ -1235,7 +1236,7 @@ function! StatusLinePath()
   if strlen(path) > maxPathLen
     let path = pathshorten(path)
   endif
-  return path.(&shellslash ? '/' : '\')
+  return path.(has('win32') && &noshellslash ? '\' : '/')
 endfunction
 
 function! s:bufferIndex(bufName)
@@ -1305,9 +1306,6 @@ function! StatusLineFugitive()
 endfunction
 
 function! StatusLineMode()
-  if winwidth(0) < 60
-    return 'none'
-  endif
   return &previewwindow ? "preview" :
     \ &ft == "dirvish" ? "dir" :
     \ empty(&ft) ? 'none' : &ft
