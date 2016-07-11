@@ -235,6 +235,8 @@ set linebreak
 set nolist
 set listchars=tab:→\ ,trail:─,extends:❭,precedes:❬,nbsp:+
 
+set fillchars=vert:┃,fold:-
+
 set splitright
 set switchbuf=useopen
 
@@ -1214,10 +1216,9 @@ endfunction
 function! StatusLineFilename()
   let fname = expand('%:t')
   return &filetype == 'dirvish' ? expand('%:~') :
-       \ &filetype == 'unite' ? unite#view#_get_status_plane_string() :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
-       \ &filetype == 'term' ? substitute(expand('%:t'), '^\d\+:', '', '')  :
+       \ &filetype == 'term' ? get(b:, 'term_title', substitute(expand('%:t'), '^\d\+:', '', ''))  :
        \ empty(fname) ? '[no name]' : fname 
 endfunction
 
@@ -1236,7 +1237,7 @@ function! StatusLinePath()
   if strlen(path) > maxPathLen
     let path = pathshorten(path)
   endif
-  return path.(has('win32') && &noshellslash ? '\' : '/')
+  return path.(has('win32') && !&shellslash ? '\' : '/')
 endfunction
 
 function! s:bufferIndex(bufName)
@@ -1306,8 +1307,8 @@ function! StatusLineFugitive()
 endfunction
 
 function! StatusLineMode()
-  return &previewwindow ? "preview" :
-    \ &ft == "dirvish" ? "dir" :
+  return &previewwindow ? 'preview:' : '' .
+    \ &ft == 'dirvish' ? 'dir' :
     \ empty(&ft) ? 'none' : &ft
 endfunction
 
