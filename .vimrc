@@ -375,7 +375,7 @@ nnoremap <leader>fer :source $MYVIMRC<CR>
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
-nnoremap <leader>bb :set nomore<bar>call EchoBuffers()<bar>set more<CR>:buffer<space>
+nnoremap <leader>bb :set nomore<bar>call Buffers()<bar>set more<CR>:buffer<space>
 nnoremap <leader><tab> :b#<CR>
 nnoremap <leader>bd :bdelete<CR>
 nnoremap <leader>bD :bdelete!<CR>
@@ -744,7 +744,7 @@ if s:has_plug('vim-dirvish')
     nnoremap <buffer> gr :<cfile><C-b>grep  <left>
     nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
-    nmap <silent> <buffer> gp :cd <cfile><bar>pwd<CR>
+    nmap <silent> <buffer> gp :lcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
     call fugitive#detect(@%)
   endfunction
@@ -803,14 +803,18 @@ if s:has_plug('gruvbox')
   let g:gruvbox_italic=0
 
   autocmd vimrc ColorScheme gruvbox
-        \ :highlight VertSplit guibg=bg guifg=#3c3836
+              \ :highlight! link VertSplit NonText
+              \| highlight! StatusLine guibg=#d5c4a1
 endif
 "}}}
 
 " nofrils: {{{
 if s:has_plug('nofrils')
   let g:nofrils_strbackgrounds = 1
-  autocmd vimrc ColorScheme nofrils-* :highlight! link Folded String
+  autocmd vimrc ColorScheme nofrils-*
+              \ :highlight! link VertSplit NonText
+              \| highlight! link Folded String
+              \| highlight! WildMenu guifg=yellow guibg=black gui=bold
 endif
 " }}}
 
@@ -838,10 +842,15 @@ endif
 command! DiffOrig vert new | set buftype=nofile | read ++edit # | 0d_
       \ | diffthis | wincmd p | diffthis
 
+command! -nargs=1 TabName let t:name='<args>'
+command! -nargs=1 TabNew tabnew | TabName <args>
+
 " Utils: {{{
-function! CaptureCommand(cmd) abort
+function! Execute(cmd) abort
   if exists('*capture')
     return capture(a:cmd)
+  elseif exists('*execute')
+    return execute(a:cmd)
   else
     let [save_verbose, save_verbosefile] = [&verbose, &verbosefile]
     set verbose=0 verbosefile=
@@ -859,8 +868,8 @@ highlight link BufferCurrentName Type
 highlight link BufferAlternateName Function
 highlight link BufferName Statement
 
-function! EchoBuffers() abort
-  let buffers = split(CaptureCommand('ls'), "\n")
+function! Buffers() abort
+  let buffers = split(Execute('ls'), "\n")
   for b in buffers
     let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+"\(.\+\)"\s\+line \(\d\+\)')
     let [bnum, bflags, bname, bline] = ms[1:4]
@@ -885,8 +894,8 @@ function! EchoBuffers() abort
   echon "\n"
 endfunction
 
-function! EchoHighlights(...) abort
-  let groups = split(CaptureCommand('hi'), "\n")
+function! Highlight(...) abort
+  let groups = split(Execute('hi'), "\n")
   let matchGroups = []
   for grp in groups
     let grpName = ''
@@ -969,7 +978,7 @@ function! EchoHighlights(...) abort
   endfor
 endfunction
 
-command! -complete=highlight -nargs=* Highlight :call EchoHighlights(<f-args>)
+command! -complete=highlight -nargs=* Highlight :call Highlight(<f-args>)
 " }}}
 
 " MRU: {{{
@@ -1088,38 +1097,9 @@ command! ReloadDos :e ++ff=dos<CR>
 " Visual Markers {{{
 nnoremap <expr> <leader>m ToggleVisualMarker()
 
-autocmd vimrc TextChanged,TextChangedI * :call s:update_visual_markers()
-
 let g:myvimrc_visual_marks_groups = [
       \ 'GruvboxBlueSign',  'GruvboxGreenSign', 'GruvboxRedSign',
       \ 'GruvboxPurpleSign', 'GruvboxYellowSign']
-
-function! s:update_visual_markers()
-  if !exists('b:myvimrc_visual_marks') || empty(b:myvimrc_visual_marks)
-    return
-  endif
-
-  if exists('b:myvimrc_visual_marks_last_line_count') && b:myvimrc_visual_marks_last_line_count == line('$')
-    return
-  endif
-
-  for [k,v] in items(b:myvimrc_visual_marks)
-    let [m,l] = v
-    let mark_line = line("'".k)
-    if mark_line != l
-      call matchdelete(m)
-      if mark_line > 0
-        let grp = g:myvimrc_visual_marks_groups[char2nr(k) % len(g:myvimrc_visual_marks_groups)]
-        let m = matchaddpos(grp, [mark_line])
-        let b:myvimrc_visual_marks[k] = [m,mark_line]
-      else
-        call remove(b:myvimrc_visual_marks, k)
-      endif
-    endif
-  endfor
-
-  let b:myvimrc_visual_marks_last_line_count = line('$')
-endfunction
 
 function! s:remove_visual_mark(match, reg)
   call matchdelete(a:match)
@@ -1137,37 +1117,22 @@ function! ToggleVisualMarker()
 
   if rc !~ '[a-zA-Z]'
     if rc == ' '
-      for [k,v] in items(b:myvimrc_visual_marks)
-        let [m,l] = v
+      for [k,m] in items(b:myvimrc_visual_marks)
         call s:remove_visual_mark(m, k)
       endfor
     endif
     return
   endif
 
-  let curr_line = line('.')
-
-  let toggled_off = 0
-  for [k,v] in items(b:myvimrc_visual_marks)
-    let [m,l] = v
-    if l == curr_line || k == rc
-      call s:remove_visual_mark(m, k)
-      let toggled_off = l == curr_line && k == rc
-    endif
-  endfor
-
-  if toggled_off
-    return
-  endif
-
-  " matchaddpos() wont add a match on blank lines
-  if getline('.') == ''
+  if has_key(b:myvimrc_visual_marks, rc)
+    let m = b:myvimrc_visual_marks[rc]
+    call s:remove_visual_mark(m, rc)
     return
   endif
 
   let grp = g:myvimrc_visual_marks_groups[c % len(g:myvimrc_visual_marks_groups)]
-  let m = matchaddpos(grp, [line('.')])
-  let b:myvimrc_visual_marks[rc] = [m,curr_line]
+  let m = matchadd(grp, '^\%''b.\+$')
+  let b:myvimrc_visual_marks[rc] = m
   return 'm' . rc
 endfunction
 "}}}
@@ -1255,16 +1220,12 @@ function! StatusLineArglist()
   if s:is_small_win() || argc() <= 1
     return ''
   endif
-
   let bufIdx = s:bufferIndex(expand('%'))
-  if bufIdx == -1
-    " buffer is not in args list
-    return '('. (argidx()+1) . ' of ' . argc() . ')'
-  elseif bufIdx == argidx()
+  if bufIdx == argidx()
     " buffer is in args list and is the current index
     return argidx()+1 . ' of ' . argc()
   else
-    return '(' . (argidx()+1) . ') of ' . argc()
+    return ''
   endif
 endfunction
 
@@ -1307,9 +1268,9 @@ function! StatusLineFugitive()
 endfunction
 
 function! StatusLineMode()
-  return &previewwindow ? 'preview:' : '' .
-    \ &ft == 'dirvish' ? 'dir' :
-    \ empty(&ft) ? 'none' : &ft
+  let m = &ft == 'dirvish' ? 'dir' :
+      \ empty(&ft) ? 'none' : &ft
+  return (&previewwindow ? 'preview:' : '') . m
 endfunction
 
 function! s:get_colour(higroup, attr)
@@ -1320,8 +1281,8 @@ function! s:get_colour(higroup, attr)
             \    attr
     endif
     let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr)
-    if (empty(colour) || colour =~ '[bf]g') && a:higroup != 'Normal'
-      return s:get_colour('Normal', attr)
+    if empty(colour) && a:higroup != 'Normal'
+      return s:get_colour('Normal', a:attr)
     elseif empty(colour) && attr == 'fg'
       let colour = 'fg'
     elseif empty(colour) && attr == 'bg'
@@ -1343,6 +1304,9 @@ function! s:SetHiColour(group, fg, bg, attrs)
 endfunction
 
 function! s:SetStatusLineColours()
+  if has('vim_starting')
+    return
+  endif
   try
     let wmbg = s:get_colour('WildMenu', 'bg')
     let wmfg = s:get_colour('WildMenu', 'fg')
@@ -1351,7 +1315,7 @@ function! s:SetStatusLineColours()
     let fg = s:get_colour('StatusLine', 'fg')
     let nbg = s:get_colour('Normal', 'bg')
 
-    call s:SetHiColour('StatusLine', fg, bg, 'bold')
+    call s:SetHiColour('User5', fg, bg, 'bold')
     call s:SetHiColour('User1', fg, bg, 'NONE')
     call s:SetHiColour('User2', wmfg, wmbg, 'NONE')
     call s:SetHiColour('User3', nbg, bg, 'NONE')
@@ -1371,22 +1335,21 @@ function! s:SetStatusLineColours()
   redrawstatus!
 endfunction
 
-function! Status(winnum)
-  let active = a:winnum == winnr() || winnr('$') == 1
+function! Status(active)
   let separator = '│'
-  if active
+  if a:active
     let sl = '%1*'
     let sl.= '%( %{StatusLineMode()} %)'
     let sl.= '%3*'.separator
-    let sl.= '%( %1*%{StatusLinePath()}%0*%{StatusLineFilename()} %)'
-    let sl.= '%( %2*%{StatusLineModified()}%0* %)'
-    let sl.= '%( %1*%{StatusLineArglist()}%0* %)'
+    let sl.= '%( %1*%{StatusLinePath()}%5*%{StatusLineFilename()} %)'
+    let sl.= '%( %2*%{StatusLineModified()}%5* %)'
+    let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%1*'
     let sl.= '%='
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
-    let sl.= '%( %2*%{StatusLineFugitive()}%0* %)'
+    let sl.= '%( %2*%{StatusLineFugitive()}%5* %)'
     let sl.= '%3*'.separator
     let sl.= '%( %1*%4l:%-3c %3p%% %)'
 
@@ -1401,11 +1364,37 @@ function! Status(winnum)
   endif
 endfunction
 
+function! TabLine()
+  let tabCount = tabpagenr('$')
+  let tabnr = tabpagenr()
+  let winnr = tabpagewinnr(tabnr)
+  let currBufName = bufname(tabpagebuflist(tabnr)[winnr-1])
+  let bufName = fnamemodify(currBufName, ':t')
+  let tabName = gettabvar(tabnr, 'name', bufName)
+  let cwd = getcwd(winnr, tabnr)
+  let isLocalCwd = haslocaldir(winnr, tabnr)
+  let s = '%#TabLine#'
+
+  let s.= ' '.tabnr.'/'.tabCount.' '
+  let s.= '%#User4#│%#TabLine# '
+  let s.= '%( %#TabLineSel#'.tabName.'%#TabLine# %)'
+  let s.= '%='
+  let s.= '%#User4#│%#TabLine# '
+  if isLocalCwd
+    let s.= '%#TabLineSel#'
+  endif
+  let s.= cwd
+  let s.= '%#TabLine#'
+  let s.= ' '
+
+  return s
+endfunction
+
 function! s:RefreshStatus()
-  let winCount = winnr('$')
-  for nr in range(1, winCount)
-    call setwinvar(nr, '&statusline', '%!Status('. nr .')')
+  for nr in filter(range(1, winnr('$')), 'v:val != winnr()')
+    call setwinvar(nr, '&statusline', '%!Status(0)')
   endfor
+  call setwinvar(winnr(), '&statusline', '%!Status(1)')
 endfunction
 
 let g:prettylittlestatus_disable=0
@@ -1416,19 +1405,25 @@ function! PrettyLittleStatus()
   augroup END
 
   if get(g:,'prettylittlestatus_disable', 0)
+    set statusline&
     return
   endif
 
-  autocmd PrettyLittleStatus ColorScheme * call <SID>SetStatusLineColours()
-  call s:SetStatusLineColours()
+  set tabline=%!TabLine()
 
-  autocmd PrettyLittleStatus WinEnter,BufWinEnter * call <SID>RefreshStatus()
-  call s:RefreshStatus()
+  autocmd PrettyLittleStatus VimEnter,ColorScheme * call <SID>SetStatusLineColours()
+  autocmd PrettyLittleStatus SessionLoadPost,VimEnter,WinEnter,BufWinEnter,FileType,BufUnload * call <SID>RefreshStatus()
+
+  if !has('vim_starting')
+    call s:SetStatusLineColours()
+    call s:RefreshStatus()
+  endif
 endfunction
 
-autocmd vimrc VimEnter * call PrettyLittleStatus()
+call PrettyLittleStatus()
 " }}}
 
 if has('vim_starting')
   colorscheme gruvbox
 endif
+
