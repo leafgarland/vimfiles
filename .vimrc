@@ -811,10 +811,28 @@ endif
 " nofrils: {{{
 if s:has_plug('nofrils')
   let g:nofrils_strbackgrounds = 1
-  autocmd vimrc ColorScheme nofrils-*
-              \ :highlight! link VertSplit NonText
-              \| highlight! link Folded String
-              \| highlight! WildMenu guifg=yellow guibg=black gui=bold
+
+  function! s:NofrilsCustomise()
+    highlight! link VertSplit NonText
+    highlight! link Folded String
+    highlight! WildMenu guifg=yellow guibg=black gui=bold
+    highlight! StatusLine guifg=white guibg=black gui=bold
+  endfunction
+  autocmd vimrc ColorScheme nofrils-* :call <SID>NofrilsCustomise()
+
+  function! s:NofrilsBackgroundToggle()
+    if g:colors_name !~ "nofrils"
+      return
+    endif
+    if &background == 'dark'
+      colorscheme nofrils-dark
+    else
+      colorscheme nofrils-light
+    endif
+    call s:NofrilsCustomise()
+    call PrettyLittleStatus()
+  endfunction
+  autocmd vimrc OptionSet background :call <SID>NofrilsBackgroundToggle()
 endif
 " }}}
 
@@ -1126,12 +1144,16 @@ function! ToggleVisualMarker()
 
   if has_key(b:myvimrc_visual_marks, rc)
     let m = b:myvimrc_visual_marks[rc]
+    let toggle = line('.') == line("'".rc)
     call s:remove_visual_mark(m, rc)
-    return
+    if toggle
+      return
+    endif
   endif
 
   let grp = g:myvimrc_visual_marks_groups[c % len(g:myvimrc_visual_marks_groups)]
-  let m = matchadd(grp, '^\%''b.\+$')
+
+  let m = matchadd(grp, "^.*\\%'".rc.'.*$')
   let b:myvimrc_visual_marks[rc] = m
   return 'm' . rc
 endfunction
@@ -1159,7 +1181,7 @@ function! VerifyUndo ()
 
   let undo_now = undotree().seq_cur
   if undo_now > 0 && undo_now == b:undo_start
-    return confirm("Undo into previous session?", "&Yes\n&No", 1) == 1 ? "\<C-L>u" : "\<C-L>"
+    return confirm("Undo into previous session?", "&Yes\n&No") == 1 ? "\<C-L>u" : "\<C-L>"
   else
     return 'u'
   endif
