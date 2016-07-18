@@ -141,7 +141,7 @@ Plug 'cespare/vim-toml', {'for': 'toml'}
 Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
 Plug 'OrangeT/vim-csharp', {'for': 'cs'}
 
-if executable('tmux')
+if strlen($TMUX)
   Plug 'tpope/vim-tbone'
   Plug 'wellle/tmux-complete.vim' 
   Plug 'tmux-plugins/vim-tmux-focus-events'
@@ -349,6 +349,26 @@ nmap gQ <Nop>
 
 if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
+  tnoremap <Space><Space> <C-\><C-n>:
+  tnoremap <C-w> <C-\><C-n><C-w>
+  if empty($TMUX)
+    tnoremap <C-a>n <C-\><C-n>gt
+    nnoremap <C-a>n gt
+    tnoremap <C-a>p <C-\><C-n>gT
+    nnoremap <C-a>p gT
+    tnoremap <C-a>c <C-\><C-n>:tabnew term://fish<CR>
+    nnoremap <C-a>c :tabnew term://fish<CR>
+    tnoremap <C-a>s <C-\><C-n>:split term://fish<CR>
+    nnoremap <C-a>s :split term://fish<CR>
+    tnoremap <C-a>v <C-\><C-n>:vsplit term://fish<CR>
+    nnoremap <C-a>v :vsplit term://fish<CR>
+    tnoremap <C-a><C-l> <C-l>
+    tnoremap <C-a><C-a> <C-a>
+    tnoremap <C-h> <C-\><C-n><C-w>h
+    tnoremap <C-l> <C-\><C-n><C-w>l
+    tnoremap <C-j> <C-\><C-n><C-w>j
+    tnoremap <C-k> <C-\><C-n><C-w>k
+  endif
 endif
 
 nnoremap <silent> <leader>s/ :s,\\,/,g<CR>
@@ -1275,7 +1295,7 @@ function! StatusLineModified()
 endfunction
 
 function! StatusLineFugitive()
-  if !s:is_basic_file() || s:is_small_win()
+  if &ft != 'dirvish' && !s:is_basic_file() || s:is_small_win()
     return ''
   endif
   try
@@ -1393,8 +1413,8 @@ function! TabLine()
   let currBufName = bufname(tabpagebuflist(tabnr)[winnr-1])
   let bufName = fnamemodify(currBufName, ':t')
   let tabName = gettabvar(tabnr, 'name', bufName)
-  let cwd = getcwd(winnr, tabnr)
-  let isLocalCwd = haslocaldir(winnr, tabnr)
+  let cwd = getcwd(exists(':tcd') ? -1 : winnr, tabnr)
+  let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
   let s = '%#TabLine#'
 
   let s.= ' '.tabnr.'/'.tabCount.' '
