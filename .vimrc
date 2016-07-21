@@ -176,10 +176,10 @@ set mouse=a
 
 set shortmess+=Im
 set viewoptions=folds,options,cursor,unix,slash
-set virtualedit=onemore,block
 set history=10000
 set hidden
 
+set virtualedit=block
 set foldopen+=jump
 set breakindent
 set smartcase
@@ -349,7 +349,8 @@ nmap gQ <Nop>
 
 if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
-  tnoremap <Space><Space> <C-\><C-n>:
+  " <C-Space> is <C-@>
+  tnoremap <C-@> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
   if empty($TMUX)
     tnoremap <C-a>n <C-\><C-n>gt
@@ -1466,6 +1467,6 @@ call PrettyLittleStatus()
 " }}}
 
 if has('vim_starting')
-  colorscheme gruvbox
+  colorscheme hybrid
 endif
 
