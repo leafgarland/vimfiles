@@ -179,6 +179,10 @@ endfunction
 "}}}
 
 " General: {{{
+
+" fix little startup bug with setglobal
+command! -nargs=+ SetGlobal if has('vim_starting')<bar>set <args><bar>else<bar>setglobal <args><bar>endif
+
 set mouse=a
 
 set shortmess+=Im
@@ -188,7 +192,6 @@ set hidden
 
 set virtualedit=block
 set foldopen+=jump
-set breakindent
 set smartcase
 set nojoinspaces
 set formatoptions+=n1
@@ -213,9 +216,11 @@ endif
 "}}}
 
 " Vim UI: {{{
-set background=dark
+if has('vim_starting')
+  set background=dark
+  set hlsearch
+endif
 set cmdheight=2
-set showmode
 set noshowcmd
 set lazyredraw
 
@@ -228,20 +233,10 @@ set wildignorecase
 set wildoptions=tagfile
 set wildcharm=<C-z>
 set number
-set hlsearch
 set winminheight=0
 set ignorecase
 
-set foldenable
-set foldmethod=indent
-set foldlevelstart=9
-set foldnestmax=10
-
-set linebreak
-
-set nolist
 set listchars=tab:→\ ,trail:─,extends:❭,precedes:❬,nbsp:+
-
 set fillchars=vert:┃,fold:-
 
 set splitright
@@ -253,8 +248,8 @@ set tags=./tags,~/.vimtags
 let g:myvimrc_manage_cursorline=0
 if g:myvimrc_manage_cursorline
   set cursorline
-  autocmd vimrc WinEnter,InsertLeave * set cursorline
-  autocmd vimrc WinLeave,InsertEnter * set nocursorline
+  autocmd vimrc WinEnter,InsertLeave * setlocal cursorline
+  autocmd vimrc WinLeave,InsertEnter * setlocal nocursorline
 endif
 
 " Opens quick fix window when there are items, close it when empty
@@ -305,12 +300,14 @@ endif
 "}}}
 
 " Formatting: {{{
-set nowrap
-set autoindent
-set expandtab
-set tabstop=8
-set shiftwidth=4
-set softtabstop=0
+SetGlobal nowrap
+SetGlobal linebreak
+SetGlobal breakindent
+SetGlobal autoindent
+SetGlobal expandtab
+SetGlobal tabstop=4
+SetGlobal shiftwidth=4
+SetGlobal softtabstop=4
 "}}}
 
 " Key Mappings: {{{
@@ -894,7 +891,7 @@ function! DiffOrig()
   let bft = &ft
   diffthis
   vert new
-  set buftype=nofile
+  setlocal buftype=nofile
   execute 'setlocal filetype='.bft
   nnoremap <buffer> q :bdelete<bar>diffoff<CR>
   read ++edit # | normal gg0d_
@@ -954,7 +951,9 @@ function! Buffers() abort
     endif
   endfor
   echohl None
-  echon "\n"
+  if count(buffers) == 1
+    echo
+  endif
 endfunction
 
 function! Highlight(...) abort
@@ -1491,6 +1490,6 @@ call PrettyLittleStatus()
 " }}}
 
 if has('vim_starting')
-  colorscheme hybrid
+  colorscheme gruvbox
 endif
 
