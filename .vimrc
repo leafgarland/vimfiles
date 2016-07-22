@@ -474,13 +474,14 @@ xnoremap L g_
 
 nnoremap gI `.
 
-nnoremap <leader>8 :lvimgrep <cword> % \| lopen<CR>
-xnoremap <leader>8 y:<C-U>lvimgrep /<C-R>"/ % \| lopen<CR>gv
+nnoremap <leader>8 :keeppatterns lvimgrep /<C-R><C-R><C-W>/j %<CR>
+xnoremap <leader>8 y:<C-U>keeppatterns lvimgrep /<C-R><C-R>"/j %<CR>
+nnoremap <leader>sl :keeppatterns lvimgrep /<C-R><C-R>//j %<CR>
 
-nnoremap <leader>v :v//d<CR>
-nnoremap <leader>V :g//d<CR>
-xnoremap <leader>v :v//d<CR>
-xnoremap <leader>V :g//d<CR>
+nnoremap <leader>sv :v//d<CR>
+nnoremap <leader>sV :g//d<CR>
+xnoremap <leader>sv :v//d<CR>
+xnoremap <leader>sV :g//d<CR>
 
 inoremap jk <esc>
 cnoremap jk <C-c> 
@@ -951,9 +952,6 @@ function! Buffers() abort
     endif
   endfor
   echohl None
-  if count(buffers) == 1
-    echo
-  endif
 endfunction
 
 function! Highlight(...) abort
