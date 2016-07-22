@@ -12,9 +12,14 @@ if exists('+guioptions')
 endif
 let g:loaded_vimballPlugin = 1
 
-if !has('nvim') && has('vim_starting')
+if has('vim_starting')
+  if has('nvim')
+    set shada=!,'1000,s100,h
+  else
     set nocompatible
     set encoding=utf-8
+    set viminfo='1000,s100,h
+  endif
 endif
 
 if &shell =~# 'fish$'
@@ -27,7 +32,9 @@ let s:is_gui = has('gui_running')
 if s:is_win
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
-  set packpath=$HOME/.vim
+  if exists('+packpath')
+    set packpath=$HOME/.vim
+  endif
 
   " On windows, if gvim.exe is executed from cygwin bash shell, the shell
   " needs to be changed to the shell most plugins expect on windows.
@@ -77,7 +84,7 @@ Plug 'kana/vim-textobj-user'
 Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
-Plug 'morhetz/gruvbox/'
+Plug 'leafgarland/gruvbox/'
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
@@ -822,10 +829,6 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
-
-  autocmd vimrc ColorScheme gruvbox
-              \ :highlight! link VertSplit NonText
-              \| highlight! StatusLine guibg=#d5c4a1
 endif
 "}}}
 
@@ -836,8 +839,16 @@ if s:has_plug('nofrils')
   function! s:NofrilsCustomise()
     highlight! link VertSplit NonText
     highlight! link Folded String
-    highlight! WildMenu guifg=yellow guibg=black gui=bold
-    highlight! StatusLine guifg=white guibg=black gui=bold
+    if &background == 'dark'
+      highlight! WildMenu guibg=black guifg=yellow gui=bold
+      highlight! StatusLine guifg=black guibg=white gui=bold
+    else
+      highlight! WildMenu guifg=black guibg=yellow gui=bold
+      highlight! StatusLine guifg=white guibg=black gui=bold
+    endif
+    highlight! xmlAttrib gui=italic
+    highlight! Keyword gui=italic
+    highlight! Statement gui=italic
   endfunction
   autocmd vimrc ColorScheme nofrils-* :call <SID>NofrilsCustomise()
 
@@ -878,8 +889,21 @@ endif
 
 " Commands & Functions: {{{
 
-command! DiffOrig vert new | set buftype=nofile | read ++edit # | 0d_
-      \ | diffthis | wincmd p | diffthis
+" Diff against last saved {{{
+function! DiffOrig()
+  let bft = &ft
+  diffthis
+  vert new
+  set buftype=nofile
+  execute 'setlocal filetype='.bft
+  nnoremap <buffer> q :bdelete<bar>diffoff<CR>
+  read ++edit # | normal gg0d_
+  diffthis
+endfunction
+
+command! DiffOrig call DiffOrig()
+nnoremap <leader>ud :DiffOrig<CR>
+"}}}
 
 command! -nargs=1 TabName let t:name='<args>'
 command! -nargs=1 TabNew tabnew | TabName <args>
@@ -934,7 +958,21 @@ function! Buffers() abort
 endfunction
 
 function! Highlight(...) abort
-  let groups = split(Execute('hi'), "\n")
+  let lines = split(Execute('highlight'), "\n")
+  let groups = []
+  for line in lines
+    if match(line, '^\s\+')> -1
+      let groups[-1] .= substitute(line, '^\s\+', ' ', '')
+      continue
+    else
+      call add(groups, line)
+    endif
+  endfor
+
+  if a:0 == 1
+    let groups = filter(groups, 'match(v:val, a:1) > -1')
+  endif
+
   let matchGroups = []
   for grp in groups
     let grpName = ''
@@ -943,40 +981,17 @@ function! Highlight(...) abort
     let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+\(\(\S\+=\S\+\s*\)\+\)')
     if !empty(ms)
       let [grpName, grpAttrs] = ms[1:2]
-    else
-      let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+links to \(\S\+\)')
-      if !empty(ms)
-        let [grpName, grpLink] = ms[1:2]
-      else
-        let ms = matchlist(grp, '^\s\+links to \(\S\+\)')
-        if !empty(ms)
-          let grpLink = ms[1]
-          let matchGroups[-1][2] = grpLink
-          continue
-        else
-          let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+cleared')
-          if !empty(ms)
-            let grpName = ms[1]
-          endif
-        endif
-      endif
+    endif
+    let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+.*links to \(\S\+\)')
+    if !empty(ms)
+      let [grpName, grpLink] = ms[1:2]
+    endif
+    let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+cleared')
+    if !empty(ms)
+      let grpName = ms[1]
     endif
     call add(matchGroups, [grpName, grpAttrs, grpLink])
   endfor
-
-  if a:0 == 1
-    call filter(matchGroups, 'match(v:val[0], a:1) >= 0')
-  elseif a:0 == 2
-    call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && match(v:val[1], a:2) >= 0')
-  elseif a:0 == 3
-    if a:3 == "cleared"
-      call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && empty(v:val[1]) && empty(v:val[2])')
-    elseif a:3 == "linked"
-      call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && !empty(v:val[2])')
-    elseif a:3 == "set"
-      call filter(matchGroups, 'match(v:val[0], a:1) >= 0 && !empty(v:val[1])')
-    endif
-  endif
 
   let maxWidth = 0
   for group in matchGroups
@@ -1017,7 +1032,7 @@ function! Highlight(...) abort
   endfor
 endfunction
 
-command! -complete=highlight -nargs=* Highlight :call Highlight(<f-args>)
+command! -complete=highlight -nargs=? Highlight :call Highlight(<f-args>)
 " }}}
 
 " MRU: {{{
@@ -1221,9 +1236,18 @@ function! s:is_small_win()
     return winwidth(0) < 60
 endfunction
 
+function! s:GetDirvishName()
+  let name = expand('%:~:.')
+  if empty(name)
+    return '['.expand('%:h:t').']'
+  else
+    return name
+  endif
+endfunction
+
 function! StatusLineFilename()
   let fname = expand('%:t')
-  return &filetype == 'dirvish' ? expand('%:~') :
+  return &filetype == 'dirvish' ? s:GetDirvishName() :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ &filetype == 'term' ? get(b:, 'term_title', substitute(expand('%:t'), '^\d\+:', '', ''))  :
@@ -1245,7 +1269,7 @@ function! StatusLinePath()
   if strlen(path) > maxPathLen
     let path = pathshorten(path)
   endif
-  return path.(has('win32') && !&shellslash ? '\' : '/')
+  return path.(exists('+shellslash') && !&shellslash ? '\' : '/')
 endfunction
 
 function! s:bufferIndex(bufName)
@@ -1347,7 +1371,7 @@ function! s:SetHiColour(group, fg, bg, attrs)
 endfunction
 
 function! s:SetStatusLineColours()
-  if has('vim_starting')
+  if has('vim_starting') || !empty(synIDattr(hlID('User1'), 'fg'))
     return
   endif
   try
@@ -1356,13 +1380,12 @@ function! s:SetStatusLineColours()
     let ncbg = s:get_colour('StatusLineNC', 'bg')
     let bg = s:get_colour('StatusLine', 'bg')
     let fg = s:get_colour('StatusLine', 'fg')
-    let nbg = s:get_colour('Normal', 'bg')
 
-    call s:SetHiColour('User5', fg, bg, 'bold')
+    call s:SetHiColour('StatusLine', fg, bg, 'bold')
     call s:SetHiColour('User1', fg, bg, 'NONE')
     call s:SetHiColour('User2', wmfg, wmbg, 'NONE')
-    call s:SetHiColour('User3', nbg, bg, 'NONE')
-    call s:SetHiColour('User4', nbg, ncbg, 'NONE')
+    call s:SetHiColour('User3', 'bg', bg, 'NONE')
+    call s:SetHiColour('User4', 'bg', ncbg, 'NONE')
 
     highlight! link TabLineFill StatusLineNC
     highlight! link TabLineSel StatusLine
@@ -1384,15 +1407,16 @@ function! Status(active)
     let sl = '%1*'
     let sl.= '%( %{StatusLineMode()} %)'
     let sl.= '%3*'.separator
-    let sl.= '%( %1*%{StatusLinePath()}%5*%{StatusLineFilename()} %)'
-    let sl.= '%( %2*%{StatusLineModified()}%5* %)'
+    let sl.= '%( %1*%{StatusLinePath()}%0*%{StatusLineFilename()} %)'
+    let sl.= '%<'
+    let sl.= '%( %2*%{StatusLineModified()}%0* %)'
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%1*'
     let sl.= '%='
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
-    let sl.= '%( %2*%{StatusLineFugitive()}%5* %)'
+    let sl.= '%( %2*%{StatusLineFugitive()}%0* %)'
     let sl.= '%3*'.separator
     let sl.= '%( %1*%4l:%-3c %3p%% %)'
 
