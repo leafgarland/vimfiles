@@ -26,16 +26,16 @@ if &shell =~# 'fish$'
   set shell=bash
 endif
 
+if exists('+packpath')
+  set packpath=$HOME/.vim
+endif
+
 " Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
 let s:is_gui = has('gui_running')
 if s:is_win
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
-  if exists('+packpath')
-    set packpath=$HOME/.vim
-  endif
-
   " On windows, if gvim.exe is executed from cygwin bash shell, the shell
   " needs to be changed to the shell most plugins expect on windows.
   " This does not change &shell inside cygwin or msys vim.
@@ -68,8 +68,8 @@ if s:is_win
     endif
   endfunction
   nnoremap co! :call <SID>toggle_powershell()<CR>
-
 endif
+
 "}}}
 "}}}
 
@@ -235,6 +235,7 @@ set wildcharm=<C-z>
 set number
 set winminheight=0
 set ignorecase
+set foldlevelstart=10
 
 set listchars=tab:→\ ,trail:─,extends:❭,precedes:❬,nbsp:+
 set fillchars=vert:┃,fold:-
@@ -760,15 +761,26 @@ if s:has_plug('vim-dirvish')
     normal! 0
   endfunction
 
+  function! s:dirvish_keepcursor(cmd)
+    let l = getline('.')
+    execute a:cmd
+    keepjumps call search('\V\^'.escape(l,'\').'\$', 'cw')
+    unlet l
+  endfunction
+  command! -nargs=+ KeepCursor call s:dirvish_keepcursor(<q-args>)
+
   function! s:dirvish_settings()
+    " sort dirs top
+    KeepCursor sort ir /^.*[^\\\/]$/
+
+    nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
     nmap <silent> <buffer> h <Plug>(dirvish_up)
     nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
-    nmap <silent> <buffer> J :call <sid>dirvish_next()<CR>
-    nmap <silent> <buffer> K :call <sid>dirvish_previous()<CR>
-    nmap <silent> <buffer> gh :keeppatterns g@\v[\/]\.[^\/]+[\/]?$@d<CR>
+    nmap <silent> <buffer> <C-n> :call <sid>dirvish_next()<CR>
+    nmap <silent> <buffer> <C-p> :call <sid>dirvish_previous()<CR>
+    nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d<CR>
     nnoremap <buffer> gR :grep  %<left><left>
     nnoremap <buffer> gr :<cfile><C-b>grep  <left>
-    nmap <silent> <buffer> gd :sort r /[^\/]$/<CR>
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
     nmap <silent> <buffer> gp :lcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
@@ -1147,6 +1159,7 @@ command! ReloadDos :e ++ff=dos<CR>
 
 " Visual Markers {{{
 nnoremap <expr> <leader>m ToggleVisualMarker()
+nnoremap <expr> m UpdateVisualMarker()
 
 let g:myvimrc_visual_marks_groups = [
       \ 'GruvboxBlueSign',  'GruvboxGreenSign', 'GruvboxRedSign',
@@ -1158,12 +1171,33 @@ function! s:remove_visual_mark(match, reg)
   execute 'delmarks ' . a:reg
 endfunction
 
+function! UpdateVisualMarker()
+  if !exists('b:myvimrc_visual_marks')
+    return 'm'
+  endif
+
+  let c = getchar(0)
+  let rc = nr2char(c)
+  if rc !~ '[a-zA-Z]'
+    return 'm'.rc
+  endif
+
+  if has_key(b:myvimrc_visual_marks, rc)
+    let grp = g:myvimrc_visual_marks_groups[c % len(g:myvimrc_visual_marks_groups)]
+    let m = b:myvimrc_visual_marks[rc]
+    call matchdelete(m)
+    call matchadd(grp, "^.*\\%'".rc.'.*$', 10, m)
+  endif
+
+  return 'm'.rc
+endfunction
+
 function! ToggleVisualMarker()
   if !exists('b:myvimrc_visual_marks')
     let b:myvimrc_visual_marks = {}
   endif
 
-  let c = getchar()
+  let c = getchar(0)
   let rc = nr2char(c)
 
   if rc !~ '[a-zA-Z]'
@@ -1225,8 +1259,8 @@ endfunction
 
 " PrettyLittleStatus: {{{
 
-function! s:is_basic_file()
-    return &filetype !~? 'term\|dirvish\|help\|unite\|qf'
+function! s:is_nofile()
+    return &buftype =~ 'nofile\|help\|qf' || &filetype =~ 'term'
 endfunction
 
 function! s:is_small_win()
@@ -1248,11 +1282,12 @@ function! StatusLineFilename()
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ &filetype == 'term' ? get(b:, 'term_title', substitute(expand('%:t'), '^\d\+:', '', ''))  :
+       \ &buftype == 'nofile' ? expand('%') :
        \ empty(fname) ? '[no name]' : fname 
 endfunction
 
 function! StatusLinePath()
-  if !s:is_basic_file()
+  if s:is_nofile()
     return ''
   endif
   if empty(expand('%'))
@@ -1281,7 +1316,7 @@ function! s:bufferIndex(bufName)
 endfunction
 
 function! StatusLineArglist()
-  if s:is_small_win() || argc() <= 1
+  if argc() <= 1 || s:is_nofile() || s:is_small_win()
     return ''
   endif
   let bufIdx = s:bufferIndex(expand('%'))
@@ -1294,21 +1329,21 @@ function! StatusLineArglist()
 endfunction
 
 function! StatusLineFileFormat()
-  if !s:is_basic_file() || s:is_small_win()
+  if s:is_nofile() || s:is_small_win()
     return ''
   endif
   return &binary ? 'binary' : &fileformat == substitute(&fileformats, ",.*$", "", "") ? '' : &fileformat
 endfunction
 
 function! StatusLineFileEncoding()
-  if !s:is_basic_file() || s:is_small_win()
+  if s:is_nofile() || s:is_small_win()
     return ''
   endif
   return &binary ? '' : &fileencoding == 'utf-8' ? '' : &fileencoding
 endfunction
 
 function! StatusLineModified()
-  if !s:is_basic_file()
+  if s:is_nofile()
     return ''
   endif
   let modified = &modified ? '*' : ''
@@ -1317,7 +1352,7 @@ function! StatusLineModified()
 endfunction
 
 function! StatusLineFugitive()
-  if &ft != 'dirvish' && !s:is_basic_file() || s:is_small_win()
+  if &ft != 'dirvish' && s:is_nofile() || s:is_small_win()
     return ''
   endif
   try
