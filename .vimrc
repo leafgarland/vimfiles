@@ -737,30 +737,6 @@ if s:has_plug('vim-dirvish')
 
   let s:dirvish_dir_search = '[\\\/]$'
 
-  function! s:dirvish_next()
-    let pos = getcurpos()
-    let nextline = search(s:dirvish_dir_search)
-    if nextline == pos[1]
-      normal! j
-      let nextline = search(s:dirvish_dir_search)
-    endif
-    if nextline == 0
-      call setpos('.', pos)
-      return
-    endif
-    normal! 0
-  endfunction
-
-  function! s:dirvish_previous()
-    let pos = getcurpos()
-    let nextline = search(s:dirvish_dir_search, 'b')
-    if nextline == 0
-      call setpos('.', pos)
-      return
-    endif
-    normal! 0
-  endfunction
-
   function! s:dirvish_keepcursor(cmd)
     let l = getline('.')
     execute a:cmd
@@ -776,8 +752,6 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
     nmap <silent> <buffer> h <Plug>(dirvish_up)
     nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
-    nmap <silent> <buffer> <C-n> :call <sid>dirvish_next()<CR>
-    nmap <silent> <buffer> <C-p> :call <sid>dirvish_previous()<CR>
     nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d<CR>
     nnoremap <buffer> gR :grep  %<left><left>
     nnoremap <buffer> gr :<cfile><C-b>grep  <left>
@@ -1172,16 +1146,12 @@ function! s:remove_visual_mark(match, reg)
 endfunction
 
 function! UpdateVisualMarker()
-  if !exists('b:myvimrc_visual_marks')
+  if !exists('b:myvimrc_visual_marks') || empty(b:myvimrc_visual_marks)
     return 'm'
   endif
 
-  let c = getchar(0)
+  let c = getchar()
   let rc = nr2char(c)
-  if rc !~ '[a-zA-Z]'
-    return 'm'.rc
-  endif
-
   if has_key(b:myvimrc_visual_marks, rc)
     let grp = g:myvimrc_visual_marks_groups[c % len(g:myvimrc_visual_marks_groups)]
     let m = b:myvimrc_visual_marks[rc]
@@ -1205,6 +1175,7 @@ function! ToggleVisualMarker()
       for [k,m] in items(b:myvimrc_visual_marks)
         call s:remove_visual_mark(m, k)
       endfor
+      unlet b:myvimrc_visual_marks
     endif
     return
   endif
@@ -1357,7 +1328,7 @@ function! StatusLineFugitive()
   endif
   try
     if exists('*fugitive#head')
-      let mark = ''
+      let mark = '' "
       let head = fugitive#head()
       return strlen(head) ? mark . head : ''
     endif
@@ -1409,15 +1380,11 @@ function! s:SetStatusLineColours()
   try
     let wmbg = s:get_colour('WildMenu', 'bg')
     let wmfg = s:get_colour('WildMenu', 'fg')
-    let ncbg = s:get_colour('StatusLineNC', 'bg')
+    let sfg = s:get_colour('Special', 'fg')
     let bg = s:get_colour('StatusLine', 'bg')
-    let fg = s:get_colour('StatusLine', 'fg')
 
-    call s:SetHiColour('StatusLine', fg, bg, 'bold')
-    call s:SetHiColour('User1', fg, bg, 'NONE')
-    call s:SetHiColour('User2', wmfg, wmbg, 'NONE')
-    call s:SetHiColour('User3', 'bg', bg, 'NONE')
-    call s:SetHiColour('User4', 'bg', ncbg, 'NONE')
+    call s:SetHiColour('User1', sfg, bg, 'bold')
+    call s:SetHiColour('User2', wmfg, wmbg, 'bold')
 
     highlight! link TabLineFill StatusLineNC
     highlight! link TabLineSel StatusLine
@@ -1434,29 +1401,23 @@ function! s:SetStatusLineColours()
 endfunction
 
 function! Status(active)
-  let separator = '│'
   if a:active
-    let sl = '%1*'
+    let sl = '%0*'
     let sl.= '%( %{StatusLineMode()} %)'
-    let sl.= '%3*'.separator
-    let sl.= '%( %1*%{StatusLinePath()}%0*%{StatusLineFilename()} %)'
+    let sl.= '%( %{StatusLinePath()}%1*%{StatusLineFilename()} %)'
     let sl.= '%<'
     let sl.= '%( %2*%{StatusLineModified()}%0* %)'
     let sl.= '%( %{StatusLineArglist()} %)'
-    let sl.= '%1*'
     let sl.= '%='
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
     let sl.= '%( %2*%{StatusLineFugitive()}%0* %)'
-    let sl.= '%3*'.separator
-    let sl.= '%( %1*%4l:%-3c %3p%% %)'
-
+    let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
   else
-    let sl = '%( %{StatusLineMode()} %)'
-    let sl.= '%#User4#'.separator
-    let sl.= '%0*'
+    let sl = '%0*'
+    let sl.= '%( %{StatusLineMode()} %)'
     let sl.= '%( %{StatusLinePath()}%{StatusLineFilename()} %)'
     let sl.= '%( %{StatusLineModified()} %)'
     return sl
@@ -1467,25 +1428,22 @@ function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
   let winnr = tabpagewinnr(tabnr)
-  let currBufName = bufname(tabpagebuflist(tabnr)[winnr-1])
-  let bufName = fnamemodify(currBufName, ':t')
-  let tabName = gettabvar(tabnr, 'name', bufName)
+  let tabName = gettabvar(tabnr, 'name', '')
   let cwd = getcwd(exists(':tcd') ? -1 : winnr, tabnr)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
-  let s = '%#TabLine#'
 
+  let s = '%#TabLine#'
   let s.= ' '.tabnr.'/'.tabCount.' '
-  let s.= '%#User4#│%#TabLine# '
+  let s.= '%#TabLine# '
   let s.= '%( %#TabLineSel#'.tabName.'%#TabLine# %)'
   let s.= '%='
-  let s.= '%#User4#│%#TabLine# '
+  let s.= '%#TabLine# '
   if isLocalCwd
     let s.= '%#TabLineSel#'
   endif
   let s.= cwd
   let s.= '%#TabLine#'
   let s.= ' '
-
   return s
 endfunction
 
