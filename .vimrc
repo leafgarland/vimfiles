@@ -404,6 +404,11 @@ nnoremap <leader>fL :Scratch<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bu
 nnoremap <leader>fo :edit **/*
 nnoremap <leader>fed :edit $MYVIMRC<CR>
 nnoremap <leader>fer :source $MYVIMRC<CR>
+" sometimes ZZ does not cause BufUnload events which
+" means that remote vims do not get notified that a file
+" is finished editing, this mapping works instead.
+" Also ZZ wants to quit everything.
+nnoremap <leader>fq :update<bar>bdelete<CR>
 
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
