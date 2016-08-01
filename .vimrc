@@ -30,6 +30,10 @@ if exists('+packpath')
   set packpath=$HOME/.vim
 endif
 
+for p in filter(globpath('~/.vim/mine/', '*', '', 1), 'isdirectory(v:val)')
+  execute 'set runtimepath+='.p
+endfor
+
 " Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
 let s:is_gui = has('gui_running')
@@ -104,7 +108,7 @@ Plug 'matchit.zip'
 Plug 'wellle/targets.vim'
 Plug 'AndrewRadev/splitjoin.vim'
 Plug 'justinmk/vim-sneak'
-Plug 'tommcdo/vim-lion'
+Plug 'idbrii/vim-endoscope'
 
 " Tools
 Plug 'tpope/vim-fugitive'
@@ -148,6 +152,7 @@ Plug 'beyondmarc/glsl.vim'
 Plug 'cespare/vim-toml', {'for': 'toml'}
 Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
 Plug 'OrangeT/vim-csharp', {'for': 'cs'}
+Plug 'idris-hackers/idris-vim'
 
 if strlen($TMUX)
   Plug 'tpope/vim-tbone'
@@ -317,6 +322,8 @@ let mapleader = "\<space>"
 
 nnoremap <leader><leader> :
 xnoremap <leader><leader> :
+nnoremap <C-@> :
+xnoremap <C-@> :
 
 xnoremap / <Esc>/\%V
 nnoremap <leader>sg :g//#<left><left>
@@ -355,6 +362,7 @@ nmap gQ <Nop>
 
 if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
+  tnoremap <C-a> <C-\><C-n>
   " <C-Space> is <C-@>
   tnoremap <C-@> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
@@ -1332,17 +1340,34 @@ function! s:GetDirvishName()
   endif
 endfunction
 
+function! s:GetTermTitle()
+  let title = get(b:, 'term_title', '')
+  if empty(title)
+    return ['', substitute(expand('%:t'), '^\d\+:', '', '')]
+  endif
+
+  let ms = matchlist(title, '\(\S\+\)\s\+\(\f\+\)$')
+  if empty(ms)
+    return ['', substitute(expand('%:t'), '^\d\+:', '', '')]
+  endif
+
+  return [ms[1].' ', ms[2]]
+endfunction
+
 function! StatusLineFilename()
   let fname = expand('%:t')
   return &filetype == 'dirvish' ? s:GetDirvishName() :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
-       \ &filetype == 'term' ? get(b:, 'term_title', substitute(expand('%:t'), '^\d\+:', '', ''))  :
+       \ &filetype == 'term' ? s:GetTermTitle()[1] :
        \ &buftype == 'nofile' ? expand('%') :
        \ empty(fname) ? '[no name]' : fname 
 endfunction
 
 function! StatusLinePath()
+  if &filetype == 'term'
+    return s:GetTermTitle()[0]
+  endif
   if s:is_nofile()
     return ''
   endif
@@ -1517,9 +1542,10 @@ function! TabLine()
   let cwd = getcwd(exists(':tcd') ? -1 : winnr, tabnr)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
 
-  let s = '%#TabLine#'
-  let s.= ' '.tabnr.'/'.tabCount.' '
-  let s.= '%#TabLine# '
+  let s = '%#TabLine# '
+  if tabCount > 1
+    let s.= ' '.tabnr.'/'.tabCount.' '
+  endif
   let s.= '%( %#TabLineSel#'.tabName.'%#TabLine# %)'
   let s.= '%='
   let s.= '%#TabLine# '
@@ -1528,7 +1554,8 @@ function! TabLine()
   endif
   let s.= cwd
   let s.= '%#TabLine#'
-  let s.= ' '
+  let s.= '%='
+  let s.= '%( %{strftime("%H:%M")} %)'
   return s
 endfunction
 
