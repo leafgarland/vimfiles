@@ -349,7 +349,7 @@ onoremap ill :<C-u>normal vill<CR>
 xnoremap ill kokV
 
 " disable exmode maps
-nnoremap Q :bdelete<CR>
+nnoremap Q :bdelete!<CR>
 nmap gQ <Nop>
 
 if has('nvim')
@@ -391,9 +391,10 @@ map <silent> <F11> :for id in synstack(line("."), col("."))<bar>
       \ endfor<CR>
 
 nnoremap <leader>fs :update<CR>
-nnoremap <leader>fn :vnew<CR>
-nnoremap <leader>fN :enew<CR>
-nnoremap <leader>fL :enew<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bufnr('%')<CR><bar>setf log4net<CR>
+nnoremap <leader>fq :update<bar>BClose<CR>
+nnoremap <leader>fn :VScratch<CR>
+nnoremap <leader>fN :Scratch<CR>
+nnoremap <leader>fL :Scratch<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bufnr('%')<CR><bar>setf log4net<CR>
 nnoremap <leader>fo :edit **/*
 nnoremap <leader>fed :edit $MYVIMRC<CR>
 nnoremap <leader>fer :source $MYVIMRC<CR>
@@ -403,8 +404,8 @@ nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
 nnoremap <leader>bb :set nomore<bar>call Buffers()<bar>set more<CR>:buffer<space>
 nnoremap <leader><tab> :b#<CR>
-nnoremap <leader>bd :bdelete<CR>
-nnoremap <leader>bD :bdelete!<CR>
+nnoremap <leader>bd :BClose<CR>
+nnoremap <leader>bD :BClose!<CR>
 
 nnoremap <C-J> <C-W>j
 nnoremap <C-K> <C-W>k
@@ -873,6 +874,72 @@ endif
 
 " Commands & Functions: {{{
 
+command! -nargs=1 TabName let t:name='<args>'
+command! -nargs=1 TabNew tabnew | TabName <args>
+
+" create scratch buffer {{{
+function! NewScratch(newCmd, name) abort
+  execute a:newCmd
+  setlocal buftype=nofile
+  setlocal bufhidden=hide
+  setlocal noswapfile
+  setfiletype scratch
+  if !empty(a:name)
+    execute 'file '.a:name
+  endif
+endfunction
+
+command! -nargs=? Scratch :call NewScratch('enew', <q-args>)
+command! -nargs=? VScratch :call NewScratch('vnew', <q-args>)
+" }}}
+
+" Delete current buffer without closing window {{{
+function! BClose(force) abort
+  if !a:force && &modified
+    echohl ErrorMsg | echo 'buffer has unsaved changes (use BClose! to discard changes)' | echohl None
+    return
+  endif
+
+  let bnr = bufnr('%')
+  for id in win_findbuf(bnr)
+    if !win_gotoid(id)
+      continue
+    endif
+
+    if bufexists(0) && bufnr('#') != bnr
+      buffer #
+    else
+      bprevious
+    endif
+
+    if bnr == bufnr('%')
+      Scratch
+    endif
+  endfor
+  
+  if a:force
+    bdelete! #
+  else
+    bdelete #
+  endif
+endfunction
+command! -bang -nargs=0 BClose :call BClose(<bang>0)
+" }}}
+
+" Send MDX to APL {{{
+if executable('activepivotlive.exe')
+  command! -nargs=1 -range -complete=customlist,APLInstances APLive :call APLive(<q-args>, <line1>, <line2>)
+
+  function! APLive(instance, line1, line2)
+    call system("activepivotlive.exe " . a:instance, getline(a:line1, a:line2))
+  endfunction
+
+  function! APLInstances(A,L,P)
+      return ['EMEA.B', 'EMEA.A', 'America.B', 'America.A', 'ASIA.A', 'ASIA.B']
+  endfunction
+endif
+" }}}
+
 " Diff against last saved {{{
 function! DiffOrig()
   let bft = &ft
@@ -888,9 +955,6 @@ endfunction
 command! DiffOrig call DiffOrig()
 nnoremap <leader>ud :DiffOrig<CR>
 "}}}
-
-command! -nargs=1 TabName let t:name='<args>'
-command! -nargs=1 TabNew tabnew | TabName <args>
 
 " Utils: {{{
 function! Execute(cmd) abort
