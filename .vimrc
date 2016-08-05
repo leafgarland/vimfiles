@@ -104,6 +104,7 @@ Plug 'matchit.zip'
 Plug 'wellle/targets.vim'
 Plug 'AndrewRadev/splitjoin.vim'
 Plug 'justinmk/vim-sneak'
+Plug 'tommcdo/vim-lion'
 
 " Tools
 Plug 'tpope/vim-fugitive'
@@ -383,11 +384,8 @@ xnoremap <silent> <leader>s/ :s,\%V\\,/,g<CR>
 xnoremap <silent> <leader>s\ :s,\%V/,\\,g<CR>
 
 " Show syntax groups under cursor
-map <F10> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<'
-\ . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
-\ . synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"<CR>
 map <silent> <F11> :for id in synstack(line("."), col("."))<bar>
-      \ echo synIDattr(id, "name").' '<bar> execute 'echohl '.synIDattr(synIDtrans(id), "name") <bar> echon synIDattr(synIDtrans(id), "name") <bar> echohl None <bar>
+      \ echo synIDattr(id, "name").' '<bar> execute 'echohl' synIDattr(synIDtrans(id), "name") <bar> echon synIDattr(synIDtrans(id), "name") <bar> echohl None <bar>
       \ endfor<CR>
 
 nnoremap <leader>fs :update<CR>
@@ -885,15 +883,38 @@ function! NewScratch(newCmd, name) abort
   setlocal noswapfile
   setfiletype scratch
   if !empty(a:name)
-    execute 'file '.a:name
+    execute 'file' a:name
   endif
 endfunction
 
 command! -nargs=? Scratch :call NewScratch('enew', <q-args>)
+command! -nargs=? NScratch :call NewScratch('new', <q-args>)
 command! -nargs=? VScratch :call NewScratch('vnew', <q-args>)
 " }}}
 
 " Delete current buffer without closing window {{{
+function! s:WinFindBuf(bnr)
+  if exists('*win_findbuf')
+    return win_findbuf(a:bnr)
+  else
+    let winids = []
+    for w in range(1, winnr('$'))
+      if winbufnr(w) == a:bnr
+        call add(winids, w)
+      endif
+    endfor
+    return winids
+  endif
+endfunction
+
+function! s:WinGotoId(id)
+  if exists('*win_gotoid')
+    return win_gotoid(a:id)
+  else
+    execute a:id 'wincmd w'
+    return winnr() == a:id
+endfunction
+
 function! BClose(force) abort
   if !a:force && &modified
     echohl ErrorMsg | echo 'buffer has unsaved changes (use BClose! to discard changes)' | echohl None
@@ -901,8 +922,8 @@ function! BClose(force) abort
   endif
 
   let bnr = bufnr('%')
-  for id in win_findbuf(bnr)
-    if !win_gotoid(id)
+  for id in s:WinFindBuf(bnr)
+    if !s:WinGotoId(id)
       continue
     endif
 
@@ -918,9 +939,9 @@ function! BClose(force) abort
   endfor
   
   if a:force
-    bdelete! #
+    execute 'bdelete!' bnr
   else
-    bdelete #
+    execute 'bdelete' bnr
   endif
 endfunction
 command! -bang -nargs=0 BClose :call BClose(<bang>0)
@@ -1054,7 +1075,7 @@ function! Highlight(...) abort
     let grpName = printf(fmt, grpName)
     if !empty(grpAttrs)
       echon grpName " "
-      execute 'echohl ' . grpName | echon "xxx" | echohl None
+      execute 'echohl' grpName | echon "xxx" | echohl None
       let s = 0
       let pattern = '\(\S\+\)=\(\S\+\)'
       let ms = matchlist(grpAttrs, pattern, s)
@@ -1071,7 +1092,7 @@ function! Highlight(...) abort
       endif
     elseif !empty(grpLink)
       echon grpName " "
-      execute 'echohl ' . grpName | echon "xxx" | echohl None
+      execute 'echohl' grpName | echon "xxx" | echohl None
       echon " links to " grpLink "\n"
     else
       echo grpName "xxx cleared\n"
@@ -1107,7 +1128,7 @@ function! s:MRUFComplete(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! s:MRU(command, arg)
-  execute a:command . " " . a:arg
+  execute a:command a:arg
 endfunction
 
 command! -nargs=1 -complete=customlist,<sid>MRUDComplete MD call <sid>MRU('cd', <f-args>)
@@ -1206,7 +1227,7 @@ let g:myvimrc_visual_marks_groups = [
 function! s:remove_visual_mark(match, reg)
   call matchdelete(a:match)
   call remove(b:myvimrc_visual_marks, a:reg)
-  execute 'delmarks ' . a:reg
+  execute 'delmarks' a:reg
 endfunction
 
 function! UpdateVisualMarker()
@@ -1434,7 +1455,7 @@ function! s:SetHiColour(group, fg, bg, attrs)
   let cterm = a:fg[0] != '#' && a:bg[0] != '#' ?
         \ 'cterm='.a:attrs.' ctermfg='.a:fg.' ctermbg='.a:bg :
         \ 'cterm='.a:attrs
-  execute 'highlight '.a:group.' '.gui.' '.cterm
+  execute 'highlight' a:group gui cterm
 endfunction
 
 function! s:SetStatusLineColours()
