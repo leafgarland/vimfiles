@@ -109,6 +109,7 @@ Plug 'wellle/targets.vim'
 Plug 'AndrewRadev/splitjoin.vim'
 Plug 'justinmk/vim-sneak'
 Plug 'idbrii/vim-endoscope'
+Plug 'tommcdo/vim-lion'
 
 " Tools
 Plug 'tpope/vim-fugitive'
