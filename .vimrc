@@ -907,7 +907,12 @@ command! -nargs=1 TabNew tabnew | TabName <args>
 
 " DevDocs cmd {{{
 function! DevDocs(query)
-  call system('"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" "https://devdocs.io/#q=' . a:query . '"')
+  let q = 'https://devdocs.io/#q=' . substitute(a:query, ' ', '%20', 'g')
+  if has('mac')
+    call system('open ' . q)
+  else
+    call system('"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" "' . q . '"')
+  endif
 endfunction
 command! -nargs=* DevDocs :call DevDocs(<q-args>)
 " }}}
