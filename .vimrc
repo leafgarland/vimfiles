@@ -691,10 +691,7 @@ endif
 " rust racer {{{
 if s:has_plug('vim-racer')
   if !exists('$RUST_SRC_PATH')
-    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/src'
-  endif
-  if s:has_plug('YouCompleteMe')
-    let g:ycm_rust_src_path = $RUST_SRC_PATH
+    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/rustc-1.10.0/src'
   endif
 endif
 " }}}
@@ -708,7 +705,10 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 " YouCompleteMe {{{
 if s:has_plug('YouCompleteMe')
 
-  let g:ycm_seed_identifiers_with_syntax = 1
+  if !exists('$RUST_SRC_PATH')
+    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/rustc-1.10.0/src'
+  endif
+  let g:ycm_rust_src_path = $RUST_SRC_PATH
 
   " Sometimes YCM is unhappy with the python it uses, so we can force it to
   " use a specific python
