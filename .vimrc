@@ -72,6 +72,8 @@ if s:is_win
     endif
   endfunction
   nnoremap co! :call <SID>toggle_powershell()<CR>
+
+  let g:statusline_use_emoji = 1
 endif
 
 "}}}
@@ -323,6 +325,10 @@ let mapleader = "\<space>"
 
 nnoremap <leader><leader> :
 xnoremap <leader><leader> :
+nnoremap <C-space> :
+xnoremap <C-space> :
+" <C-space> and <C-@> are equivalent in terminal
+" because Ctrl clears bits 6+7 :echo and(char2nr(' '), 31) == and(char2nr('@'), 31)
 nnoremap <C-@> :
 xnoremap <C-@> :
 
@@ -363,7 +369,6 @@ nmap gQ <Nop>
 
 if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
-  tnoremap <C-a> <C-\><C-n>
   " <C-Space> is <C-@>
   tnoremap <C-@> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
@@ -405,11 +410,6 @@ nnoremap <leader>fL :Scratch<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bu
 nnoremap <leader>fo :edit **/*
 nnoremap <leader>fed :edit $MYVIMRC<CR>
 nnoremap <leader>fer :source $MYVIMRC<CR>
-" sometimes ZZ does not cause BufUnload events which
-" means that remote vims do not get notified that a file
-" is finished editing, this mapping works instead.
-" Also ZZ wants to quit everything.
-nnoremap <leader>fq :update<bar>bdelete<CR>
 
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
@@ -433,6 +433,15 @@ nnoremap <leader>wsh :leftabove vsp<CR>
 nnoremap <leader>wsl :rightbelow vsp<CR>
 nnoremap <leader>wsk :leftabove sp<CR>
 nnoremap <leader>wsj :rightbelow sp<CR>
+
+function!  s:ToggleDiff()
+  if &diff
+    diffoff!
+  else
+    windo diffthis
+  endif
+endfunction
+nnoremap <c-w>D :call <SID>ToggleDiff()<CR>
 
 nnoremap <tab> <c-w>w
 nnoremap <s-tab> <c-w>W
@@ -563,6 +572,11 @@ function! s:help_filetype_settings()
   nnoremap <buffer> q :wincmd c<CR>
 endfunction
 " }}}
+
+" rust: {{{
+autocmd vimrc FileType rust setlocal keywordprg=:DevDocs\ rust
+" }}}
+
 "}}}
 
 " Plugins config: {{{
@@ -693,6 +707,8 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
 " YouCompleteMe {{{
 if s:has_plug('YouCompleteMe')
+
+  let g:ycm_seed_identifiers_with_syntax = 1
 
   " Sometimes YCM is unhappy with the python it uses, so we can force it to
   " use a specific python
@@ -889,13 +905,19 @@ endif
 command! -nargs=1 TabName let t:name='<args>'
 command! -nargs=1 TabNew tabnew | TabName <args>
 
+" DevDocs cmd {{{
+function! DevDocs(query)
+  call system('"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" "https://devdocs.io/#q=' . a:query . '"')
+endfunction
+command! -nargs=* DevDocs :call DevDocs(<q-args>)
+" }}}
+
 " create scratch buffer {{{
 function! NewScratch(newCmd, name) abort
   execute a:newCmd
   setlocal buftype=nofile
   setlocal bufhidden=hide
   setlocal noswapfile
-  setfiletype scratch
   if !empty(a:name)
     execute 'file' a:name
   endif
@@ -1433,7 +1455,7 @@ function! StatusLineModified()
   if s:is_nofile()
     return ''
   endif
-  let modified = &modified ? '*' : ''
+  let modified = &modified ? "+": ''
   let readonly = &readonly ? '' : ''
   return modified . readonly
 endfunction
@@ -1453,10 +1475,33 @@ function! StatusLineFugitive()
   return ''
 endfunction
 
+function! s:GetBufType()
+  let bt = []
+  if &buftype == 'nofile' && &bufhidden == 'hide' && !&swapfile
+    call add(bt, 'scratch')
+  elseif &previewwindow
+    call add(bt, 'preview')
+  elseif &diff
+    call add(bt, 'diff')
+  endif 
+  return join(bt)
+endfunction
+
+function! StatusLineBufType()
+  return s:GetBufType()
+endfunction
+
 function! StatusLineMode()
-  let m = &ft == 'dirvish' ? 'dir' :
-      \ empty(&ft) ? 'none' : &ft
-  return (&previewwindow ? 'preview:' : '') . m
+  if get(g:, 'statusline_use_emoji', 0)
+    let m = &ft == 'dirvish' ? "\U1F4C2" :
+        \ &ft == 'qf' ? "\U1F50D" :
+        \ &ft == 'grepr' ? "\U1F50D" :
+        \ &ft
+  else
+    let m = &ft == 'dirvish' ? "dir" :
+        \ &ft
+  endif
+  return !empty(m) ? m : 'none'
 endfunction
 
 function! s:get_colour(higroup, attr)
@@ -1523,6 +1568,7 @@ function! Status(active)
     let sl.= '%( %{StatusLinePath()}%1*%{StatusLineFilename()} %)'
     let sl.= '%<'
     let sl.= '%( %2*%{StatusLineModified()}%0* %)'
+    let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
     let sl.= '%( %{StatusLineFileEncoding()} %)'
@@ -1536,6 +1582,7 @@ function! Status(active)
     let sl.= '%( %{StatusLineMode()} %)'
     let sl.= '%( %{StatusLinePath()}%{StatusLineFilename()} %)'
     let sl.= '%( %{StatusLineModified()} %)'
+    let sl.= '%( %{StatusLineBufType()} %)'
     return sl
   endif
 endfunction
@@ -1548,10 +1595,9 @@ function! TabLine()
   let cwd = getcwd(exists(':tcd') ? -1 : winnr, tabnr)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
 
-  let s = '%#TabLine# '
-  if tabCount > 1
-    let s.= ' '.tabnr.'/'.tabCount.' '
-  endif
+  let s = '%#TabLine#'
+  let s.= ' '.tabnr.'/'.tabCount.' '
+  let s.= '%#TabLine# '
   let s.= '%( %#TabLineSel#'.tabName.'%#TabLine# %)'
   let s.= '%='
   let s.= '%#TabLine# '
