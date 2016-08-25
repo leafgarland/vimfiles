@@ -27,7 +27,7 @@ if &shell =~# 'fish$'
 endif
 
 if exists('+packpath')
-  set packpath=$HOME/.vim
+  set packpath+=$HOME/.vim
 endif
 
 for p in filter(globpath('~/.vim/mine/', '*', '', 1), 'isdirectory(v:val)')
@@ -77,6 +77,7 @@ if s:is_win
 endif
 
 "}}}
+
 "}}}
 
 " Plugins: {{{
@@ -96,7 +97,7 @@ Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
 Plug 'robertmeta/nofrils'
 Plug 'w0ng/vim-hybrid'
-Plug 'guns/xterm-color-table.vim'
+Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 
 " Motions and actions
@@ -333,8 +334,6 @@ xnoremap <C-space> :
 nnoremap <C-@> :
 xnoremap <C-@> :
 
-xnoremap / <Esc>/\%V
-nnoremap <leader>sg :g//#<left><left>
 xnoremap . :normal .<CR>
 
 " buffer text object
@@ -393,10 +392,8 @@ if has('nvim')
   endif
 endif
 
-nnoremap <silent> <leader>s/ :s,\\,/,g<CR>
-nnoremap <silent> <leader>s\ :s,/,\\,g<CR>
-xnoremap <silent> <leader>s/ :s,\%V\\,/,g<CR>
-xnoremap <silent> <leader>s\ :s,\%V/,\\,g<CR>
+" run last make cmd
+nnoremap <leader>xm q:?\([Mm]ake\\|Dispatch\)<CR><CR>
 
 " Show syntax groups under cursor
 map <silent> <F11> :for id in synstack(line("."), col("."))<bar>
@@ -411,6 +408,8 @@ nnoremap <leader>fL :Scratch<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bu
 nnoremap <leader>fo :edit **/*
 nnoremap <leader>fed :edit $MYVIMRC<CR>
 nnoremap <leader>fer :source $MYVIMRC<CR>
+nnoremap <leader>fF :UnScratch<CR>
+nnoremap <leader>fS :ScratchThis<CR>
 
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
@@ -429,6 +428,7 @@ nmap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
 
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
+nnoremap <silent> <C-w>Z :WinZoom<CR>
 
 nnoremap <leader>wsh :leftabove vsp<CR>
 nnoremap <leader>wsl :rightbelow vsp<CR>
@@ -498,9 +498,21 @@ xnoremap L g_
 
 nnoremap gI `.
 
+xnoremap / <Esc>/\%V
+
+nnoremap <leader>sg :g//#<left><left>
+nnoremap <leader>sc :%s///gn<left><left><left><left>
+xnoremap <leader>sc :s///gn<left><left><left><left>
+
+nnoremap <silent> <leader>s/ :s,\\,/,g<CR>
+nnoremap <silent> <leader>s\ :s,/,\\,g<CR>
+xnoremap <silent> <leader>s/ :s,\%V\\,/,g<CR>
+xnoremap <silent> <leader>s\ :s,\%V/,\\,g<CR>
+
+nnoremap <leader>sl :keeppatterns lvimgrep /<C-R><C-R>//j %<CR>
+
 nnoremap <leader>8 :keeppatterns lvimgrep /<C-R><C-R><C-W>/j %<CR>
 xnoremap <leader>8 y:<C-U>keeppatterns lvimgrep /<C-R><C-R>"/j %<CR>
-nnoremap <leader>sl :keeppatterns lvimgrep /<C-R><C-R>//j %<CR>
 
 nnoremap <leader>sv :v//d<CR>
 nnoremap <leader>sV :g//d<CR>
@@ -754,9 +766,8 @@ if s:has_plug('YouCompleteMe')
         \ 'log4net' : 1
         \}
 
-  nnoremap <leader>mgd :YcmCompleter GoToDefinition<CR>
-  nnoremap <leader>mgh :YcmCompleter GoToDeclaration<CR>
-  nnoremap <leader>mht :YcmCompleter GetType<CR>
+  nnoremap <leader>gd :YcmCompleter GoTo<CR>
+  nnoremap <leader>ht :YcmCompleter GetType<CR>
 endif
 " }}}
 
@@ -800,18 +811,6 @@ if s:has_plug('syntastic')
   let g:syntastic_stl_format = '[Syntax: %E{line:%fe }%W{#W:%w}%B{ }%E{#E:%e}]'
 endif
 " }}}
-
-" Fugitive: {{{
-if s:has_plug('vim-fugitive')
-  nnoremap <silent> <leader>gs :Gstatus<CR>
-  nnoremap <silent> <leader>gd :Gdiff<CR>
-  nnoremap <silent> <leader>gc :Gcommit<CR>
-  nnoremap <silent> <leader>gb :Gblame<CR>
-  nnoremap <silent> <leader>gl :Glog<CR>
-  nnoremap <silent> <leader>gp :Git pull<CR>
-  nnoremap <silent> <leader>gP :Git push<CR>
-endif
-"}}}
 
 "{{{ Slimux
 if s:has_plug('slimux')
@@ -906,6 +905,33 @@ endif
 command! -nargs=1 TabName let t:name='<args>'
 command! -nargs=1 TabNew tabnew | TabName <args>
 
+" WinZoom cmd {{{
+function! WinZoom()
+  let zoomed = getwinvar(0, 'winzoom', 0)
+  if zoomed
+    wincmd c
+  else
+    tab split
+    call setwinvar(0, 'winzoom', 1)
+  endif
+endfunction
+function! WinZoom2()
+  let zoomed = getwinvar(0, 'winzoom', 0)
+  if zoomed
+    execute 'vertical resize' w:winzoom_old_width
+    execute 'resize' w:winzoom_old_height
+    unlet w:winzoom w:winzoom_old_width w:winzoom_old_height
+  else
+    let w:winzoom = 1
+    let w:winzoom_old_width = winwidth(0)
+    let w:winzoom_old_height = winheight(0)
+    resize 999
+    vertical resize 999
+  endif
+endfunction
+command! -nargs=0 WinZoom :call WinZoom2()
+" }}}
+
 " DevDocs cmd {{{
 function! DevDocs(query)
   let q = 'https://devdocs.io/#q=' . substitute(a:query, ' ', '%20', 'g')
@@ -919,8 +945,10 @@ command! -nargs=* DevDocs :call DevDocs(<q-args>)
 " }}}
 
 " create scratch buffer {{{
-function! NewScratch(newCmd, name) abort
-  execute a:newCmd
+function! MkScratch(newCmd, name) abort
+  if !empty(a:newCmd)
+    execute a:newCmd
+  endif
   setlocal buftype=nofile
   setlocal bufhidden=hide
   setlocal noswapfile
@@ -929,9 +957,17 @@ function! NewScratch(newCmd, name) abort
   endif
 endfunction
 
-command! -nargs=? Scratch :call NewScratch('enew', <q-args>)
-command! -nargs=? NScratch :call NewScratch('new', <q-args>)
-command! -nargs=? VScratch :call NewScratch('vnew', <q-args>)
+function! UnScratch() abort
+  set buftype<
+  set bufhidden<
+  set swapfile<
+endfunction
+
+command! -nargs=? Scratch :call MkScratch('enew', <q-args>)
+command! -nargs=? NScratch :call MkScratch('new', <q-args>)
+command! -nargs=? VScratch :call MkScratch('vnew', <q-args>)
+command! -nargs=? ScratchThis :call MkScratch('', <q-args>)
+command! -nargs=0 UnScratch :call UnScratch()
 " }}}
 
 " Delete current buffer without closing window {{{
@@ -1389,12 +1425,11 @@ function! s:GetTermTitle()
 endfunction
 
 function! StatusLineFilename()
-  let fname = expand('%:t')
+  let fname = &buftype == 'nofile' ? expand('%') : expand('%:t')
   return &filetype == 'dirvish' ? s:GetDirvishName() :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ &filetype == 'term' ? s:GetTermTitle()[1] :
-       \ &buftype == 'nofile' ? expand('%') :
        \ empty(fname) ? '[no name]' : fname 
 endfunction
 
@@ -1573,7 +1608,9 @@ function! Status(active)
     let sl.= '%( %{StatusLineMode()} %)'
     let sl.= '%( %{StatusLinePath()}%1*%{StatusLineFilename()} %)'
     let sl.= '%<'
-    let sl.= '%( %2*%{StatusLineModified()}%0* %)'
+    let sl.= '%2*'
+    let sl.= '%( %{StatusLineModified()} %)'
+    let sl.= '%0*'
     let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
