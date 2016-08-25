@@ -122,6 +122,7 @@ Plug 'Valloric/YouCompleteMe'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
+Plug 'junegunn/vim-peekaboo'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
