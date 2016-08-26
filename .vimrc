@@ -97,6 +97,7 @@ Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
 Plug 'robertmeta/nofrils'
 Plug 'w0ng/vim-hybrid'
+Plug 'leafgarland/direwolf'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 
@@ -124,6 +125,7 @@ Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'junegunn/vim-peekaboo'
+Plug 'ludovicchabant/vim-gutentags'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -1265,8 +1267,8 @@ if exists('+guifont')
     endif
   endfunction
 
-  nnoremap coz :<C-U>call <sid>ChangeZoom(-1)<CR>
-  nnoremap coZ :<C-U>call <sid>ChangeZoom(1)<CR>
+  nnoremap coz :<C-U>call <sid>ChangeZoom(-1 * (v:count == 0 ? 1 : v:count))<CR>
+  nnoremap coZ :<C-U>call <sid>ChangeZoom(1 * (v:count == 0 ? 1 : v:count))<CR>
 
   let s:maximised=0
   let s:restoreLines=0
@@ -1453,6 +1455,7 @@ function! StatusLineFilename()
   let fname = &buftype == 'nofile' ? expand('%') : expand('%:t')
   return &filetype == 'dirvish' ? s:GetDirvishName() :
        \ &filetype == 'help' ? expand('%:t:r') :
+       \ &filetype == 'peekaboo' ? '' :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ &filetype == 'term' ? s:GetTermTitle()[1] :
        \ empty(fname) ? '[no name]' : fname 
@@ -1643,7 +1646,10 @@ function! Status(active)
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
-    let sl.= '%( %2*%{StatusLineFugitive()}%0* %)'
+    let sl.= '%2*'
+    let sl.= '%( %{StatusLineFugitive()} %)'
+    let sl.= '%( %{gutentags#statusline()} %)'
+    let sl.= '%0*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
   else
