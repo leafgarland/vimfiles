@@ -590,6 +590,10 @@ endfunction
 autocmd vimrc FileType rust setlocal keywordprg=:DevDocs\ rust
 " }}}
 
+" pandoc/markdown: {{{
+autocmd vimrc FileType pandoc setlocal foldcolumn=0 | setlocal concealcursor+=n
+" }}}
+
 "}}}
 
 " Plugins config: {{{
@@ -842,6 +846,27 @@ if s:has_plug('gruvbox')
     let g:gruvbox_contrast_light='hard'
   endif
   let g:gruvbox_italic=0
+endif
+"}}}
+
+" molokai: {{{
+if s:has_plug('molokai')
+  function! s:MolokaiCustomise()
+    let slfg = s:get_colour('StatusLine', 'fg')
+    let slbg = s:get_colour('StatusLine', 'bg')
+    let sbg = s:get_colour('Special', 'bg')
+    let sfg = s:get_colour('Special', 'fg')
+    let cfg = s:get_colour('Comment', 'fg')
+    let wmbg = s:get_colour('WildMenu', 'bg')
+
+    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+    call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
+    call s:SetHiColour('User1', sfg, slbg, 'bold')
+    call s:SetHiColour('User2', sfg, wmbg, 'bold')
+    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+    call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
+  endfunction
+  autocmd vimrc ColorScheme molokai :call <SID>MolokaiCustomise()
 endif
 "}}}
 
@@ -1580,17 +1605,18 @@ function! s:SetStatusLineColours()
     return
   endif
   try
-    let wmbg = s:get_colour('WildMenu', 'bg')
-    let wmfg = s:get_colour('WildMenu', 'fg')
+    let slfg = s:get_colour('StatusLine', 'fg')
+    let slbg = s:get_colour('StatusLine', 'bg')
+    let sbg = s:get_colour('Special', 'bg')
     let sfg = s:get_colour('Special', 'fg')
-    let bg = s:get_colour('StatusLine', 'bg')
+    let cfg = s:get_colour('Comment', 'fg')
+    let wmbg = s:get_colour('WildMenu', 'bg')
 
-    call s:SetHiColour('User1', sfg, bg, 'bold')
-    call s:SetHiColour('User2', wmfg, wmbg, 'bold')
-
-    highlight! link TabLineFill StatusLineNC
-    highlight! link TabLineSel StatusLine
-    highlight! link TabLine StatusLineNC
+    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+    call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
+    call s:SetHiColour('User1', sfg, slbg, 'bold')
+    call s:SetHiColour('User2', sfg, wmbg, 'bold')
+    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
   catch
     echomsg 'Failed to set custom StatusLine colours, reverting: '.v:exception
     highlight! link User1 StatusLine
