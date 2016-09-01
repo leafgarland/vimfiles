@@ -92,12 +92,12 @@ Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
-Plug 'NLKNguyen/papercolor-theme'
+Plug 'leafgarland/direwolf'
 Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
-Plug 'robertmeta/nofrils'
 Plug 'w0ng/vim-hybrid'
-Plug 'leafgarland/direwolf'
+Plug 'robertmeta/nofrils'
+Plug 'rakr/vim-one'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 
@@ -161,13 +161,16 @@ Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
 Plug 'OrangeT/vim-csharp', {'for': 'cs'}
 Plug 'idris-hackers/idris-vim'
 
-if strlen($TMUX)
+if s:is_win && s:is_gui
+  Plug 'kkoenig/wimproved.vim'
+endif
+
+if !empty($TMUX)
   Plug 'tpope/vim-tbone'
   Plug 'wellle/tmux-complete.vim' 
   Plug 'tmux-plugins/vim-tmux-focus-events'
   Plug 'christoomey/vim-tmux-navigator'
   Plug 'tmux-plugins/vim-tmux'
-  Plug 'epeli/slimux'
 endif
 
 if executable('fish')
@@ -600,6 +603,13 @@ autocmd vimrc FileType pandoc setlocal foldcolumn=0 | setlocal concealcursor+=n
 
 " Plugins config: {{{
 
+" wimproved: {{{
+if s:has_plug('wimproved.vim')
+  autocmd vimrc GUIEnter * silent! WToggleClean
+  nnoremap <silent> coF :WToggleFullscreen<CR>
+endif
+" }}}
+
 " VimPlug: {{{
 function! s:plug_gx()
   let line = getline('.')
@@ -869,6 +879,30 @@ if s:has_plug('molokai')
     call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
   endfunction
   autocmd vimrc ColorScheme molokai :call <SID>MolokaiCustomise()
+endif
+"}}}
+
+" colorscheme one: {{{
+if s:has_plug('vim-one')
+  function! s:OneCustomise()
+    let slfg = s:get_colour('StatusLine', 'fg')
+    let slbg = s:get_colour('StatusLine', 'bg')
+    let sbg = s:get_colour('Special', 'bg')
+    let sfg = s:get_colour('Special', 'fg')
+    let s2fg = s:get_colour('Constant', 'fg')
+    let cfg = s:get_colour('Comment', 'fg')
+    let wmbg = s:get_colour('WildMenu', 'bg')
+
+    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+    call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
+    call s:SetHiColour('User1', sfg, slbg, 'bold')
+    call s:SetHiColour('User2', s2fg, slbg, 'bold')
+    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+    call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
+
+    call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
+  endfunction
+  autocmd vimrc ColorScheme one :call <SID>OneCustomise()
 endif
 "}}}
 
@@ -1263,7 +1297,9 @@ if exists('+guifont')
     let &gfn=substitute(&gfn, ':h\d\+', ':h' . s:zoom_level, '')
     if s:maximised
       let &lines=999
-      let &columns=999
+      if s:maximised == 1
+        let &columns=999
+      endif
     endif
   endfunction
 
@@ -1279,7 +1315,7 @@ if exists('+guifont')
       let &lines=s:restoreLines
       let &columns=s:restoreCols
     else
-      let s:maximised=1
+      let s:maximised=1 + a:vertical
       let s:restoreLines=&lines
       let s:restoreCols=&columns
       let &lines=999
