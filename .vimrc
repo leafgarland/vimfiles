@@ -93,10 +93,12 @@ Plug 'Shougo/vimproc'
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/direwolf'
+Plug 'NLKNguyen/papercolor-theme'
 Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
 Plug 'w0ng/vim-hybrid'
 Plug 'robertmeta/nofrils'
+Plug 'w0ng/vim-hybrid'
 Plug 'rakr/vim-one'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
@@ -179,6 +181,7 @@ endif
 
 if has('nvim')
   Plug 'benekastah/neomake'
+  Plug 'cloudhead/neovim-fuzzy'
 else
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
@@ -1039,19 +1042,11 @@ function! s:WinFindBuf(bnr)
     let winids = []
     for w in range(1, winnr('$'))
       if winbufnr(w) == a:bnr
-        call add(winids, w)
+	call add(winids, win_getid(w))
       endif
     endfor
     return winids
   endif
-endfunction
-
-function! s:WinGotoId(id)
-  if exists('*win_gotoid')
-    return win_gotoid(a:id)
-  else
-    execute a:id 'wincmd w'
-    return winnr() == a:id
 endfunction
 
 function! BClose(force) abort
@@ -1062,7 +1057,7 @@ function! BClose(force) abort
 
   let bnr = bufnr('%')
   for id in s:WinFindBuf(bnr)
-    if !s:WinGotoId(id)
+    if !win_gotoid(id)
       continue
     endif
 
@@ -1457,7 +1452,7 @@ endfunction
 " PrettyLittleStatus: {{{
 
 function! s:is_nofile()
-    return &buftype =~ 'nofile\|help\|qf' || &filetype =~ 'term'
+    return &buftype =~ 'nofile\|help\|qf' || exists('b:terminal_job_id')
 endfunction
 
 function! s:is_small_win()
@@ -1490,6 +1485,7 @@ endfunction
 function! StatusLineFilename()
   let fname = &buftype == 'nofile' ? expand('%') : expand('%:t')
   return &filetype == 'dirvish' ? s:GetDirvishName() :
+       \ &filetype == 'fuzzy' ? b:fuzzy_status :
        \ &filetype == 'help' ? expand('%:t:r') :
        \ &filetype == 'peekaboo' ? '' :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
