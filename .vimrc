@@ -271,8 +271,8 @@ if g:myvimrc_manage_cursorline
 endif
 
 " Opens quick fix window when there are items, close it when empty
-autocmd vimrc QuickFixCmdPost [^l]* nested cwindow
-autocmd vimrc QuickFixCmdPost    l* nested lwindow
+autocmd vimrc QuickFixCmdPost [^l]* nested CWindow
+autocmd vimrc QuickFixCmdPost    l* nested CWindow
 
 if has('nvim')
   autocmd vimrc BufEnter term://* setfiletype term|startinsert
@@ -983,6 +983,11 @@ endif
 
 command! -nargs=1 TabName let t:name='<args>'
 command! -nargs=1 TabNew tabnew | TabName <args>
+
+" Hack buffer names relative to cwd, see
+" https://groups.google.com/forum/#!topic/vim_use/Vq0z2DJH2So
+" Useful to get relative paths in quickfix after grep
+command! CWindow 0split | lcd . | quit | cwindow
 
 " WinZoom cmd {{{
 function! WinZoom()
