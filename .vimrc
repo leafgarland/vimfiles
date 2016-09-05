@@ -93,12 +93,10 @@ Plug 'Shougo/vimproc'
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/direwolf'
-Plug 'NLKNguyen/papercolor-theme'
 Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
 Plug 'w0ng/vim-hybrid'
 Plug 'robertmeta/nofrils'
-Plug 'w0ng/vim-hybrid'
 Plug 'rakr/vim-one'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
@@ -853,7 +851,7 @@ if s:has_plug('slimux')
 endif
 "}}}
 
-" gruvbox: {{{
+" colorscheme gruvbox: {{{
 if s:has_plug('gruvbox')
   if s:is_gui
     let g:gruvbox_invert_selection=0
@@ -864,7 +862,7 @@ if s:has_plug('gruvbox')
 endif
 "}}}
 
-" molokai: {{{
+" colorscheme molokai: {{{
 if s:has_plug('molokai')
   function! s:MolokaiCustomise()
     let slfg = s:get_colour('StatusLine', 'fg')
@@ -909,7 +907,24 @@ if s:has_plug('vim-one')
 endif
 "}}}
 
-" nofrils: {{{
+" colorscheme apprentice: {{{
+if s:has_plug('Apprentice')
+  function! s:ApprenticeCustomise()
+    let slfg = s:get_colour('PMenu', 'fg')
+    let slbg = s:get_colour('PMenu', 'bg')
+    let sfg = s:get_colour('Constant', 'fg')
+    let s2fg = s:get_colour('Operator', 'fg')
+
+    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+    call s:SetHiColour('User1', sfg, slbg, 'bold')
+    call s:SetHiColour('User2', s2fg, slbg, 'bold')
+    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+  endfunction
+  autocmd vimrc ColorScheme apprentice :call <SID>ApprenticeCustomise()
+endif
+"}}}
+
+" colorscheme nofrils: {{{
 if s:has_plug('nofrils')
   let g:nofrils_strbackgrounds = 1
 
@@ -1562,15 +1577,11 @@ function! StatusLineModified()
 endfunction
 
 function! StatusLineFugitive()
-  if &ft != 'dirvish' && s:is_nofile() || s:is_small_win()
+  if !exists('*fugitive#head') || &ft != 'dirvish' && s:is_nofile() || s:is_small_win()
     return ''
   endif
   try
-    if exists('*fugitive#head')
-      let mark = '' "
-      let head = fugitive#head()
-      return strlen(head) ? mark . head : ''
-    endif
+    return fugitive#head()
   catch
   endtry
   return ''
