@@ -94,6 +94,7 @@ Plug 'Shougo/vimproc'
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/direwolf'
 Plug 'justinmk/molokai'
+Plug 'romainl/Apprentice'
 Plug 'robertmeta/nofrils'
 Plug 'rakr/vim-one'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
@@ -947,8 +948,10 @@ if s:has_plug('Apprentice')
     let slbg = s:get_colour('PMenu', 'bg')
     let sfg = s:get_colour('Constant', 'fg')
     let s2fg = s:get_colour('Operator', 'fg')
+    let tfg = s:get_colour('TabLine', 'fg')
 
     call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+    call s:SetHiColour('StatusLineNC', tfg, slbg, 'NONE')
     call s:SetHiColour('User1', sfg, slbg, 'bold')
     call s:SetHiColour('User2', s2fg, slbg, 'bold')
     call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
