@@ -94,8 +94,6 @@ Plug 'Shougo/vimproc'
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/direwolf'
 Plug 'justinmk/molokai'
-Plug 'romainl/Apprentice'
-Plug 'w0ng/vim-hybrid'
 Plug 'robertmeta/nofrils'
 Plug 'rakr/vim-one'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
@@ -126,6 +124,7 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'junegunn/vim-peekaboo'
 Plug 'ludovicchabant/vim-gutentags'
+Plug 'radenling/vim-dispatch-neovim'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -537,7 +536,9 @@ inoremap [; [<CR>];<Esc>O
 inoremap [, [<CR>],<Esc>O
 
 cnoremap cd. cd %:p:h
+cnoremap cd.. cd %:p:h:h
 cnoremap %% <C-R>=expand('%:h').'/'<cr>
+cnoremap %%% <C-R>=expand('%:h:h').'/'<cr>
 cnoremap <C-r><C-l> <C-r>=getline('.')<CR>
 cnoremap <C-p> <Up>
 cnoremap <C-n> <Down>
@@ -902,6 +903,38 @@ if s:has_plug('vim-one')
     call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
 
     call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
+    call s:SetHiColour('Folded', 'fg', cfg, 'NONE')
+
+    highlight link helpCommand Number
+    highlight link helpSectionDelim Comment
+    highlight link helpExample Special
+
+    highlight clear vimCommand
+    highlight link vimMapLhs Special
+    highlight link vimMapRhs Normal
+    highlight link vimMapMod Number
+    highlight link vimMapModKey Number
+    highlight link vimNotation Constant
+    highlight link vimBracket Constant
+
+    if has('nvim')
+      let g:terminal_color_0  = '#282c34'
+      let g:terminal_color_1  = '#be5046'
+      let g:terminal_color_2  = '#50a14f'
+      let g:terminal_color_3  = '#d19a66'
+      let g:terminal_color_4  = '#5889F3'
+      let g:terminal_color_5  = '#a626a4'
+      let g:terminal_color_6  = '#2EABE5'
+      let g:terminal_color_7  = '#828997'
+      let g:terminal_color_8  = '#5c6370'
+      let g:terminal_color_9  = '#e06c75'
+      let g:terminal_color_10 = '#98c379'
+      let g:terminal_color_11 = '#e5c07b'
+      let g:terminal_color_12 = '#61afef'
+      let g:terminal_color_13 = '#c678dd'
+      let g:terminal_color_14 = '#56b6c2'
+      let g:terminal_color_15 = '#abb2bf'
+    endif
   endfunction
   autocmd vimrc ColorScheme one :call <SID>OneCustomise()
 endif
@@ -1060,9 +1093,9 @@ function! s:WinFindBuf(bnr)
     return win_findbuf(a:bnr)
   else
     let winids = []
-    for w in range(1, winnr('$'))
-      if winbufnr(w) == a:bnr
-	call add(winids, win_getid(w))
+    for w in nvim_get_windows()
+      if nvim_win_get_buffer(w) == a:bnr
+	call add(winids, w)
       endif
     endfor
     return winids
@@ -1346,11 +1379,7 @@ endif
 " }}}
 
 " Evaluate Vim code regions {{{
-function! ExecRange(line1, line2)
-  execute substitute(join(getline(a:line1, a:line2), "\n"), '\n\s*\\', ' ', 'g')
-  echom string(a:line2 - a:line1 + 1) . "L executed"
-endfunction
-command! -range ExecRange call ExecRange(<line1>, <line2>)
+command! -range ExecRange execute substitute(join(getline(<line1>, <line2>), "\n"), '\n\s*\\', ' ', 'g')
 
 autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :ExecRange<CR>|
                          \ xnoremap <buffer> <leader>xe :ExecRange<CR>
