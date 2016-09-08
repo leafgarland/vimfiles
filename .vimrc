@@ -22,6 +22,8 @@ if has('vim_starting')
   endif
 endif
 
+" as of patch 276 this is not needed according to vim-sensible
+" todo: try not changing shell.
 if &shell =~# 'fish$'
   set shell=bash
 endif
@@ -125,7 +127,6 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'junegunn/vim-peekaboo'
 Plug 'ludovicchabant/vim-gutentags'
-Plug 'radenling/vim-dispatch-neovim'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -180,6 +181,7 @@ endif
 if has('nvim')
   Plug 'benekastah/neomake'
   Plug 'cloudhead/neovim-fuzzy'
+  Plug 'radenling/vim-dispatch-neovim'
 else
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
@@ -272,7 +274,7 @@ endif
 
 " Opens quick fix window when there are items, close it when empty
 autocmd vimrc QuickFixCmdPost [^l]* nested CWindow
-autocmd vimrc QuickFixCmdPost    l* nested CWindow
+autocmd vimrc QuickFixCmdPost    l* nested LWindow
 
 if has('nvim')
   autocmd vimrc BufEnter term://* setfiletype term|startinsert
@@ -312,7 +314,7 @@ if exists('+guioptions')
   if has('vim_starting')
     set lines=50
     set columns=120
-    set guifont=Source_Code_Pro:h10,Monaco:h16,Consolas:h11,Courier\ New:h14
+    set guifont=Source_Code_Pro:h9,Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
 endif
 "}}}
@@ -341,6 +343,8 @@ nnoremap <C-@> :
 xnoremap <C-@> :
 
 xnoremap . :normal .<CR>
+
+nnoremap <leader>t :tjump<space>
 
 " buffer text object
 onoremap ae :<C-u>normal vae<CR>
@@ -909,6 +913,7 @@ if s:has_plug('vim-one')
     highlight link helpCommand Number
     highlight link helpSectionDelim Comment
     highlight link helpExample Special
+    highlight link helpHyperTextJump Underlined
 
     highlight clear vimCommand
     highlight link vimMapLhs Special
@@ -1013,6 +1018,14 @@ if s:has_plug('unicode.vim')
 endif
 " }}}
 
+" Gutentags: {{{
+if s:has_plug('vim-gutentags')
+  let g:gutentags_project_root = ['pom.xml']
+  let g:gutentags_generate_on_missing = 0
+  let g:gutentags_cache_dir = '~/.vim/tags_cache'
+endif
+" }}}
+
 "}}}
 
 " Commands & Functions: {{{
@@ -1024,6 +1037,54 @@ command! -nargs=1 TabNew tabnew | TabName <args>
 " https://groups.google.com/forum/#!topic/vim_use/Vq0z2DJH2So
 " Useful to get relative paths in quickfix after grep
 command! CWindow 0split | lcd . | quit | cwindow
+command! LWindow 0split | lcd . | quit | lwindow
+
+" Edit QuickFix items {{{
+if has('lambda')
+
+function! MapQFItems(func)
+  if &buftype != 'quickfix'
+    echoerr "Only works on quickfix buffers"
+    return
+  endif
+  let title = w:quickfix_title
+  try
+    let items = getloclist(0)
+    if !empty(items)
+      call setloclist(0, a:func(items))
+    else
+      let items = getqflist()
+      call setqflist(a:func(items))
+    endif
+  catch
+    echoerr "Failed to map QF items:" v:exception
+  endtry
+  let w:quickfix_title = title
+endfunction
+
+function! SortQFByText(items) abort
+  return sort(items, {i1, i2 -> i1.text == i2.text ? 0 : i1.text > i2.text ? 1 : -1})})
+endfunction
+
+function! RemoveQFItem(ln1, ln2) abort
+  let index1 = a:ln1 - 1
+  let index2 = a:ln2 - 1
+  call MapQFItems({items -> filter(items, {idx, item -> idx < index1 || idx > index2})})
+endfunction
+
+function! s:SetupQuickFixMap()
+  if &buftype != 'quickfix'
+    return
+  endif
+  nnoremap <buffer> D :RemoveCurrentQFItem<CR>
+  xnoremap <buffer> D :RemoveCurrentQFItem<CR>
+endfunction
+
+command! -range RemoveCurrentQFItem call RemoveQFItem(<line1>, <line2>)
+autocmd vimrc BufEnter * call <SID>SetupQuickFixMap()
+
+endif
+"}}}
 
 " WinZoom cmd {{{
 function! WinZoom()
@@ -1609,7 +1670,7 @@ function! StatusLineModified()
     return ''
   endif
   let modified = &modified ? "+": ''
-  let readonly = &readonly ? '' : ''
+  let readonly = &readonly ? "\U1F512" : '' "\ue0a2
   return modified . readonly
 endfunction
 
@@ -1643,11 +1704,12 @@ endfunction
 function! StatusLineMode()
   if get(g:, 'statusline_use_emoji', 0)
     let m = &ft == 'dirvish' ? "\U1F4C2" :
-        \ &ft == 'qf' ? "\U1F50D" :
+        \ &ft == 'qf' ? (empty(getloclist(0)) ? '' : 'l')."\U1F50D" :
         \ &ft == 'grepr' ? "\U1F50D" :
         \ &ft
   else
     let m = &ft == 'dirvish' ? "dir" :
+        \ &ft == 'qf' ? (empty(getloclist(0)) ? 'qf' : 'loc') :
         \ &ft
   endif
   return !empty(m) ? m : 'none'
@@ -1683,34 +1745,6 @@ function! s:SetHiColour(group, fg, bg, attrs)
   execute 'highlight' a:group gui cterm
 endfunction
 
-function! s:SetStatusLineColours()
-  if has('vim_starting') || !empty(synIDattr(hlID('User1'), 'fg'))
-    return
-  endif
-  try
-    let slfg = s:get_colour('StatusLine', 'fg')
-    let slbg = s:get_colour('StatusLine', 'bg')
-    let sbg = s:get_colour('Special', 'bg')
-    let sfg = s:get_colour('Special', 'fg')
-    let cfg = s:get_colour('Comment', 'fg')
-    let wmbg = s:get_colour('WildMenu', 'bg')
-
-    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-    call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
-    call s:SetHiColour('User1', sfg, slbg, 'bold')
-    call s:SetHiColour('User2', sfg, wmbg, 'bold')
-    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-  catch
-    echomsg 'Failed to set custom StatusLine colours, reverting: '.v:exception
-    highlight! link User1 StatusLine
-    highlight! link User2 StatusLine
-    highlight! link User3 StatusLine
-    highlight! link User4 StatusLineNC
-  endtry
-
-  redrawstatus!
-endfunction
-
 function! Status(active)
   if a:active
     let sl = '%0*'
@@ -1736,6 +1770,7 @@ function! Status(active)
     let sl = '%0*'
     let sl.= '%( %{StatusLineMode()} %)'
     let sl.= '%( %{StatusLinePath()}%{StatusLineFilename()} %)'
+    let sl.= '%<'
     let sl.= '%( %{StatusLineModified()} %)'
     let sl.= '%( %{StatusLineBufType()} %)'
     return sl
@@ -1787,11 +1822,9 @@ function! PrettyLittleStatus()
 
   set tabline=%!TabLine()
 
-  autocmd PrettyLittleStatus VimEnter,ColorScheme * call <SID>SetStatusLineColours()
   autocmd PrettyLittleStatus SessionLoadPost,VimEnter,WinEnter,BufWinEnter,FileType,BufUnload * call <SID>RefreshStatus()
 
   if !has('vim_starting')
-    call s:SetStatusLineColours()
     call s:RefreshStatus()
   endif
 endfunction
@@ -1799,7 +1832,4 @@ endfunction
 call PrettyLittleStatus()
 " }}}
 
-if has('vim_starting')
-  colorscheme gruvbox
-endif
-
+autocmd vimrc VimEnter * nested colorscheme one
