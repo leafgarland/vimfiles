@@ -910,6 +910,10 @@ if s:has_plug('vim-one')
     call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
     call s:SetHiColour('Folded', 'fg', cfg, 'NONE')
 
+    highlight! link Pmenu StatusLine
+    highlight! link PmenuSbar StatusLine
+    highlight! link PmenuSel WildMenu
+
     highlight link helpCommand Number
     highlight link helpSectionDelim Comment
     highlight link helpExample Special
@@ -922,6 +926,8 @@ if s:has_plug('vim-one')
     highlight link vimMapModKey Number
     highlight link vimNotation Constant
     highlight link vimBracket Constant
+
+    highlight link rustCommentLinedDoc NonText
 
     if has('nvim')
       let g:terminal_color_0  = '#282c34'
@@ -986,7 +992,7 @@ if s:has_plug('nofrils')
   autocmd vimrc ColorScheme nofrils-* :call <SID>NofrilsCustomise()
 
   function! s:NofrilsBackgroundToggle()
-    if g:colors_name !~ "nofrils"
+    if get(g:, 'colors_name', '') !~ "nofrils"
       return
     endif
     if &background == 'dark'
@@ -1042,19 +1048,33 @@ command! LWindow 0split | lcd . | quit | lwindow
 " Edit QuickFix items {{{
 if has('lambda')
 
-function! MapQFItems(func)
+function! s:doMap(items, start, end, func)
+  let result = []
+  if a:start > 0
+    let result += a:items[:a:start-1]
+  endif
+  let result += a:func(a:items[a:start:a:end])
+  if a:end < len(a:items)
+    let result += a:items[a:end+1:]
+  endif
+  return result
+endfunction
+
+function! MapQFItems(ln1, ln2, func)
   if &buftype != 'quickfix'
     echoerr "Only works on quickfix buffers"
     return
   endif
+  let start = a:ln1 - 1
+  let end = a:ln2 - 1
   let title = w:quickfix_title
   try
     let items = getloclist(0)
     if !empty(items)
-      call setloclist(0, a:func(items))
+      call setloclist(0, s:doMap(items, start, end, a:func))
     else
       let items = getqflist()
-      call setqflist(a:func(items))
+      call setqflist(s:doMap(items, start, end, a:func))
     endif
   catch
     echoerr "Failed to map QF items:" v:exception
@@ -1062,26 +1082,35 @@ function! MapQFItems(func)
   let w:quickfix_title = title
 endfunction
 
-function! SortQFByText(items) abort
-  return sort(items, {i1, i2 -> i1.text == i2.text ? 0 : i1.text > i2.text ? 1 : -1})})
+function! SortQFByText(ln1, ln2) abort
+  if a:ln1 == a:ln2
+    let start = 1
+    let end = 9999
+  else
+    let start = a:ln1
+    let end = a:ln2
+  endif
+  return MapQFItems(start, end,
+        \ {items -> sort(items, {i1, i2 -> i1.text == i2.text ? 0 : i1.text > i2.text ? 1 : -1})})
 endfunction
 
 function! RemoveQFItem(ln1, ln2) abort
-  let index1 = a:ln1 - 1
-  let index2 = a:ln2 - 1
-  call MapQFItems({items -> filter(items, {idx, item -> idx < index1 || idx > index2})})
+  call MapQFItems(a:ln1, a:ln2, {items -> []})
 endfunction
 
+command! -range RemoveQFItem call RemoveQFItem(<line1>, <line2>)
+command! -range SortQFByText call SortQFByText(<line1>, <line2>)
+
+autocmd vimrc BufEnter * call <SID>SetupQuickFixMap()
 function! s:SetupQuickFixMap()
   if &buftype != 'quickfix'
     return
   endif
-  nnoremap <buffer> D :RemoveCurrentQFItem<CR>
-  xnoremap <buffer> D :RemoveCurrentQFItem<CR>
+  nnoremap <buffer> D :RemoveQFItem<CR>
+  xnoremap <buffer> D :RemoveQFItem<CR>
+  nnoremap <buffer> S :SortQFByText<CR>
+  xnoremap <buffer> S :SortQFByText<CR>
 endfunction
-
-command! -range RemoveCurrentQFItem call RemoveQFItem(<line1>, <line2>)
-autocmd vimrc BufEnter * call <SID>SetupQuickFixMap()
 
 endif
 "}}}
