@@ -283,6 +283,7 @@ endif
 
 " GUI Settings: {{{
 if exists('+termguicolors') && !has('gui_running') && !has('win32')
+  set guicursor+=a:blinkon0
   set termguicolors
   if has('nvim')
     let g:terminal_color_0  = '#282828'
@@ -428,6 +429,8 @@ nnoremap <leader>bb :set nomore<bar>call Buffers()<bar>set more<CR>:buffer<space
 nnoremap <leader><tab> :b#<CR>
 nnoremap <leader>bd :BClose<CR>
 nnoremap <leader>bD :BClose!<CR>
+
+nnoremap <leader>hq :helpclose<CR>
 
 nnoremap <C-J> <C-W>j
 nnoremap <C-K> <C-W>k
@@ -1398,12 +1401,12 @@ function! s:UniqPath(list)
 endfunction
 
 function! s:MRUDComplete(ArgLead, CmdLine, CursorPos)
-  let argLead = escape(a:ArgLead, '~')
+  let argLead = glob2regpat(a:ArgLead . '*')
   return s:UniqPath(filter(map(copy(v:oldfiles), "fnamemodify(v:val, ':h')"), 'v:val =~ argLead && isdirectory(expand(v:val))'))
 endfunction
 
 function! s:MRUFComplete(ArgLead, CmdLine, CursorPos)
-  let argLead = escape(a:ArgLead, '~')
+  let argLead = glob2regpat(a:ArgLead . '*')
   return filter(copy(v:oldfiles), 'v:val =~ argLead && !empty(glob(v:val))')
 endfunction
 
@@ -1411,11 +1414,11 @@ function! s:MRU(command, arg)
   execute a:command a:arg
 endfunction
 
-command! -nargs=1 -complete=customlist,<sid>MRUDComplete MD call <sid>MRU('cd', <f-args>)
-command! -nargs=1 -complete=customlist,<sid>MRUFComplete MF call <sid>MRU('edit', <f-args>)
-nnoremap <leader>pr :MD<space>
-nnoremap <leader>fr :MF<space>
-nnoremap <leader>fR :MF <C-r>=getcwd()<CR>/.*<C-z>
+command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>MRU('cd', <f-args>)
+command! -nargs=1 -complete=customlist,<sid>MRUFComplete OldFiles call <sid>MRU('edit', <f-args>)
+nnoremap <leader>pr :OldDirs *
+nnoremap <leader>fr :OldFiles *
+nnoremap <leader>fR :OldFiles <C-r>=getcwd()<CR>/*<C-z>
 " }}}
 
 " Allow the use of * and # on a visual range. (from vimcasts) {{{
@@ -1632,7 +1635,7 @@ function! StatusLineFilename()
        \ &filetype == 'peekaboo' ? '' :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ &filetype == 'term' ? s:GetTermTitle()[1] :
-       \ empty(fname) ? '[no name]' : fname 
+       \ empty(fname) ? ('[no name'.':'.bufnr('').']') : fname 
 endfunction
 
 function! StatusLinePath()
