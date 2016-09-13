@@ -283,7 +283,7 @@ endif
 
 " GUI Settings: {{{
 if exists('+termguicolors') && !has('gui_running') && !has('win32')
-  set guicursor+=a:blinkon0
+  set guicursor+=c:ver25-Cursor/lCursor,a:blinkon0
   set termguicolors
   if has('nvim')
     let g:terminal_color_0  = '#282828'
