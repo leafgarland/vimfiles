@@ -127,6 +127,7 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'junegunn/vim-peekaboo'
 Plug 'ludovicchabant/vim-gutentags'
+Plug 'mhinz/vim-grepper'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -224,12 +225,22 @@ set undofile
 
 let g:netrw_menu = 0
 
-if executable('ag')
+if executable('rg')
+  set grepprg=rg\ --vimgrep\ --no-heading
+  set grepformat=%f:%l:%c:%m
+elseif executable('ag')
   set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ -C0
   set grepformat=%f:%l:%c:%m
 elseif executable('pt')
   set grepprg=pt\ /nogroup\ /nocolor\ /smart-case\ /follow
   set grepformat=%f:%l:%m
+endif
+command! -nargs=* Grep grep <args>
+
+if has('nvim')
+  autocmd vimrc CursorHold,FocusGained,FocusLost * rshada|wshada
+else
+  autocmd vimrc CursorHold,FocusGained,FocusLost * wviminfo
 endif
 
 "}}}
@@ -283,7 +294,6 @@ endif
 
 " GUI Settings: {{{
 if exists('+termguicolors') && !has('gui_running') && !has('win32')
-  set guicursor+=c:ver25-Cursor/lCursor,a:blinkon0
   set termguicolors
   if has('nvim')
     let g:terminal_color_0  = '#282828'
@@ -306,6 +316,7 @@ if exists('+termguicolors') && !has('gui_running') && !has('win32')
 endif
 
 if exists('+guioptions')
+  set guicursor+=c:ver25-Cursor/lCursor,a:blinkon0
   set guioptions+=c
   set linespace=0
   if exists('+renderoptions')
@@ -441,7 +452,6 @@ nmap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
 
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
-nnoremap <silent> <C-w>Z :WinZoom<CR>
 
 nnoremap <leader>wsh :leftabove vsp<CR>
 nnoremap <leader>wsl :rightbelow vsp<CR>
@@ -820,8 +830,8 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> h <Plug>(dirvish_up)
     nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
     nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d<CR>
-    nnoremap <buffer> gR :grep  %<left><left>
-    nnoremap <buffer> gr :<cfile><C-b>grep  <left>
+    nnoremap <buffer> gR :Grep  %<left><left>
+    nnoremap <buffer> gr :<cfile><C-b>Grep  <left>
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
     nmap <silent> <buffer> gp :lcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
@@ -895,13 +905,16 @@ endif
 " colorscheme one: {{{
 if s:has_plug('vim-one')
   function! s:OneCustomise()
-    let slfg = s:get_colour('StatusLine', 'fg')
+    " let slfg = s:get_colour('StatusLine', 'fg')
     let slbg = s:get_colour('StatusLine', 'bg')
     let sbg = s:get_colour('Special', 'bg')
     let sfg = s:get_colour('Special', 'fg')
     let s2fg = s:get_colour('Constant', 'fg')
     let cfg = s:get_colour('Comment', 'fg')
     let wmbg = s:get_colour('WildMenu', 'bg')
+    let vbg = s:get_colour('Visual', 'bg')
+
+    let slfg = &background=='dark' ? '#d3d7de' : '#202126'
 
     call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
     call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
@@ -912,6 +925,12 @@ if s:has_plug('vim-one')
 
     call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
     call s:SetHiColour('Folded', 'fg', cfg, 'NONE')
+
+    call s:SetHiColour('MatchParen', 'NONE', vbg, 'underline')
+
+    highlight! link TabLine StatusLine
+    highlight! link TabLineFill StatusLine 
+    highlight! link TabLineSel User1 
 
     highlight! link Pmenu StatusLine
     highlight! link PmenuSbar StatusLine
@@ -1035,6 +1054,17 @@ if s:has_plug('vim-gutentags')
 endif
 " }}}
 
+" Grepper {{{
+if s:has_plug('vim-grepper')
+  let g:grepper           = {}
+  let g:grepper.tools     = ['rg', 'git']
+  let g:grepper.rg        = {'grepprg': 'rg --vimgrep --no-heading -HS'}
+  let g:grepper.jump      = 0
+
+  command! -nargs=* Grep GrepperRg <args>
+endif
+" }}}
+
 "}}}
 
 " Commands & Functions: {{{
@@ -1119,30 +1149,30 @@ endif
 "}}}
 
 " WinZoom cmd {{{
-function! WinZoom()
-  let zoomed = getwinvar(0, 'winzoom', 0)
-  if zoomed
-    wincmd c
+function! WinZoom() abort
+  if 1 == winnr('$')
+    return
+  endif
+  let restore_cmd = winrestcmd()
+  wincmd |
+  wincmd _
+  if restore_cmd ==# winrestcmd()
+    exe t:zoom_restore
   else
-    tab split
-    call setwinvar(0, 'winzoom', 1)
+    let t:zoom_restore = restore_cmd
+  endif
+  return '<Nop>'
+endfunc
+
+function! s:zoom_or_goto_column(cnt) abort
+  if a:cnt
+    exe 'norm! '.v:count.'|'
+  else
+    call WinZoom()
   endif
 endfunction
-function! WinZoom2()
-  let zoomed = getwinvar(0, 'winzoom', 0)
-  if zoomed
-    execute 'vertical resize' w:winzoom_old_width
-    execute 'resize' w:winzoom_old_height
-    unlet w:winzoom w:winzoom_old_width w:winzoom_old_height
-  else
-    let w:winzoom = 1
-    let w:winzoom_old_width = winwidth(0)
-    let w:winzoom_old_height = winheight(0)
-    resize 999
-    vertical resize 999
-  endif
-endfunction
-command! -nargs=0 WinZoom :call WinZoom2()
+
+nnoremap <Bar> :<C-U>call <SID>zoom_or_goto_column(v:count)<CR>
 " }}}
 
 " DevDocs cmd {{{
@@ -1694,7 +1724,7 @@ function! StatusLineFileEncoding()
   if s:is_nofile() || s:is_small_win()
     return ''
   endif
-  return &binary ? '' : &fileencoding == 'utf-8' ? '' : &fileencoding
+  return &binary ? 'binary' : &fileencoding == 'utf-8' ? (&bomb ? 'BOM' : '') : &fileencoding
 endfunction
 
 function! StatusLineModified()
@@ -1747,6 +1777,10 @@ function! StatusLineMode()
   return !empty(m) ? m : 'none'
 endfunction
 
+function! StatusLineGrep()
+  return get(s:, 'grepping', 0) ? 'GREP' : ''
+endfunction
+
 function! s:get_colour(higroup, attr)
     let attr = a:attr
     if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse') == 1
@@ -1795,6 +1829,7 @@ function! Status(active)
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
     let sl.= '%( %{gutentags#statusline()} %)'
+    let sl.= '%( %{grepper#statusline()} %)'
     let sl.= '%0*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
@@ -1813,20 +1848,16 @@ function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
   let winnr = tabpagewinnr(tabnr)
-  let tabName = gettabvar(tabnr, 'name', '')
   let cwd = getcwd(exists(':tcd') ? -1 : winnr, tabnr)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
 
   let s = '%#TabLine#'
   let s.= ' '.tabnr.'/'.tabCount.' '
-  let s.= '%#TabLine# '
-  let s.= '%( %#TabLineSel#'.tabName.'%#TabLine# %)'
-  let s.= '%='
-  let s.= '%#TabLine# '
   if isLocalCwd
     let s.= '%#TabLineSel#'
   endif
   let s.= cwd
+  let s.= '%='
   let s.= '%#TabLine#'
   let s.= '%='
   let s.= '%( %{strftime("%H:%M")} %)'
