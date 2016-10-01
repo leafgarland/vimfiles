@@ -120,7 +120,6 @@ Plug 'tpope/vim-fugitive' | Plug 'idanarye/vim-merginal'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
-Plug 'Valloric/YouCompleteMe'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
@@ -181,7 +180,10 @@ if has('nvim')
   Plug 'benekastah/neomake'
   Plug 'cloudhead/neovim-fuzzy'
   Plug 'radenling/vim-dispatch-neovim'
+  Plug 'Shougo/deoplete.nvim'
+  Plug 'racer-rust/vim-racer'
 else
+  Plug 'Valloric/YouCompleteMe'
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
@@ -750,6 +752,27 @@ endif
 let g:UltiSnipsExpandTrigger="<c-j>"
 let g:UltiSnipsJumpForwardTrigger="<c-j>"
 let g:UltiSnipsJumpBackwardTrigger="<c-k>"
+" }}}
+
+" deoplete {{{
+
+if s:has_plug('deoplete.nvim')
+  let g:deoplete#enable_at_startup=1
+  let g:deoplete#disable_auto_complete=1
+
+  inoremap <silent><expr> <TAB>
+    \ pumvisible() ? "\<C-n>" :
+    \ <SID>check_back_space() ? "\<TAB>" :
+    \ deoplete#mappings#manual_complete()
+
+  inoremap <expr><BS>
+    \ deoplete#smart_close_popup()."\<C-h>"
+
+  function! s:check_back_space() abort
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~ '\s'
+  endfunction
+endif
 " }}}
 
 " YouCompleteMe {{{
