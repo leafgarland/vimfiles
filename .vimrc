@@ -117,7 +117,7 @@ Plug 'idbrii/vim-endoscope'
 Plug 'tommcdo/vim-lion'
 
 " Tools
-Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-fugitive' | Plug 'idanarye/vim-merginal'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
@@ -127,7 +127,6 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'junegunn/vim-peekaboo'
 Plug 'ludovicchabant/vim-gutentags'
-Plug 'mhinz/vim-grepper'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -226,7 +225,7 @@ set undofile
 let g:netrw_menu = 0
 
 if executable('rg')
-  set grepprg=rg\ --vimgrep\ --no-heading
+  set grepprg=rg\ --vimgrep\ --no-heading\ -HS
   set grepformat=%f:%l:%c:%m
 elseif executable('ag')
   set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ -C0
@@ -357,6 +356,7 @@ xnoremap <C-@> :
 xnoremap . :normal .<CR>
 
 nnoremap <leader>t :tjump<space>
+nnoremap g<C-P> :pwd<CR>
 
 " buffer text object
 onoremap ae :<C-u>normal vae<CR>
@@ -436,7 +436,8 @@ nnoremap <leader>fS :ScratchThis<CR>
 nnoremap <leader>bo :b#<CR>
 nnoremap <leader>bn :bn<CR>
 nnoremap <leader>bp :bp<CR>
-nnoremap <leader>bb :set nomore<bar>call Buffers()<bar>set more<CR>:buffer<space>
+nnoremap <leader>bb :set nomore<bar>Buffers<bar>set more<CR>:buffer<space>
+nnoremap <leader>bB :set nomore<bar>Buffers!<bar>set more<CR>:buffer<space>
 nnoremap <leader><tab> :b#<CR>
 nnoremap <leader>bd :BClose<CR>
 nnoremap <leader>bD :BClose!<CR>
@@ -1313,8 +1314,10 @@ highlight link BufferCurrentName Type
 highlight link BufferAlternateName Function
 highlight link BufferName Statement
 
-function! Buffers() abort
-  let buffers = split(Execute('ls'), "\n")
+command! -bar -bang Buffers call Buffers(<bang>0)
+function! Buffers(show_all) abort
+  let ls = a:show_all ? 'ls!' : 'ls'
+  let buffers = split(Execute(ls), "\n")
   for b in buffers
     let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+"\(.\+\)"\s\+line \(\d\+\)')
     let [bnum, bflags, bname, bline] = ms[1:4]
@@ -1829,7 +1832,6 @@ function! Status(active)
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
     let sl.= '%( %{gutentags#statusline()} %)'
-    let sl.= '%( %{grepper#statusline()} %)'
     let sl.= '%0*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
