@@ -97,7 +97,6 @@ Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/direwolf'
 Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
-Plug 'robertmeta/nofrils'
 Plug 'rakr/vim-one'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
@@ -428,6 +427,7 @@ nnoremap <leader>fn :VScratch<CR>
 nnoremap <leader>fN :Scratch<CR>
 nnoremap <leader>fL :Scratch<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bufnr('%')<CR><bar>setf log4net<CR>
 nnoremap <leader>fo :edit **/*
+nnoremap <leader>fO :edit <C-R>=expand('%:p:h:.:~')<CR>/
 nnoremap <leader>fed :edit $MYVIMRC<CR>
 nnoremap <leader>fer :source $MYVIMRC<CR>
 nnoremap <leader>fF :UnScratch<CR>
@@ -762,9 +762,9 @@ if s:has_plug('YouCompleteMe')
 
   " Sometimes YCM is unhappy with the python it uses, so we can force it to
   " use a specific python
-  let s:ycm_python=expand('$LOCALAPPDATA/scoop/apps/python/3.5.1/python.exe')
+  let s:ycm_python=expand('c:/Dev/Tools/Python35/python.exe')
   if executable(s:ycm_python)
-    let g:ycm_path_to_python_interpreter = s:ycm_python
+    let g:ycm_server_python_interpreter = s:ycm_python
   endif
 
   " let g:ycm_server_log_level = 'debug'
@@ -1070,9 +1070,6 @@ endif
 
 " Commands & Functions: {{{
 
-command! -nargs=1 TabName let t:name='<args>'
-command! -nargs=1 TabNew tabnew | TabName <args>
-
 " Hack buffer names relative to cwd, see
 " https://groups.google.com/forum/#!topic/vim_use/Vq0z2DJH2So
 " Useful to get relative paths in quickfix after grep
@@ -1291,12 +1288,26 @@ command! DiffOrig call DiffOrig()
 nnoremap <leader>ud :DiffOrig<CR>
 "}}}
 
+" xxd against last saved {{{
+function! XxdOrig()
+  vert new
+  setlocal buftype=nofile
+  setlocal filetype=xxd
+  nnoremap <buffer> q :bdelete<CR>
+  read ++edit # | normal gg0d_
+  %!xxd
+endfunction
+
+command! XxdOrig call XxdOrig()
+nnoremap <leader>ux :XxdOrig<CR>
+"}}}
+
 " Utils: {{{
 function! Execute(cmd) abort
-  if exists('*capture')
-    return capture(a:cmd)
-  elseif exists('*execute')
+  if exists('*execute')
     return execute(a:cmd)
+  elseif exists('*capture')
+    return capture(a:cmd)
   else
     let [save_verbose, save_verbosefile] = [&verbose, &verbosefile]
     set verbose=0 verbosefile=
@@ -1330,7 +1341,11 @@ function! Buffers(show_all) abort
     else
       echohl BufferName
     endif
+    if len(bname) > 60
+      echon pathshorten(bname)
+    else
     echon bname
+    endif
     let bufIdx = s:bufferIndex(bname)
     if argc() > 1 && bufIdx >= 0
       echohl BufferArgList | echon " (" bufIdx+1 ")\n"
@@ -1419,7 +1434,7 @@ endfunction
 command! -complete=highlight -nargs=? Highlight :call Highlight(<f-args>)
 " }}}
 
-" MRU: {{{
+" Recent files etc: {{{
 function! s:UniqPath(list)
   let i = 0
   let seen = []
@@ -1443,15 +1458,21 @@ function! s:MRUFComplete(ArgLead, CmdLine, CursorPos)
   return filter(copy(v:oldfiles), 'v:val =~ argLead && !empty(glob(v:val))')
 endfunction
 
-function! s:MRU(command, arg)
-  execute a:command a:arg
+function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
+  return systemlist('rg -S --files --glob ' . a:ArgLead . '*')
 endfunction
 
-command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>MRU('cd', <f-args>)
-command! -nargs=1 -complete=customlist,<sid>MRUFComplete OldFiles call <sid>MRU('edit', <f-args>)
+function! s:Run(command, arg, mods)
+  execute a:mods a:command a:arg
+endfunction
+
+command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>Run('cd', <q-args>, <q-mods>)
+command! -nargs=1 -complete=customlist,<sid>MRUFComplete OldFiles call <sid>Run('edit', <q-args>, <q-mods>)
+command! -nargs=1 -complete=customlist,<sid>RgFilesComplete RgFiles call <sid>Run('edit', <q-args>, <q-mods>)
 nnoremap <leader>pr :OldDirs *
 nnoremap <leader>fr :OldFiles *
-nnoremap <leader>fR :OldFiles <C-r>=getcwd()<CR>/*<C-z>
+nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>/*<C-z>
+nnoremap <leader>ff :RgFiles 
 " }}}
 
 " Allow the use of * and # on a visual range. (from vimcasts) {{{
@@ -1566,7 +1587,7 @@ function! ToggleVisualMarker()
     let b:myvimrc_visual_marks = {}
   endif
 
-  let c = getchar(0)
+  let c = getchar()
   let rc = nr2char(c)
 
   if rc !~ '[a-zA-Z]'
