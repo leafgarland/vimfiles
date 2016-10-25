@@ -22,12 +22,6 @@ if has('vim_starting')
   endif
 endif
 
-" as of patch 276 this is not needed according to vim-sensible
-" todo: try not changing shell.
-if &shell =~# 'fish$'
-  set shell=bash
-endif
-
 if exists('+packpath')
   set packpath+=$HOME/.vim
 endif
@@ -1235,20 +1229,6 @@ command! -nargs=0 UnScratch :call UnScratch()
 " }}}
 
 " Delete current buffer without closing window {{{
-function! s:WinFindBuf(bnr)
-  if exists('*win_findbuf')
-    return win_findbuf(a:bnr)
-  else
-    let winids = []
-    for w in nvim_get_windows()
-      if nvim_win_get_buffer(w) == a:bnr
-	call add(winids, w)
-      endif
-    endfor
-    return winids
-  endif
-endfunction
-
 function! BClose(force) abort
   if !a:force && &modified
     echohl ErrorMsg | echo 'buffer has unsaved changes (use BClose! to discard changes)' | echohl None
@@ -1256,7 +1236,7 @@ function! BClose(force) abort
   endif
 
   let bnr = bufnr('%')
-  for id in s:WinFindBuf(bnr)
+  for id in win_findbuf(bnr)
     if !win_gotoid(id)
       continue
     endif
@@ -1941,4 +1921,4 @@ endfunction
 call PrettyLittleStatus()
 " }}}
 
-autocmd vimrc VimEnter * nested colorscheme one
+autocmd vimrc VimEnter * nested colorscheme gruvbox
