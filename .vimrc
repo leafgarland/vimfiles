@@ -26,16 +26,12 @@ if exists('+packpath')
   set packpath+=$HOME/.vim
 endif
 
-for p in filter(globpath('~/.vim/mine/', '*', '', 1), 'isdirectory(v:val)')
-  execute 'set runtimepath+='.p
-endfor
-
 " Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
 let s:is_gui = has('gui_running')
 if s:is_win
   " On Windows, also use '.vim' instead of 'vimfiles'
-  set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
+  set runtimepath^=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
   " On windows, if gvim.exe is executed from cygwin bash shell, the shell
   " needs to be changed to the shell most plugins expect on windows.
   " This does not change &shell inside cygwin or msys vim.
@@ -170,13 +166,16 @@ if executable('fish')
   Plug 'dag/vim-fish', {'for': 'fish'}
 endif
 
-if has('nvim')
+if has('nvim') && !has('win32')
   Plug 'benekastah/neomake'
   Plug 'cloudhead/neovim-fuzzy'
   Plug 'radenling/vim-dispatch-neovim'
   Plug 'Shougo/deoplete.nvim'
   Plug 'racer-rust/vim-racer'
-else
+elseif has('nvim') && has('win32')
+  Plug 'radenling/vim-dispatch-neovim'
+  Plug 'Shougo/deoplete.nvim'
+elseif !has('nvim')
   Plug 'Valloric/YouCompleteMe'
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
@@ -558,6 +557,13 @@ cnoremap <C-r><C-l> <C-r>=getline('.')<CR>
 cnoremap <C-p> <Up>
 cnoremap <C-n> <Down>
 
+cnoremap        <C-B> <Left>
+cnoremap <expr> <C-F> getcmdpos()>strlen(getcmdline())?&cedit:"\<Lt>Right>"
+cnoremap        <M-b> <S-Left>
+cnoremap        <M-d> <C-O>dw
+cnoremap        <M-d> <S-Right><C-W>
+cnoremap        <M-BS> <C-W>
+cnoremap        <M-f> <S-Right>
 "}}}
 
 " Filetypes: {{{
@@ -866,7 +872,7 @@ if s:has_plug('syntastic')
 endif
 " }}}
 
-"{{{ Slimux
+" Slimux {{{
 if s:has_plug('slimux')
   autocmd vimrc FileType scheme call s:slimux_scheme_settings()
   autocmd vimrc FileType fsharp call s:slimux_fsharp_settings()
@@ -1093,6 +1099,40 @@ endif
 command! CWindow 0split | lcd . | quit | cwindow
 command! LWindow 0split | lcd . | quit | lwindow
 
+" Custom fold display {{{
+
+let s:foldfill = matchlist(&fillchars, 'fold:\zs.\ze')[0]
+
+function! s:CurrentWinWidth()
+  let numwidth = (&number || &relativenumber) ? max([&numberwidth, strwidth(string(line('$'))) + 1]) : 0
+  return winwidth(0) - &foldcolumn - numwidth
+endfunction
+
+function! CustomFoldText() abort
+  let fs = nextnonblank(v:foldstart)
+  if fs > v:foldend
+    let fs = v:foldstart
+  endif
+
+  let line = getline(fs)
+  let line = substitute(line, '\t', repeat(' ', &tabstop), 'g')
+  if &foldmethod == 'marker'
+    let line = substitute(line, split(&foldmarker, ',')[0], '', 'g')
+  endif
+
+  let w = s:CurrentWinWidth()
+  let foldSize = 1 + v:foldend - v:foldstart
+  let foldDetails = ' ' . foldSize . ' lines ' . repeat('-', v:foldlevel) . '+'
+  let extraSize = strwidth(foldDetails)
+  if strwidth(line) > w - extraSize
+    let line = line[:(w - extraSize - 4)]
+  endif
+  let expansionString = repeat(s:foldfill, w - strwidth(line) - extraSize)
+  return line . expansionString . foldDetails
+endfunction
+set foldtext=CustomFoldText()
+" }}}
+
 " Edit QuickFix items {{{
 if has('lambda')
 
@@ -1229,6 +1269,7 @@ command! -nargs=0 UnScratch :call UnScratch()
 " }}}
 
 " Delete current buffer without closing window {{{
+
 function! BClose(force) abort
   if !a:force && &modified
     echohl ErrorMsg | echo 'buffer has unsaved changes (use BClose! to discard changes)' | echohl None
@@ -1305,7 +1346,7 @@ command! XxdOrig call XxdOrig()
 nnoremap <leader>ux :XxdOrig<CR>
 "}}}
 
-" Utils: {{{
+" Buffers: {{{
 function! Execute(cmd) abort
   if exists('*execute')
     return execute(a:cmd)
@@ -1324,9 +1365,28 @@ endfunction
 
 highlight link BufferNumber Number
 highlight link BufferFlags Special
-highlight link BufferCurrentName Type
-highlight link BufferAlternateName Function
-highlight link BufferName Statement
+highlight link BufferCurrentName GruvboxYellowSign
+highlight link BufferAlternateName Include
+highlight link BufferName Conceal
+
+cmap <expr> <C-k> CustomCmdPrevious()
+cmap <expr> <C-j> CustomCmdNext()
+function! CustomCmdPrevious()
+  let cmd = getcmdline()
+  if getcmdtype() != ':' || cmd != 'buffer '
+    return "\<C-k>"
+  endif
+
+  return "\<Esc>:bprevious\<CR>:redraw\<CR>:Buffers\<CR>:buffer "
+endfunction
+function! CustomCmdNext()
+  let cmd = getcmdline()
+  if getcmdtype() != ':' || cmd != 'buffer '
+    return "\<C-j>"
+  endif
+
+  return "\<Esc>:bnext\<CR>:redraw\<CR>:Buffers\<CR>:buffer "
+endfunction
 
 command! -bar -bang Buffers call Buffers(<bang>0)
 function! Buffers(show_all) abort
@@ -1347,7 +1407,7 @@ function! Buffers(show_all) abort
     if len(bname) > 60
       echon pathshorten(bname)
     else
-    echon bname
+      echon bname
     endif
     let bufIdx = s:bufferIndex(bname)
     if argc() > 1 && bufIdx >= 0
@@ -1462,7 +1522,13 @@ function! s:MRUFComplete(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
-  return systemlist('rg -S --files --glob ' . a:ArgLead . '*')
+  let pattern = a:ArgLead
+  if pattern[-1:] == '$'
+    let pattern = pattern[:-2]
+  elseif pattern[-1:] != '*'
+    let pattern .= '*'
+  endif
+  return systemlist('rg -S --files --glob ' . pattern)
 endfunction
 
 function! s:Run(command, arg, mods)
@@ -1921,4 +1987,4 @@ endfunction
 call PrettyLittleStatus()
 " }}}
 
-autocmd vimrc VimEnter * nested colorscheme gruvbox
+autocmd vimrc VimEnter * colorscheme gruvbox
