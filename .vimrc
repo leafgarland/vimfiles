@@ -231,7 +231,7 @@ endif
 command! -nargs=* Grep grep <args>
 
 if has('nvim')
-  autocmd vimrc CursorHold,FocusGained,FocusLost * rshada|wshada
+  autocmd vimrc CursorHold,FocusGained,FocusLost * wshada|rshada!
 else
   autocmd vimrc CursorHold,FocusGained,FocusLost * wviminfo
 endif
@@ -758,7 +758,7 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
 if s:has_plug('deoplete.nvim')
   let g:deoplete#enable_at_startup=1
-  let g:deoplete#disable_auto_complete=1
+  let g:deoplete#disable_auto_complete=0
 
   inoremap <silent><expr> <TAB>
     \ pumvisible() ? "\<C-n>" :
@@ -1542,6 +1542,7 @@ nnoremap <leader>pr :OldDirs *
 nnoremap <leader>fr :OldFiles *
 nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>/*<C-z>
 nnoremap <leader>ff :RgFiles 
+
 " }}}
 
 " Allow the use of * and # on a visual range. (from vimcasts) {{{
@@ -1625,8 +1626,10 @@ nnoremap <expr> <leader>m ToggleVisualMarker()
 nnoremap <expr> m UpdateVisualMarker()
 
 let g:myvimrc_visual_marks_groups = [
-      \ 'GruvboxBlueSign',  'GruvboxGreenSign', 'GruvboxRedSign',
-      \ 'GruvboxPurpleSign', 'GruvboxYellowSign']
+      \ 'GruvboxBlueSign',  'GruvboxGreenSign',
+      \ 'GruvboxRedSign', 'GruvboxPurpleSign',
+      \ 'GruvboxYellowSign', 'GruvboxAquaSign',
+      \ 'GruvboxOrangeSign']
 
 function! s:remove_visual_mark(match, reg)
   call matchdelete(a:match)
