@@ -65,7 +65,7 @@ if s:is_win
   endfunction
   nnoremap co! :call <SID>toggle_powershell()<CR>
 
-  let g:statusline_use_emoji = 1
+  let g:statusline_use_emoji = 1 && !has('nvim')
 endif
 
 "}}}
@@ -471,7 +471,7 @@ nnoremap k gk
 
 nnoremap <leader>j i<CR><Esc>
 
-nnoremap <leader>eF :<C-U>let &foldlevel=v:count<CR>
+nnoremap <leader>eF :<C-U>let &foldlevel=v:count > 0 ? v:count : foldlevel('.') - 1<CR>
 
 nnoremap <silent> <leader>/ :nohlsearch<bar>redraw<CR>
 
@@ -833,7 +833,7 @@ endif
 
 " Dirvish: {{{
 if s:has_plug('vim-dirvish')
-  nnoremap <leader>fj :Dirvish %:p:h<CR>
+  nnoremap <leader>fj :Dirvish %<CR>
   nnoremap <leader>pe :Dirvish<CR>
 
   let s:dirvish_dir_search = '[\\\/]$'
@@ -1236,7 +1236,7 @@ function! DevDocs(query)
   if has('mac')
     call system('open ' . q)
   else
-    call system('"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" "' . q . '"')
+    call system('start ' . q)
   endif
 endfunction
 command! -nargs=* DevDocs :call DevDocs(<q-args>)
@@ -1939,6 +1939,7 @@ function! Status(active)
   endif
 endfunction
 
+set showtabline=2
 function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
@@ -1947,14 +1948,14 @@ function! TabLine()
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
 
   let s = '%#TabLine#'
-  let s.= ' '.tabnr.'/'.tabCount.' '
+  let s.= ' ['.tabnr.'] '
   if isLocalCwd
     let s.= '%#TabLineSel#'
   endif
+  let s.= '%='
   let s.= cwd
   let s.= '%='
   let s.= '%#TabLine#'
-  let s.= '%='
   let s.= '%( %{strftime("%H:%M")} %)'
   return s
 endfunction
