@@ -76,7 +76,9 @@ endif
 call plug#begin('~/.vim/bundle')
 
 " Base
-Plug 'tpope/vim-sensible'
+if !has('nvim')
+  Plug 'tpope/vim-sensible'
+endif
 Plug 'tpope/vim-dispatch'
 Plug 'tpope/vim-repeat'
 Plug 'kana/vim-textobj-user'
@@ -141,7 +143,7 @@ Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'elmcast/elm-vim', {'for': 'elm'}
-Plug 'rust-lang/rust.vim', {'for': 'rust'}
+Plug 'rust-lang/rust.vim' ", {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
@@ -1523,11 +1525,15 @@ endfunction
 
 function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
   let pattern = a:ArgLead
-  if pattern[-1:] == '$'
+  echom pattern
+  if empty(pattern)
+    let pattern = '**'
+  elseif pattern[-1:] == '$'
     let pattern = pattern[:-2]
   elseif pattern[-1:] != '*'
     let pattern .= '*'
   endif
+  echom pattern
   return systemlist('rg -S --files --glob ' . pattern)
 endfunction
 
@@ -1541,7 +1547,7 @@ command! -nargs=1 -complete=customlist,<sid>RgFilesComplete RgFiles call <sid>Ru
 nnoremap <leader>pr :OldDirs *
 nnoremap <leader>fr :OldFiles *
 nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>/*<C-z>
-nnoremap <leader>ff :RgFiles 
+nnoremap <leader>ff :RgFiles **
 
 " }}}
 
