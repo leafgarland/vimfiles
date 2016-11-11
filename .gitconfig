@@ -1,0 +1,46 @@
+[push]
+    default = simple
+[alias]
+    logmore = log --name-status --decorate
+    graph = log --graph -10 --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %cr) %Cred%d' --date-order
+    last = log -1 --stat
+    log1 = log --oneline
+    home = rev-parse --show-toplevel
+    unstage = reset q HEAD --
+    discard = checkout --
+    uncommit = reset --mixed HEAD~
+    amend = commit --amend
+    nevermind = !git reset --hard HEAD && git clean -d -f
+    branches = branch -a
+    tags = tag
+    stashes = stash list
+    precommit = diff --cached --diff-algorithm=minimal -w
+    mergeup = fetch upstream && git checkout master && git merge upstream/master
+	remotes = remote -v
+    # shortcuts
+    s = status -sb
+    l = log
+    ll = logmore
+    l1 = log --oneline
+    st = status
+    co = checkout
+[diff]
+    tool = bc3
+[difftool]
+    prompt = false
+[difftool "bc3"]
+    cmd = \"C:/Program Files (x86)/Beyond Compare 3/BComp.com\" "$LOCAL" "$REMOTE"
+[merge]
+    tool = bc3
+[mergetool]
+    prompt = false
+[mergetool "bc3"]
+    trustExitCode = false
+    keepBackup = false
+    cmd = \"C:/Program Files (x86)/Beyond Compare 3/BComp.com\" "$LOCAL" "$REMOTE" "$BASE" "$MERGED"
+[credential]
+	helper = wincred
+[color]
+    ui = true
+[gui]
+	fontdiff = -family \"Source Code Pro\" -size 11 -weight normal -slant roman -underline 0 -overstrike 0
