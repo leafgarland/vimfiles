@@ -1,3 +1,9 @@
+$global:PsGetDestinationModulePath = "C:\Dev\Tools\PSModules"
+$env:PSModulePath = $global:PsGetDestinationModulePath + ";" + $env:PSModulePath
+
+# Make scripts run within powershell, not in own cmd window
+$env:PATHEXT += ";.PY;.ERL"
+
 Remove-Item -ErrorAction Ignore Alias:Curl
 Remove-Item -ErrorAction Ignore Alias:WGet
 Remove-Item -Force -ErrorAction Ignore Alias:gl
@@ -9,17 +15,11 @@ function TabExpansion($line, $lastword) {
   }
 }
 
-import-Module posh-git
+import-module poshgit2
 function gs { git status -sb $args }
 function gl { git log $args }
 function gll { git logmore $args }
 function gl1 { git log1 $args }
-
-$global:PsGetDestinationModulePath = "C:\Dev\Tools\PSModules"
-$env:PSModulePath = $global:PsGetDestinationModulePath + ";" + $env:PSModulePath
-
-# Make scripts run within powershell, not in own cmd window
-$env:PATHEXT += ";.PY;.ERL"
 
 $rustSrcPath = "C:\Dev\Tools\rust\rustc-1.11.0\src"
 if (test-path $rustSrcPath) {
@@ -43,10 +43,9 @@ function Prompt {
   $lastcmd = get-history -count 1
   $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
 
-  $host.ui.rawui.windowtitle = "PS $(get-location)"
-
   Write-Host -foregroundcolor darkcyan (get-location) -nonewline
-  Write-VcsStatus
+  Write-RepositoryStatus
+
   if ($global:ShowTiming) {
     Write-Host -foregroundcolor yellow " $($lastcmdtime)" -nonewline
   }
@@ -55,6 +54,9 @@ function Prompt {
   }
   Write-Host
   Write-Host -foregroundcolor $waserror ">" -nonewline
+
+  $host.ui.rawui.windowtitle = "PS $(get-location)"
+
   " "
 }
 
@@ -136,20 +138,6 @@ Set-PSReadlineKeyHandler -Key Ctrl+5 -Function GotoBrace
 Set-PSReadlineKeyHandler -Key Ctrl+Alt+s -Function CaptureScreen
 Set-PSReadlineOption -MaximumHistoryCount 200000
 
-function Invoke-Sift ([string]$Pattern,
-                      [string[]]$FileExtensions) {
-  $sargs = @("-n")
-  if ($FileExtensions) { $sargs += "-x",($FileExtensions -join ',') }
-  $sargs += $Pattern
-  & "sift" $sargs | % {
-      $li = $_.indexof(':') + 1;
-      $mi = $_.indexof(':',$li) + 1;
-      $fname = $_.substring(0,$li - 1);
-      $line = $_.substring($li, $mi - $li - 1);
-      $match = $_.substring($mi);
-      new-object -typename psobject -property @{FileName=$fname;Line=$line;Match=$match} }
-}
-
 function Start-Elevated {
   Start-Process -Verb runAs $args[0]
 }
@@ -170,6 +158,8 @@ function Get-Path {
 
 function Invoke-NVim([switch]$Tab, [switch]$Wait)
 {
+    # $vimInstall = "C:\Dev\Tools\vim\Neovim-equalsraf-tb-mingw"
+    $vimInstall = "C:\Dev\Tools\vim\Neovim-master"
     $files = $args | ? { $_ -notlike "-*" }
     $otherArgs = $args | ? { $_ -like "-*" }
     if ($files) {
@@ -183,11 +173,15 @@ function Invoke-NVim([switch]$Tab, [switch]$Wait)
     if ($nvims) {
         python.exe c:\dev\tools\python35\scripts\nvr.py --servername $nvims[0] -f $otherArgs $remote $files
     } else {
-        C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe --nvim 'C:\Program Files (x86)\nvim\bin\nvim.exe' --geometry 80x50 -- $args
+        Add-Path "$vimInstall\bin"
+        $env:VIM = "$vimInstall\share\nvim"
+        $env:VIMRUNTIME = "$vimInstall\share\nvim\runtime"
+        C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe --nvim "$vimInstall\bin\nvim.exe" --geometry 80x50 -- $args
     }
 }
 
 function Invoke-Vim([switch]$Tab, [switch]$Wait) {
+  $vimInstall="c:\dev\tools\vim\vim"
   if ($global:VimServerName) { $serverName = $global:VimServerName }
   else { $serverName = "GVIM" }
   $servers = (vim.exe --noplugin -u NORC --serverlist) | ? { $_ -eq $serverName }
@@ -207,6 +201,8 @@ function Invoke-Vim([switch]$Tab, [switch]$Wait) {
     if ($servers) {
       vim.exe --noplugin -u NORC -c "call remote_foreground('$serverName')" -c "quit"
     } else {
+      $env:VIM = "$vimInstall"
+      $env:VIMRUNTIME = "$vimInstall" 
       gvim.exe --servername $serverName
     }
   }
