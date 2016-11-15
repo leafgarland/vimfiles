@@ -91,7 +91,7 @@ Add-Path "C:\Program Files (x86)\Nomura\Desktop\DesktopCoordinator\Service\"
 Add-Path "C:\Program Files (x86)\Nomura\Desktop\Installs\Organizer"
 
 Set-Alias l ls
-Set-Alias vim Invoke-NVim
+Set-Alias vim Invoke-Nvr
 Set-Alias tsvn Invoke-TortoiseSvn
 Set-Alias stree Invoke-SourceTree
 Set-Alias vsvar Set-VisualStudioEnvironment
@@ -154,6 +154,14 @@ function Get-Path {
     (Get-PathFor Machine) |
     % { $paths[$_.Path] = $_ }
   $paths.Values | sort Target
+}
+
+function Invoke-Nvr([switch]$Tab, [switch]$Wait)
+{
+    $remote = '--remote-silent'
+    $remote = if ($Tab) { $remote + '-tab' } else { $remote }
+    $remote = if ($Wait) { $remote + '-wait' } else { $remote }
+    c:\dev\tools\Python35\pythonw.exe c:\dev\tmp\me\vimfiles\tools\nvr.py -f $remote $args
 }
 
 function Invoke-NVim([switch]$Tab, [switch]$Wait)

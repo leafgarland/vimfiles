@@ -78,7 +78,7 @@ class Neovim():
             env = os.environ.copy()
             env['VIM'] = vimInstall + r"\share\nvim"
             env['VIMRUNTIME'] = vimInstall + r"\share\nvim\runtime"
-            proc = subprocess.Popen([r'C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe', '--geometry', '80x50', '--nvim', vimInstall + r'\bin\nvim.exe', '--'] + arguments, env=env)
+            proc = subprocess.Popen([r'C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe', '--nvim', vimInstall + r'\bin\nvim.exe', '-qwindowgeometry', '800x800+10+10', '--'] + arguments, env=env)
             if wait:
                 proc.wait()
     def _execute_remotely(self, arguments, cmd, wait):
