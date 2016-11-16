@@ -1525,7 +1525,6 @@ endfunction
 
 function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
   let pattern = a:ArgLead
-  echom pattern
   if empty(pattern)
     let pattern = '**'
   elseif pattern[-1:] == '$'
@@ -1533,7 +1532,6 @@ function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
   elseif pattern[-1:] != '*'
     let pattern .= '*'
   endif
-  echom pattern
   return systemlist('rg -S --files --glob ' . pattern)
 endfunction
 
@@ -1547,7 +1545,7 @@ command! -nargs=1 -complete=customlist,<sid>RgFilesComplete RgFiles call <sid>Ru
 nnoremap <leader>pr :OldDirs *
 nnoremap <leader>fr :OldFiles *
 nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>/*<C-z>
-nnoremap <leader>ff :RgFiles **
+nnoremap <leader>ff :RgFiles **/
 
 " }}}
 
