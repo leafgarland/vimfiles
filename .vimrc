@@ -221,7 +221,7 @@ set undofile
 let g:netrw_menu = 0
 
 if executable('rg')
-  set grepprg=rg\ --vimgrep\ --no-heading\ -HS
+  set grepprg=rg\ --vimgrep\ --no-heading\ -HS\ --line-number
   set grepformat=%f:%l:%c:%m
 elseif executable('ag')
   set grepprg=ag\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ -C0
@@ -835,10 +835,19 @@ endif
 
 " Dirvish: {{{
 if s:has_plug('vim-dirvish')
-  nnoremap <leader>fj :Dirvish %<CR>
+  nnoremap <silent> <leader>fj :call <SID>dirvish_open()<CR>
   nnoremap <leader>pe :Dirvish<CR>
 
   let s:dirvish_dir_search = '[\\\/]$'
+
+  function! s:dirvish_open()
+    let name = expand('%')
+    if empty(name)
+      Dirvish
+    else
+      Dirvish %
+    endif
+  endfunction
 
   function! s:dirvish_keepcursor(cmd)
     let l = getline('.')
@@ -859,7 +868,7 @@ if s:has_plug('vim-dirvish')
     nnoremap <buffer> gR :Grep  %<left><left>
     nnoremap <buffer> gr :<cfile><C-b>Grep  <left>
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
-    nmap <silent> <buffer> gp :lcd % <bar>pwd<CR>
+    nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
     call fugitive#detect(@%)
   endfunction
@@ -1539,7 +1548,7 @@ function! s:Run(command, arg, mods)
   execute a:mods a:command a:arg
 endfunction
 
-command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>Run('cd', <q-args>, <q-mods>)
+command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>Run('tcd', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>MRUFComplete OldFiles call <sid>Run('edit', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>RgFilesComplete RgFiles call <sid>Run('edit', <q-args>, <q-mods>)
 nnoremap <leader>pr :OldDirs *
