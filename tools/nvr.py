@@ -38,18 +38,32 @@ class Neovim():
         self.address    = address
         self.server     = None
         self._msg_shown = False
+        self._attach_tries = 2
 
     def attach(self):
-        try:
+        try:            
             if ':' in self.address:
                 ip, port = self.address.split(':')
                 self.server = attach('tcp', address=ip, port=int(port))
-            elif self.address == '':
+            elif self.address != '':
+                self.server = attach('socket', path=self.address)
+                self._attach_tries = 2
+                return
+            else:
                 pipes = glob.glob(r"\\.\pipe\nvim-*")
                 if len(pipes) > 0:
                     self.address = pipes[0]
-                self.server = attach('socket', path=self.address)
-        except:
+                    self.attach()
+                    return
+                elif self._attach_tries > 0:
+                    self._attach_tries -= 1
+                    self._start_nvim([], False)
+                    time.sleep(2)
+                    self.attach()
+                    return
+                
+        except Exception as e:
+            print("attach except: " + e)
             pass
 
     def is_attached(self, silent=False):
@@ -65,22 +79,20 @@ class Neovim():
         if self.is_attached(silent):
             self._execute_remotely(arguments, cmd, wait)
         else:
-            self._execute_locally([], True, False)
-            time.sleep(2)
             self.attach()
             self._execute_remotely(arguments, cmd, wait)
 
-    def _execute_locally(self, arguments, silent, wait):
-        if not arguments and not silent:
-            print('No arguments were given!')
-        else:
-            vimInstall = r"C:\Dev\Tools\vim\Neovim-master"
-            env = os.environ.copy()
-            env['VIM'] = vimInstall + r"\share\nvim"
-            env['VIMRUNTIME'] = vimInstall + r"\share\nvim\runtime"
-            proc = subprocess.Popen([r'C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe', '--nvim', vimInstall + r'\bin\nvim.exe', '-qwindowgeometry', '800x800+10+10', '--'] + arguments, env=env)
-            if wait:
-                proc.wait()
+    def _start_nvim(self, arguments, wait):
+        vimInstall = r"C:\Dev\Tools\vim\Neovim-master"
+        env = os.environ.copy()
+        if 'XDG_DATA_HOME' not in env:
+            env['XDG_DATA_HOME'] = env['LOCALAPPDATA']
+        env['VIM'] = vimInstall + r"\share\nvim"
+        env['VIMRUNTIME'] = vimInstall + r"\share\nvim\runtime"
+        proc = subprocess.Popen([r'C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe', '--nvim', vimInstall + r'\bin\nvim.exe', '-qwindowgeometry', '800x800+10+10', '--'] + arguments, env=env)
+        if wait:
+            proc.wait()
+
     def _execute_remotely(self, arguments, cmd, wait):
         c = None
         for fname in reversed(arguments):
