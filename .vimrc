@@ -143,7 +143,7 @@ Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'elmcast/elm-vim', {'for': 'elm'}
-Plug 'rust-lang/rust.vim' ", {'for': 'rust'}
+Plug 'rust-lang/rust.vim', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
@@ -1415,8 +1415,9 @@ function! Buffers(show_all) abort
     else
       echohl BufferName
     endif
-    if len(bname) > 60
-      echon pathshorten(bname)
+    let maxPathLen = &columns - 50
+    if len(bname) > maxPathLen
+      echon PathShorten(bname, maxPathLen)
     else
       echon bname
     endif
@@ -1743,6 +1744,20 @@ function! s:is_small_win()
     return winwidth(0) < 60
 endfunction
 
+function! PathShorten(path, max)
+  let pathbits = split(a:path, '\\\|/') 
+  let numShort = 0
+  let shortPath = a:path
+  while len(shortPath) > a:max && numShort < len(pathbits) - 1
+    let pathbit = pathbits[numShort]
+    let pathbit = pathbit !~ '[A-Z]:' ? pathbit[0] : pathbit
+    let pathbits[numShort] = pathbit
+    let shortPath = join(pathbits, (&shellslash ? '/' : '\'))
+    let numShort += 1
+  endwhile
+  return shortPath
+endfunction
+
 function! s:GetDirvishName()
   let name = expand('%:~:.')
   if empty(name)
@@ -1793,7 +1808,7 @@ function! StatusLinePath()
   endif
   let maxPathLen = winwidth(0) - 50
   if strlen(path) > maxPathLen
-    let path = pathshorten(path)
+    let path = PathShorten(path, maxPathLen)
   endif
   return path.(exists('+shellslash') && !&shellslash ? '\' : '/')
 endfunction
@@ -1957,7 +1972,7 @@ function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
   let winnr = tabpagewinnr(tabnr)
-  let cwd = getcwd(exists(':tcd') ? -1 : winnr, tabnr)
+  let cwd = PathShorten(getcwd(exists(':tcd') ? -1 : winnr, tabnr), &columns - 6)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
 
   let s = '%#TabLine#'
@@ -1967,9 +1982,10 @@ function! TabLine()
   endif
   let s.= '%='
   let s.= cwd
-  let s.= '%='
-  let s.= '%#TabLine#'
-  let s.= '%( %{strftime("%H:%M")} %)'
+  let s.= ' '
+  " let s.= '%='
+  " let s.= '%#TabLine#'
+  " let s.= '%( %{strftime("%H:%M")} %)'
   return s
 endfunction
 
