@@ -113,28 +113,27 @@ function jj ([switch]$All) {
 function em { emacsclient --alternate-editor=runemacs --quiet --no-wait $args }
 
 Import-Module PSReadLine
-Set-PSReadlineOption -EditMode Emacs
+Set-PSReadlineOption -EditMode Vi -ViModeIndicator Cursor
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -HistoryNoDuplicates
-Set-PSReadlineOption -ContinuationPrompt "→ "
+Set-PSReadlineOption -ContinuationPrompt ">> "
 Set-PSReadlineOption -ContinuationPromptForegroundColor DarkYellow
 Set-PSReadlineOption Operator -ForegroundColor Cyan
 Set-PSReadlineOption Parameter -ForegroundColor DarkCyan
 Set-PSReadlineOption Type -ForegroundColor Blue
 Set-PSReadlineOption String -ForegroundColor Magenta
 Set-PSReadlineOption -ShowToolTips
-Set-PSReadlineKeyHandler -Key Ctrl+P -Function HistorySearchBackward
-Set-PSReadlineKeyHandler -Key Ctrl+N -Function HistorySearchForward
-Set-PSReadlineKeyHandler -Key Ctrl+Q -Function TabCompleteNext
-Set-PSReadlineKeyHandler -Key Ctrl+Shift+Q -Function TabCompletePrevious
-Set-PSReadlineKeyHandler -Key Alt+D -Function ShellKillWord
-Set-PSReadlineKeyHandler -Key Alt+Backspace -Function ShellBackwardKillWord
-Set-PSReadlineKeyHandler -Key Alt+B -Function ShellBackwardWord
-Set-PSReadlineKeyHandler -Key Alt+F -Function ShellForwardWord
-Set-PSReadlineKeyHandler -Key Shift+Alt+B -Function SelectShellBackwardWord
-Set-PSReadlineKeyHandler -Key Shift+Alt+F -Function SelectShellForwardWord
-Set-PSReadlineKeyHandler -Key Ctrl+V -Function Paste
-Set-PSReadlineKeyHandler -Key Ctrl+5 -Function GotoBrace
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+P -Function HistorySearchBackward
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+N -Function HistorySearchForward
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+Q -Function TabCompleteNext
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+Shift+Q -Function TabCompletePrevious
+Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+D -Function ShellKillWord
+Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+Backspace -Function ShellBackwardKillWord
+Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+B -Function ShellBackwardWord
+Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+F -Function ShellForwardWord
+Set-PSReadlineKeyHandler -ViMode Insert -Key Shift+Alt+B -Function SelectShellBackwardWord
+Set-PSReadlineKeyHandler -ViMode Insert -Key Shift+Alt+F -Function SelectShellForwardWord
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+V -Function Paste
 Set-PSReadlineKeyHandler -Key Ctrl+Alt+s -Function CaptureScreen
 Set-PSReadlineOption -MaximumHistoryCount 200000
 
@@ -158,10 +157,10 @@ function Get-Path {
 
 function Invoke-Nvr([switch]$Tab, [switch]$Wait)
 {
-    $remote = '--remote-silent'
+    $remote = if ($args) { '--remote-silent' } else { '' }
     $remote = if ($Tab) { $remote + '-tab' } else { $remote }
     $remote = if ($Wait) { $remote + '-wait' } else { $remote }
-    c:\dev\tools\Python35\pythonw.exe c:\dev\tmp\me\vimfiles\tools\nvr.py -f $remote $args
+    c:\dev\tools\Python35\python.exe c:\dev\tmp\me\vimfiles\tools\nvr.py -f $remote $args
 }
 
 function Invoke-NVim([switch]$Tab, [switch]$Wait)
