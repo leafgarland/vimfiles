@@ -136,6 +136,14 @@ Set-PSReadlineKeyHandler -ViMode Insert -Key Shift+Alt+F -Function SelectShellFo
 Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+V -Function Paste
 Set-PSReadlineKeyHandler -Key Ctrl+Alt+s -Function CaptureScreen
 Set-PSReadlineOption -MaximumHistoryCount 200000
+Set-PSReadlineKeyHandler `
+	 -Chord 'Ctrl+s' `
+	 -BriefDescription "InsertHeatseekerPathInCommandLine" `
+	 -LongDescription "Run Heatseeker in the PWD, appending any selected paths to the current command" `
+	 -ScriptBlock {
+		 $choices = $(rg --files . | hs)
+        [Microsoft.PowerShell.PSConsoleReadLine]::Insert($choices -join " ")
+	}
 
 function Start-Elevated {
   Start-Process -Verb runAs $args[0]
