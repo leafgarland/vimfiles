@@ -113,7 +113,7 @@ function jj ([switch]$All) {
 function em { emacsclient --alternate-editor=runemacs --quiet --no-wait $args }
 
 Import-Module PSReadLine
-Set-PSReadlineOption -EditMode Vi -ViModeIndicator Cursor
+Set-PSReadlineOption -EditMode Emacs -ViModeIndicator Cursor
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -HistoryNoDuplicates
 Set-PSReadlineOption -ContinuationPrompt ">> "
@@ -123,18 +123,19 @@ Set-PSReadlineOption Parameter -ForegroundColor DarkCyan
 Set-PSReadlineOption Type -ForegroundColor Blue
 Set-PSReadlineOption String -ForegroundColor Magenta
 Set-PSReadlineOption -ShowToolTips
-Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+P -Function HistorySearchBackward
-Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+N -Function HistorySearchForward
-Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+Q -Function TabCompleteNext
-Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+Shift+Q -Function TabCompletePrevious
-Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+D -Function ShellKillWord
-Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+Backspace -Function ShellBackwardKillWord
-Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+B -Function ShellBackwardWord
-Set-PSReadlineKeyHandler -ViMode Insert -Key Alt+F -Function ShellForwardWord
-Set-PSReadlineKeyHandler -ViMode Insert -Key Shift+Alt+B -Function SelectShellBackwardWord
-Set-PSReadlineKeyHandler -ViMode Insert -Key Shift+Alt+F -Function SelectShellForwardWord
-Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+V -Function Paste
+Set-PSReadlineKeyHandler -Key Ctrl+p -Function HistorySearchBackward
+Set-PSReadlineKeyHandler -Key Ctrl+n -Function HistorySearchForward
+Set-PSReadlineKeyHandler -Key Ctrl+q -Function TabCompleteNext
+Set-PSReadlineKeyHandler -Key Ctrl+Shift+q -Function TabCompletePrevious
+Set-PSReadlineKeyHandler -Key Alt+d -Function ShellKillWord
+Set-PSReadlineKeyHandler -Key Alt+Backspace -Function ShellBackwardKillWord
+Set-PSReadlineKeyHandler -Key Alt+b -Function ShellBackwardWord
+Set-PSReadlineKeyHandler -Key Alt+f -Function ShellForwardWord
+Set-PSReadlineKeyHandler -Key Shift+Alt+b -Function SelectShellBackwardWord
+Set-PSReadlineKeyHandler -Key Shift+Alt+f -Function SelectShellForwardWord
+Set-PSReadlineKeyHandler -Key Ctrl+v -Function Paste
 Set-PSReadlineKeyHandler -Key Ctrl+Alt+s -Function CaptureScreen
+Set-PSReadlineKeyHandler -Key Ctrl+5 -Function GotoBrace
 Set-PSReadlineOption -MaximumHistoryCount 200000
 Set-PSReadlineKeyHandler `
 	 -Chord 'Ctrl+s' `
