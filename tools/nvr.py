@@ -1,4 +1,4 @@
-#!c:\dev\tools\python35\python.exe
+#!python
 
 """
 Copyright (c) 2015 - present Marco Hinz
@@ -83,13 +83,9 @@ class Neovim():
             self._execute_remotely(arguments, cmd, wait)
 
     def _start_nvim(self, arguments, wait):
-        vimInstall = r"C:\Dev\Tools\vim\Neovim-master"
         env = os.environ.copy()
-        if 'XDG_DATA_HOME' not in env:
-            env['XDG_DATA_HOME'] = env['LOCALAPPDATA']
-        env['VIM'] = vimInstall + r"\share\nvim"
-        env['VIMRUNTIME'] = vimInstall + r"\share\nvim\runtime"
-        proc = subprocess.Popen([r'C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe', '--nvim', vimInstall + r'\bin\nvim.exe', '-qwindowgeometry', '800x800+10+10', '--'] + arguments, env=env)
+        vimInstall = env['TOOLS']+r"\vim\Neovim"
+        proc = subprocess.Popen([vimInstall + r'\bin\nvim-qt.exe', '-qwindowgeometry', '800x800+10+10', '--'] + arguments, env=env)
         if wait:
             proc.wait()
 

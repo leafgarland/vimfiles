@@ -73,7 +73,7 @@ endif
 "}}}
 
 " Plugins: {{{
-call plug#begin('~/.vim/bundle')
+call plug#begin($VIMBUNDLEPATH)
 
 " Base
 if !has('nvim')
@@ -111,12 +111,14 @@ Plug 'tommcdo/vim-lion'
 Plug 'tpope/vim-fugitive' | Plug 'idanarye/vim-merginal'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-projectionist'
+Plug 'tpope/vim-scriptease'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'junegunn/vim-peekaboo'
 Plug 'ludovicchabant/vim-gutentags'
+Plug 'sgur/vim-editorconfig'
 
 " Filetypes
 Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
@@ -140,6 +142,7 @@ Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
 Plug 'pangloss/vim-javascript', {'for': 'javascript'}
 Plug 'mxw/vim-jsx', {'for': 'javascript'}
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
+Plug 'ianks/vim-tsx'
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'elmcast/elm-vim', {'for': 'elm'}
@@ -169,16 +172,12 @@ if executable('fish')
 endif
 
 if has('nvim') && !has('win32')
-  Plug 'benekastah/neomake'
   Plug 'cloudhead/neovim-fuzzy'
   Plug 'radenling/vim-dispatch-neovim'
-  Plug 'Shougo/deoplete.nvim'
   Plug 'racer-rust/vim-racer'
 elseif has('nvim') && has('win32')
   Plug 'radenling/vim-dispatch-neovim'
-  Plug 'Shougo/deoplete.nvim'
 elseif !has('nvim')
-  Plug 'Valloric/YouCompleteMe'
   Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
@@ -200,6 +199,7 @@ command! -nargs=+ SetGlobal if has('vim_starting')<bar>set <args><bar>else<bar>s
 
 set mouse=a
 
+set belloff=error,cursor
 set shortmess+=Im
 set viewoptions=folds,options,cursor,unix,slash
 set history=10000
@@ -321,7 +321,7 @@ if exists('+guioptions')
   if has('vim_starting')
     set lines=50
     set columns=120
-    set guifont=Source_Code_Pro:h9,Monaco:h16,Consolas:h11,Courier\ New:h14
+    set guifont=Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
 endif
 "}}}
@@ -540,9 +540,6 @@ nnoremap <leader>sV :g//d<CR>
 xnoremap <leader>sv :v//d<CR>
 xnoremap <leader>sV :g//d<CR>
 
-inoremap jk <esc>
-cnoremap jk <C-c> 
-
 inoremap (<CR> (<CR>)<Esc>O
 inoremap {<CR> {<CR>}<Esc>O
 inoremap {; {<CR>};<Esc>O
@@ -550,6 +547,10 @@ inoremap {, {<CR>},<Esc>O
 inoremap [<CR> [<CR>]<Esc>O
 inoremap [; [<CR>];<Esc>O
 inoremap [, [<CR>],<Esc>O
+
+inoremap <C-F> <C-X><C-F>
+inoremap <C-C> <C-X><C-O>
+inoremap <C-S> <C-X><C-S>
 
 cnoremap cd. cd %:p:h
 cnoremap cd.. cd %:p:h:h
@@ -754,83 +755,6 @@ endif
 let g:UltiSnipsExpandTrigger="<c-j>"
 let g:UltiSnipsJumpForwardTrigger="<c-j>"
 let g:UltiSnipsJumpBackwardTrigger="<c-k>"
-" }}}
-
-" deoplete {{{
-
-if s:has_plug('deoplete.nvim')
-  let g:deoplete#enable_at_startup=1
-  let g:deoplete#disable_auto_complete=0
-
-  inoremap <silent><expr> <TAB>
-    \ pumvisible() ? "\<C-n>" :
-    \ <SID>check_back_space() ? "\<TAB>" :
-    \ deoplete#mappings#manual_complete()
-
-  inoremap <expr><BS>
-    \ deoplete#smart_close_popup()."\<C-h>"
-
-  function! s:check_back_space() abort
-    let col = col('.') - 1
-    return !col || getline('.')[col - 1]  =~ '\s'
-  endfunction
-endif
-" }}}
-
-" YouCompleteMe {{{
-if s:has_plug('YouCompleteMe')
-
-  if !exists('$RUST_SRC_PATH')
-    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/rustc-1.10.0/src'
-  endif
-  let g:ycm_rust_src_path = $RUST_SRC_PATH
-
-  " Sometimes YCM is unhappy with the python it uses, so we can force it to
-  " use a specific python
-  let s:ycm_python=expand('c:/Dev/Tools/Python35/python.exe')
-  if executable(s:ycm_python)
-    let g:ycm_server_python_interpreter = s:ycm_python
-  endif
-
-  " let g:ycm_server_log_level = 'debug'
-  " let g:ycm_semantic_triggers =  {
-  "   \   'c' : ['->', '.'],
-  "   \   'objc' : ['->', '.'],
-  "   \   'ocaml' : ['.', '#'],
-  "   \   'cpp,objcpp' : ['->', '.', '::'],
-  "   \   'perl' : ['->'],
-  "   \   'php' : ['->', '::'],
-  "   \   'cs,java,javascript,d,vim,python,perl6,scala,vb,elixir,go' : ['.'],
-  "   \   'ruby,rust' : ['.', '::'],
-  "   \   'lua' : ['.', ':'],
-  "   \   'elm' : ['.'],
-  "   \   'erlang' : [':'],
-  "   \   'fsharp' : ['.'],
-  "   \ }
-
-  let g:ycm_semantic_triggers =  {
-    \   'elm' : ['.'],
-    \   'fsharp' : ['.'],
-    \ }
-
-  let g:ycm_filetype_blacklist = {
-        \ 'tagbar' : 1,
-        \ 'qf' : 1,
-        \ 'notes' : 1,
-        \ 'markdown' : 1,
-        \ 'unite' : 1,
-        \ 'text' : 1,
-        \ 'vimwiki' : 1,
-        \ 'pandoc' : 1,
-        \ 'infolog' : 1,
-        \ 'mail' : 1,
-        \ 'dirvish' : 1,
-        \ 'log4net' : 1
-        \}
-
-  nnoremap <leader>gd :YcmCompleter GoTo<CR>
-  nnoremap <leader>ht :YcmCompleter GetType<CR>
-endif
 " }}}
 
 " Dirvish: {{{
@@ -1865,7 +1789,7 @@ function! StatusLineFugitive()
     return ''
   endif
   try
-    return fugitive#head()
+    return fugitive#head()[0:20]
   catch
   endtry
   return ''

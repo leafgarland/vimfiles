@@ -1,5 +1,13 @@
-$global:PsGetDestinationModulePath = "C:\Dev\Tools\PSModules"
-$env:PSModulePath = $global:PsGetDestinationModulePath + ";" + $env:PSModulePath
+$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
+
+& "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
+$env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
+
+$HistoryPath = "~\pshistory.xml"
+Register-EngineEvent PowerShell.Exiting -Action { Get-History | Export-CliXml $HistoryPath} | Out-Null
+if (Test-Path $HistoryPath) {
+    Import-CliXml $HistoryPath | Add-History
+}
 
 # Make scripts run within powershell, not in own cmd window
 $env:PATHEXT += ";.PY;.ERL"
@@ -10,8 +18,7 @@ Remove-Item -Force -ErrorAction Ignore Alias:gl
 
 function TabExpansion($line, $lastword) {
   switch ($lastword) {
-      "mvu" { "mvn -U process-resources "; break }
-      "mvv" { "mvn versions:display-dependency-updates "; break }
+      "go" { "git checkout "; break }
   }
 }
 
@@ -20,44 +27,52 @@ function gs { git status -sb $args }
 function gl { git log $args }
 function gll { git logmore $args }
 function gl1 { git log1 $args }
+function go { git checkout $args }
 
-$rustSrcPath = "C:\Dev\Tools\rust\rustc-1.11.0\src"
-if (test-path $rustSrcPath) {
-    $env:RUST_SRC_PATH=$rustSrcPath
+function ppgulp {
+    $febuild = join-path (git home) "febuild"
+    if (test-path $febuild) {
+        try {
+            pushd $febuild
+            ./node_modules/.bin/gulp $args
+        }
+        finally {
+            popd
+        }
+    } else {
+        write-warning "not in repo"
+    }
 }
 
 # $env:_NT_SYMBOL_PATH="SRV*c:\dev\tmp\symbols*http://msdl.microsoft.com/download/symbols"
-$env:_NT_DEBUGGER_EXTENSION_PATH="C:\dev\tools\debuggers\sosex_64;C:\dev\tools\Debuggers\SOS-4.0"
+# $env:_NT_DEBUGGER_EXTENSION_PATH="$env:TOOLS\debuggers\sosex_64;$env:TOOLS\Debuggers\SOS-4.0"
 
-function Out-File($filepath, $encoding, [switch]$append) {
-    $input | microsoft.powershell.utility\out-file $filepath -encoding utf8 -append:$append
-}
-
+$isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 function Prompt {
-  $waserror = if ($?) {
-    [system.consolecolor]"green"
-  } else {
-    [system.consolecolor]"red"
-  }
+    $waserror = if ($?) {
+        [system.consolecolor]"green"
+    } else {
+        [system.consolecolor]"red"
+    }
 
-  $lastcmd = get-history -count 1
-  $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
+    $lastcmd = get-history -count 1
+    $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
 
-  Write-Host -foregroundcolor darkcyan (get-location) -nonewline
-  Write-RepositoryStatus
+    Write-Host -foregroundcolor darkcyan (get-location) -nonewline
 
-  if ($global:ShowTiming) {
-    Write-Host -foregroundcolor yellow " $($lastcmdtime)" -nonewline
-  }
-  elseif ($lastcmdtime.totalseconds -gt 3) {
-    Write-Host -foregroundcolor yellow " $(format-timespan($lastcmdtime))" -nonewline
-  }
-  Write-Host
-  Write-Host -foregroundcolor $waserror ">" -nonewline
+    if ($global:ShowTiming) {
+        Write-Host -foregroundcolor yellow " $($lastcmdtime)" -nonewline
+    }
+    elseif ($lastcmdtime.totalseconds -gt 3) {
+        Write-Host -foregroundcolor yellow " $(format-timespan($lastcmdtime))" -nonewline
+    }
+    Write-Host
+    if ($isElevated) { Write-Host -ForegroundColor ([system.consolecolor]'magenta') -NoNewline "ADMIN" }
+    Write-Host -foregroundcolor $waserror ">" -nonewline
 
-  $host.ui.rawui.windowtitle = "PS $(get-location)"
+    $host.ui.rawui.windowtitle = "PS $(get-location)"
 
-  " "
+    " "
 }
 
 function Add-Path ([switch] $First, [string[]] $Paths){
@@ -70,49 +85,43 @@ function arr { $args }
 function d2o([HashTable]$dictionary) { new-object -typename psobject -property $dictionary }
 filter asXml { [xml](cat $_) }
 
-$env:LEIN_FAST_TRAMPOLINE="y"
-function Start-CljsBuild()
-{
-  lein trampoline cljsbuild $args
-}
-Set-Alias cljsbuild Start-CljsBuild
-Add-Path -First "c:/dev/Tools/Python27/"
-Add-Path -First "c:/dev/Tools/Python34/"
-Add-Path "C:\Dev\Tools\PSScripts"
-Add-Path "C:\Dev\Tools\Utils\"
-Add-Path "C:\Users\garlandl\.cargo\bin\"
-Add-Path "C:\Users\garlandl\AppData\Local\Pandoc"
-Add-Path "C:\Dev\Tools\vim\vim"
-Add-Path "C:\Dev\Tools\emacs\bin"
-Add-Path "C:\Dev\Tools\maven\bin"
-Add-Path "C:\Dev\Tools\ruby200\bin"
-Add-Path "C:\Program Files\Mercurial"
-Add-Path "C:\Program Files (x86)\Nomura\Desktop\DesktopCoordinator\Service\"
-Add-Path "C:\Program Files (x86)\Nomura\Desktop\Installs\Organizer"
+Add-Path -First "$env:TOOLS\Python27\"
+Add-Path "$env:LOCALAPPDATA\Programs\Python\Python35"
+Add-Path "$env:TOOLS\PSScripts"
+Add-Path "$env:TOOLS\Yarn\bin"
+Add-Path "$env:TOOLS\Utils"
+Add-Path "~\.cargo\bin\"
+Add-Path "$env:TOOLS\vim\vim80"
+Add-Path "$env:TOOLS\vim\Neovim\bin"
+Add-Path "$env:TOOLS\BeyondCompare"
 
+Set-Alias ss select-string
+Set-Alias gx gitex
 Set-Alias l ls
-Set-Alias vim Invoke-Nvr
+Set-Alias nvim Invoke-Nvr
+Set-Alias vim Invoke-Vim
 Set-Alias tsvn Invoke-TortoiseSvn
 Set-Alias stree Invoke-SourceTree
 Set-Alias vsvar Set-VisualStudioEnvironment
 Set-Alias sudo Start-Elevated
 Set-Alias de devenv.com
-Set-Alias bc 'C:\Program Files (x86)\Beyond Compare 3\BComp.com'
-Set-Alias code "C:\Program Files (x86)\Microsoft VS Code\Code.exe"
+Set-Alias bc 'bcompare'
+set-alias code 'C:\Program Files (x86)\Microsoft VS Code Insiders\bin\code-insiders.cmd'
 Set-Alias cdb "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe"
 Set-Alias windbg "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\windbg.exe"
+set-alias python3 "$env:LOCALAPPDATA\Programs\Python\Python35\python.exe"
+Set-Alias gitex "$env:TOOLS\GitExtensions\gitex.cmd"
 
 function spe { sudo procexp $args }
-function rg { rg.exe --type-add xaml:*.xaml --type-add proj:*.*proj -SH $args }
+function rg { rg.exe --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cs,cshtml -SH $args }
 
 Import-Module Jump.Location
 function jj ([switch]$All) {
   [System.IO.DirectoryInfo](jumpstat -First:(-not $All) $args).Path
 }
 
-function em { emacsclient --alternate-editor=runemacs --quiet --no-wait $args }
-
 Import-Module PSReadLine
+Set-PSReadlineOption -BellStyle Visual
 Set-PSReadlineOption -EditMode Emacs -ViModeIndicator Cursor
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -HistoryNoDuplicates
@@ -139,15 +148,17 @@ Set-PSReadlineKeyHandler -Key Ctrl+5 -Function GotoBrace
 Set-PSReadlineOption -MaximumHistoryCount 200000
 Set-PSReadlineKeyHandler `
 	 -Chord 'Ctrl+s' `
-	 -BriefDescription "InsertHeatseekerPathInCommandLine" `
-	 -LongDescription "Run Heatseeker in the PWD, appending any selected paths to the current command" `
 	 -ScriptBlock {
 		 $choices = $(rg --files . | hs)
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert($choices -join " ")
 	}
 
-function Start-Elevated {
-  Start-Process -Verb runAs $args[0]
+function Start-Elevated($Command="powershell.exe", $Args) {
+  if ($Args) {
+    Start-Process -Verb runAs -workingdirectory $pwd -FilePath $Command -Args:$Args
+  } else {
+    Start-Process -Verb runAs -workingdirectory $pwd -FilePath $Command
+  }
 }
 
 function Get-PathFor([System.EnvironmentVariableTarget]$target) {
@@ -169,38 +180,16 @@ function Invoke-Nvr([switch]$Tab, [switch]$Wait)
     $remote = if ($args) { '--remote-silent' } else { '' }
     $remote = if ($Tab) { $remote + '-tab' } else { $remote }
     $remote = if ($Wait) { $remote + '-wait' } else { $remote }
-    c:\dev\tools\Python35\python.exe c:\dev\tmp\me\vimfiles\tools\nvr.py -f $remote $args
-}
-
-function Invoke-NVim([switch]$Tab, [switch]$Wait)
-{
-    # $vimInstall = "C:\Dev\Tools\vim\Neovim-equalsraf-tb-mingw"
-    $vimInstall = "C:\Dev\Tools\vim\Neovim-master"
-    $files = $args | ? { $_ -notlike "-*" }
-    $otherArgs = $args | ? { $_ -like "-*" }
-    if ($files) {
-        $remote = '--remote'
-        $remote = if ($Tab) { $remote + '-tab' } else { $remote }
-        $remote = if ($Wait) { $remote + '-wait' } else { $remote }
-    } else {
-        $remote = ''
-    }
-    $nvims = [System.IO.Directory]::GetFiles("\\.\pipe\") | select-string nvim
-    if ($nvims) {
-        python.exe c:\dev\tools\python35\scripts\nvr.py --servername $nvims[0] -f $otherArgs $remote $files
-    } else {
-        Add-Path "$vimInstall\bin"
-        $env:VIM = "$vimInstall\share\nvim"
-        $env:VIMRUNTIME = "$vimInstall\share\nvim\runtime"
-        C:\dev\tools\vim\Neovim-Qt\bin\nvim-qt.exe --nvim "$vimInstall\bin\nvim.exe" --geometry 80x50 -- $args
-    }
+    python3 $env:DOTFILES\tools\nvr.py -f $remote $args
 }
 
 function Invoke-Vim([switch]$Tab, [switch]$Wait) {
-  $vimInstall="c:\dev\tools\vim\vim"
+  $vimInstall="$env:TOOLS\vim\vim80"
+  $vim=join-path $vimInstall 'vim.exe'
+  $gvim=join-path $vimInstall 'gvim.exe'
   if ($global:VimServerName) { $serverName = $global:VimServerName }
   else { $serverName = "GVIM" }
-  $servers = (vim.exe --noplugin -u NORC --serverlist) | ? { $_ -eq $serverName }
+  $servers = (& $vim --noplugin -u NORC --serverlist) | ? { $_ -eq $serverName }
   if ($args) {
     $files = $args | ? { $_ -notlike "-*" }
     $otherArgs = $args | ? { $_ -like "-*" }
@@ -209,26 +198,19 @@ function Invoke-Vim([switch]$Tab, [switch]$Wait) {
     $remote = if ($Wait) { $remote + '-wait' } else { $remote }
     $remote += '-silent'
     if ($servers) {
-      vim.exe $otherArgs --servername $serverName -c "call remote_foreground('$serverName')" $remote $files
+      & $vim $otherArgs --servername $serverName -c "call remote_foreground('$serverName')" $remote $files
     } else {
-      gvim.exe $otherArgs --servername $serverName $files
+      & $gvim $otherArgs --servername $serverName $files
     }
   } else {
     if ($servers) {
-      vim.exe --noplugin -u NORC -c "call remote_foreground('$serverName')" -c "quit"
+      & $vim --noplugin -u NORC -c "call remote_foreground('$serverName')" -c "quit"
     } else {
       $env:VIM = "$vimInstall"
       $env:VIMRUNTIME = "$vimInstall" 
-      gvim.exe --servername $serverName
+      & $gvim --servername $serverName
     }
   }
-}
-
-function Invoke-SourceTree(
-[ValidateSet('clone', 'status', 'log', 'search', 'filelog', 'commit')]$cmd)
-{
-  $stree = 'C:\Program Files (x86)\Atlassian\SourceTree\sourcetree.exe'
-  & $stree $cmd $args
 }
 
 function Invoke-TortoiseSvn(
@@ -249,55 +231,6 @@ function Set-SvnDepth($Path=".", [ValidateSet('infinity','files','immediates','e
 function svninc($Path) { Set-SvnDepth -Path $Path -Depth infinity }
 function svnexc($Path) { Set-SvnDepth -Path $Path -Depth exclude }
 
-function Invoke-Maven(
-  [ValidateSet('process-resources',
-               'versions:display-dependency-updates',
-               'dependency:list',
-               'help:effective-pom -Doutput=effective-pom.xml',
-               'compile',
-               'package',
-               'sonar',
-               'clean',
-               'test')]$cmd) {
-  mvn $cmd $args
-}
-
-function Open-RiskViewer(
-    [String]
-    [ValidateSet("Development",
-                 "Development.Staging",
-                 "Staging")]
-    $Env = "Development",
-    [String] $User) {
-    if ($User) {
-        $instance = "$User($User)"
-    } else {
-        $instance = "default"
-    }
-    stk openwindow "stk://$Env.Onyx-Risk-Viewer.$instance/OnyxRisk"
-}
-Set-Alias orv Open-RiskViewer
-
-function Stk-ListWindows {
-  (stk listwindows | select -Skip 1) | % {$_.split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)[0]}
-}
-
-function orv-users ($Env="Staging", $Users, $App = "Onyx-Risk-Viewer", [switch]$NewWindow) {
-  $wid = Stk-ListWindows | select -Last 1
-  $NewWindow = $NewWindow -or $wids.length -eq 0
-  foreach ($user in $Users) {
-    if ($NewWindow) {
-      stk openwindow "stk://$Env.$App.$user($user)/OnyxRisk"
-      $wid = Stk-ListWindows | select -Last 1
-      $NewWindow = $false
-    } else {
-      stk addtab $wid "stk://$Env.$App.$user($user)/OnyxRisk" 
-    }
-  }
-}
-# $u = ($users | select -Skip 5 -First 5); orv-users -Users $u -NewWindow; orv-users -Env Production -Users $u -NewWindow
-# ps *content* | ? FileVersion -match "8.2*" | measure PrivateMemorySize -Sum
-
 function Format-TimeSpan([TimeSpan]$ts) {
   $format = ""
   if ($ts.Hours -gt 0)   { $format += "h\h\ " }
@@ -308,11 +241,11 @@ function Format-TimeSpan([TimeSpan]$ts) {
 
 function Set-VisualStudioEnvironment([string]$Version="*", [string]$Platform="") {
   $vsenvvar = "env:\VS$($Version)0COMNTOOLS"
-  $command = "$((ls $vsenvvar | sort name | select -last 1).value)..\..\VC\vcvarsall.bat"
+  # $command = "$((ls $vsenvvar | sort name | select -last 1).value)..\..\VC\vcvarsall.bat"
+  $command = "$((ls $vsenvvar | sort name | select -last 1).value)vsvars32.bat"
   foreach($line in cmd /c "`"$command`" $Platform 2>&1 && set") {
     if ($line -match '^([^=]+)=(.*)') {
       [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
     }
   }
 }
-
