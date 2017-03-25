@@ -1,4 +1,6 @@
 $env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
+# $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
+$env:EDITOR = 'gvim'
 
 & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
 $env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
@@ -22,12 +24,45 @@ function TabExpansion($line, $lastword) {
   }
 }
 
-import-module poshgit2
 function gs { git status -sb $args }
 function gl { git log $args }
 function gll { git logmore $args }
 function gl1 { git log1 $args }
+function glm { git lm $args }
 function go { git checkout $args }
+
+function Get-GitCmds {
+    $UsedGitCmds = (Get-History).commandline |
+        sls "^git (?:-\S+ )*(\S+)" |
+        % { $_.matches.groups[1].value } |
+        group |
+        select name, count
+    $AllGitCmds = git help -a |
+        ? { $_ -match "^  [a-z]" } |
+        % { $_.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries) }
+    $AllGitAliases = git config -l |
+        sls "alias\.(\w+)" |
+        % { $_.matches.groups[1].value }
+    $AllGitCmds + $AllGitAliases |
+        sort -unique {
+            $p = ($UsedGitCmds | ? Name -eq $_).Count
+            if ($p -gt 1) { (99999-$p).tostring("x8") + $_ } else { $_ }
+        }
+}
+
+Register-ArgumentCompleter -Native -CommandName 'git' -ScriptBlock { param($lastword, $line)
+  if (-not $global:AllGitCmds) { $global:AllGitCmds = Get-GitCmds }
+  if ($line -match "^git (-\S+ )*\S+$") {
+    $AllGitCmds |
+    ? { $_ -like "$lastword*" } |
+    % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
+  } else {
+    git for-each-ref --format='%(refname:short)' refs/heads/ |
+    sort |
+    ? { $_ -like "$lastword*" } |
+    % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
+  }
+}
 
 function ppgulp {
     $febuild = join-path (git home) "febuild"
@@ -48,6 +83,7 @@ function ppgulp {
 # $env:_NT_DEBUGGER_EXTENSION_PATH="$env:TOOLS\debuggers\sosex_64;$env:TOOLS\Debuggers\SOS-4.0"
 
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+$ShowTiming = false
 function Prompt {
     $waserror = if ($?) {
         [system.consolecolor]"green"
@@ -59,13 +95,16 @@ function Prompt {
     $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
 
     Write-Host -foregroundcolor darkcyan (get-location) -nonewline
+    $branchName = if (Test-Path ./.git) { git rev-parse --abbrev-ref HEAD }
+    if ($branchName) { Write-Host -foregroundcolor darkyellow " $branchName" -nonewline }
 
-    if ($global:ShowTiming) {
-        Write-Host -foregroundcolor yellow " $($lastcmdtime)" -nonewline
+    if ($ShowTiming) {
+        Write-Host -foregroundcolor yellow " $lastcmdtime" -nonewline
     }
     elseif ($lastcmdtime.totalseconds -gt 3) {
         Write-Host -foregroundcolor yellow " $(format-timespan($lastcmdtime))" -nonewline
     }
+
     Write-Host
     if ($isElevated) { Write-Host -ForegroundColor ([system.consolecolor]'magenta') -NoNewline "ADMIN" }
     Write-Host -foregroundcolor $waserror ">" -nonewline
@@ -112,6 +151,7 @@ Set-Alias windbg "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\windbg.ex
 set-alias python3 "$env:LOCALAPPDATA\Programs\Python\Python35\python.exe"
 Set-Alias gitex "$env:TOOLS\GitExtensions\gitex.cmd"
 
+function e { Invoke-Expression "$env:EDITOR $args" }
 function spe { sudo procexp $args }
 function rg { rg.exe --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cs,cshtml -SH $args }
 
@@ -177,6 +217,8 @@ function Get-Path {
 
 function Invoke-Nvr([switch]$Tab, [switch]$Wait)
 {
+    rm env:VIM -ErrorAction SilentlyContinue
+    rm env:VIMRUNTIME -ErrorAction SilentlyContinue
     $remote = if ($args) { '--remote-silent' } else { '' }
     $remote = if ($Tab) { $remote + '-tab' } else { $remote }
     $remote = if ($Wait) { $remote + '-wait' } else { $remote }
@@ -240,10 +282,16 @@ function Format-TimeSpan([TimeSpan]$ts) {
 }
 
 function Set-VisualStudioEnvironment([string]$Version="*", [string]$Platform="") {
-  $vsenvvar = "env:\VS$($Version)0COMNTOOLS"
-  # $command = "$((ls $vsenvvar | sort name | select -last 1).value)..\..\VC\vcvarsall.bat"
-  $command = "$((ls $vsenvvar | sort name | select -last 1).value)vsvars32.bat"
-  foreach($line in cmd /c "`"$command`" $Platform 2>&1 && set") {
+  $vsDevCmd = "C:\Program Files (x86)\Microsoft Visual Studio\$Version\*\Common7\Tools\VsDevCmd.bat"
+  if (test-path $vsDevCmd) {
+    $command = Resolve-Path $vsDevCmd
+    $output = cmd /c "`"$command`" -arch=$Platform 2>&1 && set"
+  } else {
+    $vsenvvar = "env:\VS$($Version)0COMNTOOLS"
+    $command = "$((ls $vsenvvar | sort name | select -last 1).value)vsvars32.bat"
+    $output = cmd /c "`"$command`" $Platform 2>&1 && set"
+  }
+  foreach($line in $output) {
     if ($line -match '^([^=]+)=(.*)') {
       [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
     }

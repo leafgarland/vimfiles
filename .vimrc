@@ -141,8 +141,9 @@ Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
 Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
 Plug 'pangloss/vim-javascript', {'for': 'javascript'}
 Plug 'mxw/vim-jsx', {'for': 'javascript'}
-Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
+" Plug 'Quramy/tsuquyomi'
 Plug 'ianks/vim-tsx'
+Plug 'leafgarland/typescript-vim'
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'elmcast/elm-vim', {'for': 'elm'}
@@ -233,7 +234,7 @@ endif
 command! -nargs=* Grep grep <args>
 
 if has('nvim')
-  autocmd vimrc CursorHold,FocusGained,FocusLost * wshada|rshada!
+  autocmd vimrc CursorHold,FocusGained,FocusLost * wshada
 else
   autocmd vimrc CursorHold,FocusGained,FocusLost * wviminfo
 endif
@@ -1327,6 +1328,7 @@ command! -bar -bang Buffers call Buffers(<bang>0)
 function! Buffers(show_all) abort
   let ls = a:show_all ? 'ls!' : 'ls'
   let buffers = split(Execute(ls), "\n")
+  echo "\n"
   for b in buffers
     let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+"\(.\+\)"\s\+line \(\d\+\)')
     let [bnum, bflags, bname, bline] = ms[1:4]
@@ -1944,4 +1946,5 @@ endfunction
 call PrettyLittleStatus()
 " }}}
 
-autocmd vimrc VimEnter * colorscheme gruvbox
+" autocmd vimrc VimEnter * colorscheme gruvbox
+colorscheme gruvbox

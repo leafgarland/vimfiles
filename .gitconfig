@@ -1,24 +1,45 @@
+
+[core]
+	pager = less -x1,5
 [alias]
-    branches = branch -a
-    discard = checkout --
-    graph = log --graph -10 --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %ar) %Cred%d' --date-order
-    home = rev-parse --show-toplevel
-    last = log -1 --stat
-    log1 = log --oneline
-    logmore = log --name-status --decorate
-    mergetrail = log --ancestry-path --merges
-    nevermind = !git reset --hard HEAD && git clean -d -f
-    precommit = diff --cached --diff-algorithm=minimal -w
-    remotes = remote -v
-    stashes = stash list
-    tags = tag
-    uncommit = reset --mixed HEAD~
-    untrack = rm -r --cached
-    what = show -w
-    # shortcuts
-    co = checkout
-    l = log
-    l1 = log --oneline
-    ll = logmore
-    s = status -sb
-    st = status
+	amend = commit --amend --no-edit
+	fixup = commit --fixup
+	rewrite = rebase -i --autosquash master
+	uncommit = reset --mixed HEAD~
+	uncommit = reset --mixed HEAD~
+	dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	branches = branch -a --list
+	discard = checkout --
+	graph = log --graph -10 --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %ar) %Cred%d' --date-order
+	home = rev-parse --show-toplevel
+	last = log -1 --stat
+	log1 = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar'
+	logmore = log --name-status --decorate
+	mergetrail = log --ancestry-path --merges
+	nevermind = !git reset --hard HEAD && git clean -d -f
+	precommit = diff --cached --diff-algorithm=minimal -w
+	remotes = remote -v
+	stashes = stash list
+	tags = tag
+	untrack = rm -r --cached
+	what = show -w
+	tidy = !git remote prune origin && git branch --merged master | grep -v master | xargs git branch -d
+	; pulled = log --no-merges --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar' master@{1}..master
+	pulled = !gitk --no-merges master@{1}..master
+	pulledwhat = "! git diff --name-only master@{1}..master | sort | uniq"
+	ffmaster = fetch origin master:master
+	pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
+	prtidy = "!git for-each-ref refs/heads/pr/* --format='%(refname)' | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
+	co = checkout
+	l = log
+	l1 = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar'
+	lm = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar' origin/master..
+	lu = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar' @{upstream}..
+	ll = log --name-status --decorate
+	s = status -sb
+	st = status
+	rc = rebase --continue
+[push]
+	default = current
+[gui]
+	fontdiff = -family \"Source Code Pro\" -size 10 -weight normal -slant roman -underline 0 -overstrike 0
