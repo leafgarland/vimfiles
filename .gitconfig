@@ -1,6 +1,8 @@
 
 [core]
 	pager = less -x1,5
+[pretty]
+    one=%C(auto)%h %s %Cblue%an %Cgreen%ar
 [alias]
 	amend = commit --amend --no-edit
 	fixup = commit --fixup
@@ -8,12 +10,11 @@
 	uncommit = reset --mixed HEAD~
 	uncommit = reset --mixed HEAD~
 	dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
-	branches = branch -a --list
+	branches = branch -l --list
 	discard = checkout --
-	graph = log --graph -10 --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %ar) %Cred%d' --date-order
 	home = rev-parse --show-toplevel
-	last = log -1 --stat
-	log1 = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar'
+	last = log -1 --stat --decorate
+	log1 = log --pretty=one
 	logmore = log --name-status --decorate
 	mergetrail = log --ancestry-path --merges
 	nevermind = !git reset --hard HEAD && git clean -d -f
@@ -24,17 +25,17 @@
 	untrack = rm -r --cached
 	what = show -w
 	tidy = !git remote prune origin && git branch --merged master | grep -v master | xargs git branch -d
-	; pulled = log --no-merges --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar' master@{1}..master
-	pulled = !gitk --no-merges master@{1}..master
+	pulled = log --no-merges --pretty=one master@{1}..master
+	; pulled = !gitk --no-merges master@{1}..master
 	pulledwhat = "! git diff --name-only master@{1}..master | sort | uniq"
 	ffmaster = fetch origin master:master
 	pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
 	prtidy = "!git for-each-ref refs/heads/pr/* --format='%(refname)' | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
 	co = checkout
 	l = log
-	l1 = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar'
-	lm = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar' origin/master..
-	lu = log --pretty=format:'%C(auto)%h %s %Cblue%an %Cgreen%ar' @{upstream}..
+	l1 = log --pretty=one
+	lm = log --pretty=one origin/master..
+	lu = log --pretty=one @{upstream}..
 	ll = log --name-status --decorate
 	s = status -sb
 	st = status
