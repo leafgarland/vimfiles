@@ -6,7 +6,7 @@ $env:EDITOR = 'gvim'
 $env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
 
 $HistoryPath = "~\pshistory.xml"
-Register-EngineEvent PowerShell.Exiting -Action { Get-History | Export-CliXml $HistoryPath} | Out-Null
+Register-EngineEvent PowerShell.Exiting -Action { Get-History -Count 2000 | Export-CliXml $HistoryPath} | Out-Null
 if (Test-Path $HistoryPath) {
     Import-CliXml $HistoryPath | Add-History
 }
@@ -85,18 +85,16 @@ function ppgulp {
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 $ShowTiming = false
 function Prompt {
-    $waserror = if ($?) {
-        [system.consolecolor]"green"
-    } else {
-        [system.consolecolor]"red"
-    }
+    $waserror = if ($?) { 1,9 } else { 4,12 }
 
     $lastcmd = get-history -count 1
     $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
 
     Write-Host -foregroundcolor darkcyan (get-location) -nonewline
     $branchName = if (Test-Path ./.git) { git rev-parse --abbrev-ref HEAD }
-    if ($branchName) { Write-Host -foregroundcolor darkyellow " $branchName" -nonewline }
+    if ($branchName) {
+        Write-Host -foregroundcolor darkyellow " $branchName" -nonewline
+    }
 
     if ($ShowTiming) {
         Write-Host -foregroundcolor yellow " $lastcmdtime" -nonewline
@@ -106,8 +104,11 @@ function Prompt {
     }
 
     Write-Host
-    if ($isElevated) { Write-Host -ForegroundColor ([system.consolecolor]'magenta') -NoNewline "ADMIN" }
-    Write-Host -foregroundcolor $waserror ">" -nonewline
+    if ($isElevated) {
+        Write-Host -ForegroundColor White -backgroundcolor $waserror[0] -NoNewline "ADMIN"
+    }
+    Write-Host -foregroundcolor $waserror[0] -backgroundcolor $waserror[1] ([char]0xE0B0) -nonewline
+    Write-Host -foregroundcolor $waserror[1] ([char]0xE0B0) -nonewline
 
     $host.ui.rawui.windowtitle = "PS $(get-location)"
 
