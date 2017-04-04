@@ -102,7 +102,8 @@ function Prompt {
     Write-Host -foregroundcolor darkcyan (get-location) -nonewline
     $branchName = if (Test-Path ./.git) { git rev-parse --abbrev-ref HEAD }
     if ($branchName) {
-        Write-Host -foregroundcolor darkyellow " $branchName" -nonewline
+        if ($branchName.Length -gt 50) { $branchName = $branchName.substring(0, 50)+"$([char]0x2026)" }
+        Write-Host -foregroundcolor darkyellow (" " + $branchName) -nonewline
     }
 
     if ($ShowTiming) {
