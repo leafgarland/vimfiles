@@ -1450,7 +1450,7 @@ endfunction
 function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
   let pattern = a:ArgLead
   if empty(pattern)
-    let pattern = '**'
+    return []
   elseif pattern[-1:] == '$'
     let pattern = pattern[:-2]
   elseif pattern[-1:] != '*'
