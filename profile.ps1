@@ -2,8 +2,10 @@ $env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
 # $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
 $env:EDITOR = 'gvim'
 
-& "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
-$env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
+if (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
+    & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
+    $env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
+}
 
 $HistoryPath = "~\pshistory.xml"
 Register-EngineEvent PowerShell.Exiting -Action { Get-History -Count 2000 | Export-CliXml $HistoryPath} | Out-Null
