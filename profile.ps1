@@ -19,8 +19,15 @@ Remove-Item -ErrorAction Ignore Alias:WGet
 Remove-Item -Force -ErrorAction Ignore Alias:gl
 
 function TabExpansion($line, $lastword) {
-  switch ($lastword) {
+  switch ($line) {
+      "g" { "git "; break }
       "go" { "git checkout "; break }
+      "gs" { "git status -sb "; break }
+      "gl" { "git log "; break }
+      "gll" { "git logmore "; break }
+      "gl1" { "git log1 "; break }
+      "glm" { "git lm "; break }
+      "grc" { "git rebase --continue "; break }
   }
 }
 
