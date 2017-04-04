@@ -195,9 +195,6 @@ endfunction
 
 " General: {{{
 
-" fix little startup bug with setglobal
-command! -nargs=+ SetGlobal if has('vim_starting')<bar>set <args><bar>else<bar>setglobal <args><bar>endif
-
 set mouse=a
 
 set belloff=error,cursor
@@ -328,14 +325,14 @@ endif
 "}}}
 
 " Formatting: {{{
-SetGlobal nowrap
-SetGlobal linebreak
-SetGlobal breakindent
-SetGlobal autoindent
-SetGlobal expandtab
-SetGlobal tabstop=4
-SetGlobal shiftwidth=4
-SetGlobal softtabstop=4
+setglobal nowrap
+setglobal linebreak
+setglobal breakindent
+setglobal autoindent
+setglobal expandtab
+setglobal tabstop=4
+setglobal shiftwidth=4
+setglobal softtabstop=4
 "}}}
 
 " Key Mappings: {{{
