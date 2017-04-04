@@ -82,7 +82,7 @@ endif
 Plug 'tpope/vim-dispatch'
 Plug 'tpope/vim-repeat'
 Plug 'kana/vim-textobj-user'
-Plug 'Shougo/vimproc'
+" Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
@@ -110,7 +110,7 @@ Plug 'tommcdo/vim-lion'
 " Tools
 Plug 'tpope/vim-fugitive' | Plug 'idanarye/vim-merginal'
 Plug 'tpope/vim-ragtag'
-Plug 'tpope/vim-projectionist'
+" Plug 'tpope/vim-projectionist'
 Plug 'tpope/vim-scriptease'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'justinmk/vim-dirvish'
@@ -244,7 +244,7 @@ if has('vim_starting')
   set hlsearch
 endif
 set cmdheight=2
-set noshowcmd
+" set noshowcmd
 set lazyredraw
 
 set sidescroll=1
@@ -1238,20 +1238,6 @@ function! BClose(force) abort
   endif
 endfunction
 command! -bang -nargs=0 BClose :call BClose(<bang>0)
-" }}}
-
-" Send MDX to APL {{{
-if executable('activepivotlive.exe')
-  command! -nargs=1 -range -complete=customlist,APLInstances APLive :call APLive(<q-args>, <line1>, <line2>)
-
-  function! APLive(instance, line1, line2)
-    call system("activepivotlive.exe " . a:instance, getline(a:line1, a:line2))
-  endfunction
-
-  function! APLInstances(A,L,P)
-      return ['EMEA.B', 'EMEA.A', 'America.B', 'America.A', 'ASIA.A', 'ASIA.B']
-  endfunction
-endif
 " }}}
 
 " Diff against last saved {{{
