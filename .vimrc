@@ -110,13 +110,11 @@ Plug 'tommcdo/vim-lion'
 " Tools
 Plug 'tpope/vim-fugitive' | Plug 'idanarye/vim-merginal'
 Plug 'tpope/vim-ragtag'
-" Plug 'tpope/vim-projectionist'
 Plug 'tpope/vim-scriptease'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
-Plug 'junegunn/vim-peekaboo'
 Plug 'ludovicchabant/vim-gutentags'
 Plug 'sgur/vim-editorconfig'
 
@@ -244,7 +242,6 @@ if has('vim_starting')
   set hlsearch
 endif
 set cmdheight=2
-" set noshowcmd
 set lazyredraw
 
 set sidescroll=1
