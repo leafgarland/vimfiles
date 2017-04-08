@@ -2,6 +2,22 @@ $env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
 # $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
 $env:EDITOR = 'gvim'
 
+function Enable-VirtualTerminal() {
+    Add-Type -MemberDefinition @"
+[DllImport("kernel32.dll", SetLastError=true)]
+public static extern bool SetConsoleMode(IntPtr hConsoleHandle, int mode);
+[DllImport("kernel32.dll", SetLastError=true)]
+public static extern IntPtr GetStdHandle(int handle);
+[DllImport("kernel32.dll", SetLastError=true)]
+public static extern bool GetConsoleMode(IntPtr handle, out int mode);
+"@ -Namespace Profile -Name NativeMethods
+    $Handle = [Profile.NativeMethods]::GetStdHandle(-11) # STDOUT
+    $Mode = 0
+    $Result = [Profile.NativeMethods]::GetConsoleMode($Handle, [ref]$Mode)
+    $Mode = $Mode -bor 4 # ENABLE_VT
+    $Result = [Profile.NativeMethods]::SetConsoleMode($Handle, $Mode)
+}
+
 if (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
     & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
     $env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
