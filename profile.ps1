@@ -18,6 +18,10 @@ public static extern bool GetConsoleMode(IntPtr handle, out int mode);
     $Result = [Profile.NativeMethods]::SetConsoleMode($Handle, $Mode)
 }
 
+function setbg([byte]$r, [byte]$g, [byte]$b) { "$([char]0x1b)[48;2;${r};${g};${b}m" }
+function setfg([byte]$r, [byte]$g, [byte]$b) { "$([char]0x1b)[38;2;${r};${g};${b}m" }
+function resetbgfg() { "$([char]0x1b)[0m" }
+
 if (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
     & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
     $env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
