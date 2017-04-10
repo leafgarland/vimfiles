@@ -44,12 +44,14 @@ function TabExpansion($line, $lastword) {
   switch ($line) {
       "g" { "git "; break }
       "go" { "git checkout "; break }
+      "gg" { "git gui "; break }
       "gs" { "git status -sb "; break }
       "gl" { "git log "; break }
       "gll" { "git logmore "; break }
       "gl1" { "git log1 "; break }
       "glm" { "git lm "; break }
       "grc" { "git rebase --continue "; break }
+      "gk" { "gitk "; break }
   }
 }
 
@@ -59,6 +61,9 @@ function gll { git logmore $args }
 function gl1 { git log1 $args }
 function glm { git lm $args }
 function go { git checkout $args }
+function gg { git gui $args }
+function grc { git rebase --continue $args }
+function gk { gitk $args }
 
 function Get-GitCmds {
     $UsedGitCmds = (Get-History).commandline |
@@ -111,6 +116,16 @@ function ppgulp {
 # $env:_NT_SYMBOL_PATH="SRV*c:\dev\tmp\symbols*http://msdl.microsoft.com/download/symbols"
 # $env:_NT_DEBUGGER_EXTENSION_PATH="$env:TOOLS\debuggers\sosex_64;$env:TOOLS\Debuggers\SOS-4.0"
 
+function FitWindow($text) {
+    $rawui = $host.ui.rawui
+    $cols = $rawui.windowsize.width
+    $x = $rawui.cursorposition.x
+    $remaining = $cols - $x - 1
+    if ($text.length -gt $remaining) {
+        $text = $text.substring(0, $remaining) + "$([char]0x2026)"
+    }
+    $text
+}
 function Reset-Colours { $host.ui.rawui.foregroundcolor = 7 }
 
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -124,8 +139,8 @@ function Prompt {
     Write-Host -foregroundcolor darkcyan (get-location) -nonewline
     $branchName = if (Test-Path ./.git) { git rev-parse --abbrev-ref HEAD }
     if ($branchName) {
-        if ($branchName.Length -gt 50) { $branchName = $branchName.substring(0, 50)+"$([char]0x2026)" }
-        Write-Host -foregroundcolor darkyellow (" " + $branchName) -nonewline
+        Write-Host -nonewline " "
+        Write-Host -foregroundcolor darkyellow -nonewline (FitWindow($branchName))
     }
 
     if ($ShowTiming) {
