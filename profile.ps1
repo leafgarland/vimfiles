@@ -2,8 +2,7 @@ $env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
 # $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
 $env:EDITOR = 'gvim'
 
-function Enable-VirtualTerminal() {
-    Add-Type -MemberDefinition @"
+Add-Type -MemberDefinition @"
 [DllImport("kernel32.dll", SetLastError=true)]
 public static extern bool SetConsoleMode(IntPtr hConsoleHandle, int mode);
 [DllImport("kernel32.dll", SetLastError=true)]
@@ -11,11 +10,15 @@ public static extern IntPtr GetStdHandle(int handle);
 [DllImport("kernel32.dll", SetLastError=true)]
 public static extern bool GetConsoleMode(IntPtr handle, out int mode);
 "@ -Namespace Profile -Name NativeMethods
+
+function Enable-VirtualTerminal() {
     $Handle = [Profile.NativeMethods]::GetStdHandle(-11) # STDOUT
     $Mode = 0
     $Result = [Profile.NativeMethods]::GetConsoleMode($Handle, [ref]$Mode)
-    $Mode = $Mode -bor 4 # ENABLE_VT
-    $Result = [Profile.NativeMethods]::SetConsoleMode($Handle, $Mode)
+    if (($Mode -band 4) -ne 4) {
+        $Mode = $Mode -bor 4 # ENABLE_VT
+        $Result = [Profile.NativeMethods]::SetConsoleMode($Handle, $Mode)
+    }
 }
 
 function setbg([byte]$r, [byte]$g, [byte]$b) { "$([char]0x1b)[48;2;${r};${g};${b}m" }
@@ -129,8 +132,10 @@ function FitWindow($text) {
 function Reset-Colours { $host.ui.rawui.foregroundcolor = 7 }
 
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-$ShowTiming = false
+
+$ShowTiming = $false
 function Prompt {
+    Enable-VirtualTerminal
     $waserror = if ($?) { 1,9 } else { 4,12 }
 
     $lastcmd = get-history -count 1
@@ -198,6 +203,7 @@ Set-Alias cdb "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe"
 Set-Alias windbg "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\windbg.exe"
 set-alias python3 "$env:LOCALAPPDATA\Programs\Python\Python35\python.exe"
 Set-Alias gitex "$env:TOOLS\GitExtensions\gitex.cmd"
+function icdiff { icdiff.py "--cols=$($Host.UI.RawUI.WindowSize.Width)" $args }
 
 function e { Invoke-Expression "$env:EDITOR $args" }
 function spe { sudo procexp $args }
