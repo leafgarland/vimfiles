@@ -322,14 +322,14 @@ endif
 "}}}
 
 " Formatting: {{{
-setglobal nowrap
-setglobal linebreak
-setglobal breakindent
-setglobal autoindent
-setglobal expandtab
-setglobal tabstop=4
-setglobal shiftwidth=4
-setglobal softtabstop=4
+set nowrap
+set linebreak
+set breakindent
+set autoindent
+set expandtab
+set tabstop=4
+set shiftwidth=4
+set softtabstop=4
 "}}}
 
 " Key Mappings: {{{
