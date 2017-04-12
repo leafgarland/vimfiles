@@ -316,7 +316,7 @@ if exists('+guioptions')
   if has('vim_starting')
     set lines=50
     set columns=120
-    set guifont=SF\ Mono:h12,Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
+    set guifont=Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
   endif
 endif
 "}}}
