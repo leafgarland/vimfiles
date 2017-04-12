@@ -3,11 +3,11 @@
 	pager = less -x1,5
 [pretty]
     one=%C(auto)%h %s %Cblue%an %Cgreen%ar
+    onebody=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,26)%s%n%w(100,26,26)%-b
 [alias]
 	amend = commit --amend --no-edit
 	fixup = commit --fixup
-	rewrite = rebase -i --autosquash master
-	uncommit = reset --mixed HEAD~
+	rewrite = !git rebase -i --autosquash $(git merge-base master HEAD)
 	uncommit = reset --mixed HEAD~
 	dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	branches = branch -l --list
@@ -25,9 +25,9 @@
 	untrack = rm -r --cached
 	what = show -w
 	tidy = !git remote prune origin && git branch --merged master | grep -v master | xargs git branch -d
-	pulled = log --no-merges --pretty=one master@{1}..master
-	; pulled = !gitk --no-merges master@{1}..master
 	pulledwhat = "! git diff --name-only master@{1}..master | sort | uniq"
+    pulls = log master@{1}..master --pretty=format:'%w(100,0,9)%b%w(0) %C(blue)%an' --merges
+	pulld = log --no-merges --topo-order --pretty=onebody master@{1}..master
 	ffmaster = fetch origin master:master
 	pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
 	prtidy = "!git for-each-ref refs/heads/pr/* --format='%(refname)' | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
@@ -36,11 +36,15 @@
 	l1 = log --pretty=one
 	lm = log --pretty=one origin/master..
 	lu = log --pretty=one @{upstream}..
+	lp = log --pretty=one @{push}..
 	ll = log --name-status --decorate
 	s = status -sb
 	st = status
 	rc = rebase --continue
+    mtool = mergetool
+    dtool = difftool
 [push]
 	default = current
 [gui]
 	fontdiff = -family \"Source Code Pro\" -size 10 -weight normal -slant roman -underline 0 -overstrike 0
+	tabsize = 4
