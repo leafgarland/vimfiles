@@ -92,6 +92,7 @@ Plug 'romainl/Apprentice'
 Plug 'rakr/vim-one'
 Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
+Plug 'trevordmiller/nova-vim'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -117,9 +118,12 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'ludovicchabant/vim-gutentags'
 Plug 'sgur/vim-editorconfig'
+Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
 
 " Filetypes
-Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
+" Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
+Plug 'hail2u/vim-css3-syntax', {'for': 'css'}
+Plug 'othree/html5.vim', {'for': 'html'}
 Plug 'elzr/vim-json', {'for': 'json'}
 Plug 'tpope/vim-jdaddy', {'for': 'json'}
 Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
@@ -146,6 +150,7 @@ Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'elmcast/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
+Plug 'racer-rust/vim-racer', {'for': 'rust'}
 Plug 'raichoo/purescript-vim', {'for': 'purescript'}
 Plug 'wlangstroth/vim-racket', {'for': 'racket'}
 Plug 'beyondmarc/glsl.vim'
@@ -624,7 +629,18 @@ autocmd vimrc FileType pandoc setlocal foldcolumn=0 | setlocal concealcursor+=n
 
 " Plugins config: {{{
 
-" wimproved: {{{
+" LSP Client: {{{
+if s:has_plug('LanguageClient-neovim')
+  let g:LanguageClient_serverCommands = {
+  \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
+  \ }
+
+  " Automatically start language servers.
+  let g:LanguageClient_autoStart = 1
+endif
+" }}}
+
+" Wimproved: {{{
 if s:has_plug('wimproved.vim')
   autocmd vimrc GUIEnter * silent! WToggleClean
   nnoremap <silent> coF :WToggleFullscreen<CR>
@@ -741,8 +757,10 @@ endif
 " rust racer {{{
 if s:has_plug('vim-racer')
   if !exists('$RUST_SRC_PATH')
-    let $RUST_SRC_PATH = '/Users/leaf/Dev/rust/source/rustc-1.10.0/src'
+    let $RUST_SRC_PATH = expand('~/.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\src\rust\src\')
   endif
+  let g:racer_cmd = "racer"
+  let g:racer_experimental_completer = 1
 endif
 " }}}
 
@@ -949,6 +967,26 @@ if s:has_plug('Apprentice')
     call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
   endfunction
   autocmd vimrc ColorScheme apprentice :call <SID>ApprenticeCustomise()
+endif
+"}}}
+
+" colorscheme nova: {{{
+if s:has_plug('nova-vim')
+  function! s:NovaCustomise()
+    let slfg = s:get_colour('StatusLine', 'fg')
+    let slbg = s:get_colour('StatusLine', 'bg')
+    let sfg = s:get_colour('Special', 'fg')
+    let s2fg = s:get_colour('Operator', 'fg')
+
+    call s:SetHiColour('User1', sfg, slbg, 'bold')
+    call s:SetHiColour('User2', s2fg, slbg, 'bold')
+    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+
+    highlight! link TabLine StatusLine
+    highlight! link TabLineFill StatusLine 
+    highlight! link TabLineSel User1 
+  endfunction
+  autocmd vimrc ColorScheme nova :call <SID>NovaCustomise()
 endif
 "}}}
 
