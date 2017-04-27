@@ -1,4 +1,4 @@
-$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
+﻿$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
 # $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
 $env:EDITOR = 'gvim'
 
@@ -157,6 +157,8 @@ function ppgulp {
     }
 }
 
+function wsl { &"${env:LOCALAPPDATA}\wsltty\bin\mintty.exe" --wsl -o Locale=C -o Charset=UTF-8 -i "${env:LOCALAPPDATA}\lxss\bash.ico" /bin/wslbridge -t /usr/bin/fish }
+
 # $env:_NT_SYMBOL_PATH="SRV*c:\dev\tmp\symbols*http://msdl.microsoft.com/download/symbols"
 # $env:_NT_DEBUGGER_EXTENSION_PATH="$env:TOOLS\debuggers\sosex_64;$env:TOOLS\Debuggers\SOS-4.0"
 
@@ -254,6 +256,7 @@ function icdiff { icdiff.py "--cols=$($Host.UI.RawUI.WindowSize.Width)" $args }
 function e { Invoke-Expression "$env:EDITOR $args" }
 function spe { sudo procexp $args }
 function rg { rg.exe --color=ansi --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cs,cshtml -SH $args }
+function grep() { $input | rg.exe --hidden $args }
 
 Import-Module Jump.Location
 function jj ([switch]$All) {
