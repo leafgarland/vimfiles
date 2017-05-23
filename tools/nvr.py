@@ -271,8 +271,8 @@ def main():
     if flags.l and neovim.is_attached():
         neovim.server.command('wincmd p')
 
-    if flags.f and neovim.is_attached():
-        neovim.server.command('call GuiForeground()')
+    # if flags.f and neovim.is_attached():
+    neovim.server.command('call GuiForeground()')
 
     try:
         arguments.remove('--')
@@ -281,7 +281,7 @@ def main():
 
     # Arguments not consumed by flags, are fed to --remote.
     if arguments:
-        neovim.execute(arguments, 'edit')
+        neovim.execute(arguments, 'edit', silent=True, wait=True)
     elif flags.remote:
         neovim.execute(flags.remote, 'edit')
     elif flags.remote_wait:
