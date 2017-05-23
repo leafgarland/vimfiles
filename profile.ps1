@@ -2,6 +2,9 @@
 # $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
 $env:EDITOR = 'gvim'
 
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 Add-Type -MemberDefinition @"
 [DllImport("kernel32.dll", SetLastError=true)]
 public static extern bool SetConsoleMode(IntPtr hConsoleHandle, int mode);
@@ -172,6 +175,13 @@ function FitWindow($text) {
     }
     $text
 }
+
+$host.PrivateData.ProgressForegroundColor = 'White'
+$host.PrivateData.ProgressBackgroundColor = 'DarkBlue'
+$host.PrivateData.ErrorForegroundColor = 'White'
+$host.PrivateData.ErrorBackgroundColor = 'DarkRed'
+$host.PrivateData.WarningForegroundColor = 'DarkYellow'
+$host.PrivateData.WarningBackgroundColor = 'DarkRed'
 function Reset-Colours { $host.ui.rawui.foregroundcolor = 7 }
 
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -240,7 +250,6 @@ Set-Alias gx gitex
 Set-Alias l ls
 Set-Alias nvim Invoke-Nvr
 Set-Alias vim Invoke-Vim
-Set-Alias tsvn Invoke-TortoiseSvn
 Set-Alias stree Invoke-SourceTree
 Set-Alias vsvar Set-VisualStudioEnvironment
 Set-Alias sudo Start-Elevated
@@ -255,7 +264,7 @@ function icdiff { icdiff.py "--cols=$($Host.UI.RawUI.WindowSize.Width)" $args }
 
 function e { Invoke-Expression "$env:EDITOR $args" }
 function spe { sudo procexp $args }
-function rg { rg.exe --color=ansi --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cs,cshtml -SH $args }
+function rg { rg.exe --color=ansi --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cshtml $args }
 function grep() { $input | rg.exe --hidden $args }
 
 Import-Module Jump.Location
@@ -357,24 +366,6 @@ function Invoke-Vim([switch]$Tab, [switch]$Wait) {
     }
   }
 }
-
-function Invoke-TortoiseSvn(
-[ValidateSet('blame','merge','log','resolve','status','commit','browse','update','add','cleanup','copy','diff')]$cmd,
-  $path=".") 
-{
-  $acmd = $cmd
-  if ($acmd -eq "status") { $acmd = "repostatus" }
-  if ($acmd -eq "browse") { $acmd = "repobrowser" }
-  & 'C:\Program Files\TortoiseSVN\SVN\bin\TortoiseProc.exe' /command:$acmd /path:$path
-}
-
-function Set-SvnDepth($Path=".", [ValidateSet('infinity','files','immediates','exclude','empty')]$Depth)
-{
-  svn update --parents --set-depth=$Depth $Path
-}
-
-function svninc($Path) { Set-SvnDepth -Path $Path -Depth infinity }
-function svnexc($Path) { Set-SvnDepth -Path $Path -Depth exclude }
 
 function Format-TimeSpan([TimeSpan]$ts) {
   $format = ""
