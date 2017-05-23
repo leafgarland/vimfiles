@@ -65,7 +65,6 @@ if s:is_win
   endfunction
   nnoremap co! :call <SID>toggle_powershell()<CR>
 
-  let g:statusline_use_emoji = 1 && !has('nvim')
 endif
 
 "}}}
@@ -79,10 +78,8 @@ call plug#begin($VIMBUNDLEPATH)
 if !has('nvim')
   Plug 'tpope/vim-sensible'
 endif
-Plug 'tpope/vim-dispatch'
 Plug 'tpope/vim-repeat'
 Plug 'kana/vim-textobj-user'
-" Plug 'Shougo/vimproc'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
@@ -116,12 +113,10 @@ Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
-Plug 'ludovicchabant/vim-gutentags'
 Plug 'sgur/vim-editorconfig'
-Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
+Plug 'ludovicchabant/vim-gutentags'
 
 " Filetypes
-" Plug 'ChrisYip/Better-CSS-Syntax-for-Vim', {'for': 'css'}
 Plug 'hail2u/vim-css3-syntax', {'for': 'css'}
 Plug 'othree/html5.vim', {'for': 'html'}
 Plug 'elzr/vim-json', {'for': 'json'}
@@ -143,7 +138,6 @@ Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
 Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
 Plug 'pangloss/vim-javascript', {'for': 'javascript'}
 Plug 'mxw/vim-jsx', {'for': 'javascript'}
-" Plug 'Quramy/tsuquyomi'
 Plug 'ianks/vim-tsx'
 Plug 'leafgarland/typescript-vim'
 Plug 'Blackrush/vim-gocode', {'for': 'go'}
@@ -175,17 +169,11 @@ if executable('fish')
   Plug 'dag/vim-fish', {'for': 'fish'}
 endif
 
-if has('nvim') && !has('win32')
+if has('nvim') && executable('fzy')
   Plug 'cloudhead/neovim-fuzzy'
-  Plug 'radenling/vim-dispatch-neovim'
-  Plug 'racer-rust/vim-racer'
-elseif has('nvim') && has('win32')
-  Plug 'radenling/vim-dispatch-neovim'
-elseif !has('nvim')
-  Plug 'scrooloose/syntastic', {'for': 'fsharp'}
 endif
 
-if has('mac') && !has('gui_running') && !has('nvim')
+if has('mac') && !s:is_gui && !has('nvim')
   Plug 'jszakmeister/vim-togglecursor'
 endif
 
@@ -207,15 +195,14 @@ set history=10000
 set hidden
 
 set virtualedit=block
-set foldopen+=jump
 set smartcase
 set nojoinspaces
 set formatoptions+=n1
 
-set backup
 set backupdir=~/.vim/backup//
 set directory=~/.vim/swap//
 set undodir=~/.vim/undo//
+set backup
 set undolevels=5000
 set undofile
 
@@ -310,8 +297,11 @@ if exists('+termguicolors') && !has('gui_running') && !has('win32')
   endif
 endif
 
-if exists('+guioptions')
+if exists('+guicursor')
   set guicursor+=c:ver25-Cursor/lCursor,a:blinkon0
+endif
+
+if exists('+guioptions')
   set guioptions+=c
   set linespace=0
   if exists('+renderoptions')
@@ -464,9 +454,6 @@ function!  s:ToggleDiff()
   endif
 endfunction
 nnoremap <c-w>D :call <SID>ToggleDiff()<CR>
-
-nnoremap <tab> <c-w>w
-nnoremap <s-tab> <c-w>W
 
 nnoremap j gj
 nnoremap k gk
@@ -624,6 +611,16 @@ autocmd vimrc FileType rust setlocal keywordprg=:DevDocs\ rust
 " pandoc/markdown: {{{
 autocmd vimrc FileType pandoc setlocal foldcolumn=0 | setlocal concealcursor+=n
 " }}}
+
+" lua: {{{
+autocmd vimrc FileType lua call s:lua_filetype_settings()
+function! s:lua_filetype_settings()
+  
+  command! -buffer -range LuaExecRange execute 'lua' 'assert(loadstring("'.escape(join(getline(<line1>,<line2>), "\\n"), '"').'"))()'
+  nnoremap <buffer> <leader>xe :LuaExecRange<CR>
+  xnoremap <buffer> <leader>xe :LuaExecRange<CR>
+endfunction
+"}}}
 
 "}}}
 
@@ -812,6 +809,7 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
     nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
+    nnoremap <buffer> vs :Gstatus<CR>
     call fugitive#detect(@%)
   endfunction
 
@@ -1588,6 +1586,7 @@ command! ReloadDos :e ++ff=dos<CR>
 nnoremap <expr> <leader>m ToggleVisualMarker()
 nnoremap <expr> m UpdateVisualMarker()
 
+highlight GruvboxOrangeSign guifg=#fe8019 guibg=#3c3836
 let g:myvimrc_visual_marks_groups = [
       \ 'GruvboxBlueSign',  'GruvboxGreenSign',
       \ 'GruvboxRedSign', 'GruvboxPurpleSign',
@@ -1801,11 +1800,13 @@ function! StatusLineFileEncoding()
 endfunction
 
 function! StatusLineModified()
+  let modified_char = get(g:, 'use_nerd_font', 0) ? "\UF040" : '+'
+  let readonly_char = get(g:, 'use_nerd_font', 0) ? "\UF023" : "\UE0A2"
   if s:is_nofile()
     return ''
   endif
-  let modified = &modified ? "+": ''
-  let readonly = &readonly ? "\U1F512" : '' "\ue0a2
+  let modified = &modified ? modified_char : ''
+  let readonly = &readonly ? readonly_char : ''
   return modified . readonly
 endfunction
 
@@ -1837,10 +1838,10 @@ function! StatusLineBufType()
 endfunction
 
 function! StatusLineMode()
-  if get(g:, 'statusline_use_emoji', 0)
-    let m = &ft == 'dirvish' ? "\U1F4C2" :
-        \ &ft == 'qf' ? (empty(getloclist(0)) ? '' : 'l')."\U1F50D" :
-        \ &ft == 'grepr' ? "\U1F50D" :
+  if get(g:, 'use_nerd_font', 0)
+    let m = &ft == 'dirvish' ? "\UF07B" :
+        \ &ft == 'qf' ? (empty(getloclist(0)) ? "\UF002" : "\UF00E") :
+        \ &ft == 'grepr' ? "\UF002" :
         \ &ft
   else
     let m = &ft == 'dirvish' ? "dir" :
@@ -1901,7 +1902,9 @@ function! Status(active)
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
-    let sl.= '%( %{gutentags#statusline()} %)'
+    if s:has_plug('vim-gutentags')
+      let sl.= '%( %{gutentags#statusline()} %)'
+    endif
     let sl.= '%0*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
@@ -1970,4 +1973,6 @@ call PrettyLittleStatus()
 " }}}
 
 " autocmd vimrc VimEnter * colorscheme gruvbox
-colorscheme gruvbox
+if has('vim_starting')
+  colorscheme gruvbox
+endif
