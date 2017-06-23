@@ -1,0 +1,88 @@
+// Place your settings in this file to overwrite the default settings
+{
+    // typescript
+    "tslint.autoFixOnSave": true,
+    // vim
+    "vim.visualstar": true,
+    "vim.enableNeovim": true,
+    "vim.neovimPath": "nvim",
+    "vim.leader": "<space>",
+    "vim.handleKeys": {
+        "<C-E>": false,
+        "<C-F>": false,
+        "<C-G>": false,
+        "<C-D>": false,
+        "<C-X>": false,
+        "<C-b>": false
+    },
+    "vim.otherModesKeyBindingsNonRecursive": [
+        {
+            "before": ["<leader>","p"], "after": ["\"","*","p"]
+        },
+        {
+            "before": ["<leader>","y"], "after": ["\"","*","y"]
+        },
+        {
+            "before": ["L"], "after": ["$"]
+        },
+        {
+            "before": ["[", "<space>"], "after": ["O", "<esc>"]
+        },
+        {
+            "before": ["]", "<space>"], "after": ["o", "<esc>"]
+        },
+        {
+            "before": ["H"], "after": ["^"]
+        },
+        {
+            "before": ["<leader>", "f", "s"],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.files.save",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": ["<leader>", "b", "d"],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.closeActiveEditor",
+                    "args": []
+                }
+            ]
+        },
+        {
+            //"before": ["c", "o", "b"],
+            "before": ["<leader>", "o", "b"],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.toggleSidebarVisibility",
+                    "args": []
+                }
+            ]
+        }
+    ],
+    "vim.disableAnnoyingNeovimMessage": true,
+
+    "editor.minimap.enabled": false,
+    "editor.fontFamily": "'Source Code Pro', Consolas, 'Courier New', monospace",
+    "editor.fontSize": 16,
+    "editor.fontLigatures": true,
+    "workbench.sideBar.location": "left",
+    "window.menuBarVisibility": "toggle",
+    "editor.renderWhitespace": "none",
+    "window.zoomLevel": 0,
+    "workbench.iconTheme": null,
+
+    "debug.allowBreakpointsEverywhere": true,
+
+    "FSharp.logLanguageServiceRequestsOutputWindowLevel": "DEBUG",
+    "FSharp.logLanguageServiceRequests": "both",
+
+    "workbench.activityBar.visible": false,
+    "workbench.colorTheme": "Visual Gruvbox (Medium Dark)"
+}
