@@ -1,6 +1,6 @@
 ﻿$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
 # $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
-$env:EDITOR = 'gvim'
+$env:EDITOR = 'nvim.exe'
 
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -138,8 +138,7 @@ Register-ArgumentCompleter -Native -CommandName 'git' -ScriptBlock { param($last
     ? { $_ -like "$lastword*" } |
     % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
   } else {
-    git for-each-ref --format='%(refname:short)' refs/heads/ |
-    sort |
+    git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/ |
     ? { $_ -like "$lastword*" } |
     % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
   }
@@ -197,7 +196,7 @@ function Prompt {
 
     Write-Host "$(setbg $dark2)$(setfg $neutral_aqua)$(get-location)" -nonewline
     $lastbg = $dark2
-    $branchName = if (Test-Path ./.git) { git rev-parse --abbrev-ref HEAD }
+    $branchName = if (git rev-parse --is-inside-work-tree 2>$null) { git rev-parse --abbrev-ref HEAD }
     if ($branchName) {
         Write-Host -nonewline "$(setbg $dark1)$(setfg $dark2)$PA$(setfg $neutral_yellow)$(FitWindow($branchName))"
         $lastbg = $dark1
