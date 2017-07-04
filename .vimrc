@@ -22,10 +22,6 @@ if has('vim_starting')
   endif
 endif
 
-if exists('+packpath')
-  set packpath+=$HOME/.vim
-endif
-
 " Windows Compatible: {{{
 let s:is_win = has('win32') || has('win64')
 let s:is_gui = has('gui_running')
@@ -79,17 +75,16 @@ if !has('nvim')
   Plug 'tpope/vim-sensible'
 endif
 Plug 'tpope/vim-repeat'
+Plug 'tpope/vim-dispatch'
 Plug 'kana/vim-textobj-user'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
-Plug 'leafgarland/direwolf'
 Plug 'justinmk/molokai'
 Plug 'romainl/Apprentice'
 Plug 'rakr/vim-one'
-Plug 'guns/xterm-color-table.vim', {'on': 'XtermColorTable'}
-Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 Plug 'trevordmiller/nova-vim'
+Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -98,18 +93,17 @@ Plug 'tpope/vim-surround'
 Plug 'tpope/vim-unimpaired'
 Plug 'tpope/vim-abolish'
 Plug 'tommcdo/vim-exchange'
-Plug 'matchit.zip'
 Plug 'wellle/targets.vim'
 Plug 'AndrewRadev/splitjoin.vim'
 Plug 'justinmk/vim-sneak'
-Plug 'idbrii/vim-endoscope'
 Plug 'tommcdo/vim-lion'
 
 " Tools
-Plug 'tpope/vim-fugitive' | Plug 'idanarye/vim-merginal'
+Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-ragtag'
-Plug 'tpope/vim-scriptease'
-Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
+Plug 'tpope/vim-scriptease', {'on': 'Verbose'}
+Plug 'SirVer/ultisnips' 
+Plug 'honza/vim-snippets'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
@@ -127,8 +121,8 @@ Plug 'PProvost/vim-ps1', {'for': 'ps1'}
 Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
-Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']} |
-      \ Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure', 'scheme']}
+Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
+Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure', 'scheme']}
 Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
 Plug 'vim-erlang/vim-erlang-runtime', {'for': 'erlang'}
 Plug 'vim-erlang/vim-erlang-compiler', {'for': 'erlang'}
@@ -140,7 +134,6 @@ Plug 'pangloss/vim-javascript', {'for': 'javascript'}
 Plug 'mxw/vim-jsx', {'for': 'javascript'}
 Plug 'ianks/vim-tsx'
 Plug 'leafgarland/typescript-vim'
-Plug 'Blackrush/vim-gocode', {'for': 'go'}
 Plug 'findango/vim-mdx', {'for': 'mdx'}
 Plug 'elmcast/elm-vim', {'for': 'elm'}
 Plug 'rust-lang/rust.vim', {'for': 'rust'}
@@ -188,14 +181,13 @@ endfunction
 
 set mouse=a
 
-set belloff=error,cursor
+set belloff=all
 set shortmess+=Im
 set viewoptions=folds,options,cursor,unix,slash
 set history=10000
 set hidden
 
 set virtualedit=block
-set smartcase
 set nojoinspaces
 set formatoptions+=n1
 
@@ -247,6 +239,8 @@ set wildcharm=<C-z>
 set number
 set winminheight=0
 set ignorecase
+set infercase
+set smartcase
 set foldlevelstart=10
 
 set listchars=tab:→\ ,trail:─,extends:❭,precedes:❬,nbsp:+
@@ -275,7 +269,7 @@ endif
 "}}}
 
 " GUI Settings: {{{
-if exists('+termguicolors') && !has('gui_running') && !has('win32')
+if exists('+termguicolors')
   set termguicolors
   if has('nvim')
     let g:terminal_color_0  = '#282828'
@@ -317,14 +311,18 @@ endif
 "}}}
 
 " Formatting: {{{
-set nowrap
-set linebreak
-set breakindent
-set autoindent
-set expandtab
-set tabstop=4
-set shiftwidth=4
-set softtabstop=4
+if has('vim_starting')
+  set nowrap
+  set linebreak
+  set breakindent
+  set breakindentopt=shift:4,sbr
+  set showbreak=↪
+  set autoindent
+  set expandtab
+  set tabstop=4
+  set shiftwidth=4
+  set softtabstop=4
+endif
 "}}}
 
 " Key Mappings: {{{
@@ -558,14 +556,19 @@ cnoremap        <M-f> <S-Right>
 
 " Filetypes: {{{
 
-" log: {{{
-autocmd vimrc BufNewFile,BufRead *.log setfiletype log4net
-autocmd vimrc BufNewFile,BufRead *.log.? setfiletype log4net
-" }}}
+function! s:ft_load(ftype)
+  if exists('*s:ft_'.a:ftype)
+    call s:ft_{a:ftype}()
+  endif
+endfunction
+autocmd vimrc FileType * call s:ft_load(expand('<amatch>'))
 
 " json: {{{
-autocmd vimrc FileType json setlocal equalprg=python\ -m\ json.tool
-autocmd vimrc FileType json setlocal shiftwidth=2 | setlocal concealcursor=n
+function! s:ft_json()
+    setlocal equalprg=python\ -m\ json.tool
+    setlocal shiftwidth=2
+    setlocal concealcursor=n
+endfunction
 " }}}
 
 " xml: {{{
@@ -574,8 +577,7 @@ autocmd vimrc BufNewFile,BufRead *.config setfiletype xml
 autocmd vimrc BufNewFile,BufRead *.*proj setfiletype xml
 autocmd vimrc BufNewFile,BufRead *.xaml setfiletype xml
 
-autocmd vimrc FileType xml call s:xml_filetype_settings()
-function! s:xml_filetype_settings()
+function! s:ft_xml()
   setlocal foldmethod=syntax
   setlocal equalprg=xmllint\ --format\ --recover\ -
   setlocal shiftwidth=2
@@ -586,479 +588,54 @@ endfunction
 " }}}
 
 " fsharp: {{{
-if executable('fantomas')
-  autocmd vimrc FileType fsharp setlocal equalprg=fantomas\ --stdin\ --stdout
-endif
-autocmd vimrc FileType fsharp setlocal shiftwidth=2
-autocmd vimrc FileType fsharp let b:end_trun_str = ';;'
+function! s:ft_fsharp()
+  if executable('fantomas')
+    setlocal equalprg=fantomas\ --stdin\ --stdout
+  endif
+  setlocal shiftwidth=2
+  let b:end_trun_str = ';;'
+endfunction
 " }}}
 
 " vim: {{{
-autocmd vimrc FileType vim setlocal keywordprg=:help | setlocal omnifunc=syntaxcomplete#Complete | setlocal shiftwidth=2
+function! s:ft_vim()
+  setlocal keywordprg=:help 
+  setlocal omnifunc=syntaxcomplete#Complete 
+  setlocal shiftwidth=2
+
+  command! -range ExecRange execute substitute(join(getline(<line1>, <line2>), "\n"), '\n\s*\\', ' ', 'g')
+  nnoremap <buffer> <leader>xe :ExecRange<CR>
+  xnoremap <buffer> <leader>xe :ExecRange<CR>
+endfunction
 " }}}
 
 " help: {{{
-autocmd vimrc FileType help call s:help_filetype_settings()
-function! s:help_filetype_settings()
+function! s:ft_help()
   nnoremap <buffer> q :wincmd c<CR>
 endfunction
 " }}}
 
 " rust: {{{
-autocmd vimrc FileType rust setlocal keywordprg=:DevDocs\ rust
+function! s:ft_rust()
+  setlocal keywordprg=:DevDocs\ rust
+endfunction
 " }}}
 
 " pandoc/markdown: {{{
-autocmd vimrc FileType pandoc setlocal foldcolumn=0 | setlocal concealcursor+=n
+function! s:ft_pandoc()
+  setlocal foldcolumn=0 
+  setlocal concealcursor+=n
+endfunction
 " }}}
 
 " lua: {{{
-autocmd vimrc FileType lua call s:lua_filetype_settings()
-function! s:lua_filetype_settings()
-  
+autocmd vimrc BufNewFile,BufRead *.love setfiletype lua
+function! s:ft_lua()
   command! -buffer -range LuaExecRange execute 'lua' 'assert(loadstring("'.escape(join(getline(<line1>,<line2>), "\\n"), '"').'"))()'
   nnoremap <buffer> <leader>xe :LuaExecRange<CR>
   xnoremap <buffer> <leader>xe :LuaExecRange<CR>
 endfunction
 "}}}
-
-"}}}
-
-" Plugins config: {{{
-
-" LSP Client: {{{
-if s:has_plug('LanguageClient-neovim')
-  let g:LanguageClient_serverCommands = {
-  \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
-  \ }
-
-  " Automatically start language servers.
-  let g:LanguageClient_autoStart = 1
-endif
-" }}}
-
-" Wimproved: {{{
-if s:has_plug('wimproved.vim')
-  autocmd vimrc GUIEnter * silent! WToggleClean
-  nnoremap <silent> coF :WToggleFullscreen<CR>
-endif
-" }}}
-
-" VimPlug: {{{
-function! s:plug_gx()
-  let line = getline('.')
-  let sha  = matchstr(line, '^  [*|\/\\ ]*\zs[0-9a-f]\{7\}\ze ')
-  let name = empty(sha) ? matchstr(line, '^[-x+] \zs[^:]\+\ze:')
-                      \ : getline(search('^- .*:$', 'bn'))[2:-2]
-  let uri  = get(get(g:plugs, name, {}), 'uri', '')
-  if uri !~ 'github.com'
-    return
-  endif
-  let repo = matchstr(uri, '[^:/]*/'.name)
-  let url  = empty(sha) ? 'https://github.com/'.repo
-                      \ : printf('https://github.com/%s/commit/%s', repo, sha)
-  call netrw#BrowseX(url, 0)
-endfunction
-
-autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
-" }}}
-
-" Vimproc: {{{
-let g:vimproc#download_windows_dll=1
-" }}}
-
-" Surround: {{{
-let g:surround_no_insert_mappings = 1
-" }}}
-
-" TBone: {{{
-" trun originally from justinmk/config
-
-if s:has_plug('vim-tbone')
-  function! s:tmux_run_operator(type, ...)
-    let sel_save = &selection
-    let &selection = "inclusive"
-    let isvisual = a:0
-
-    let lines = isvisual ? getline("'<", "'>") : getline("'[", "']")
-    if a:type !=# 'line' && a:type !=# 'V'
-      let startcol  = isvisual ? col("'<") : col("'[")
-      let endcol    = isvisual ? col("'>")-2 : col("']")
-      let lines[0]  = lines[0][startcol-1 : ]
-      let lines[-1] = lines[-1][ : endcol-1]
-    endif
-
-    call s:tmux_run(0, 1, join(lines, "\<cr>"))
-
-    let &selection = sel_save
-  endf
-
-  nnoremap <silent> yrr V:<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
-  xnoremap <silent> R   :<c-u>call <sid>tmux_run_operator(visualmode(), 1)<CR>
-  nnoremap <silent> yr :set opfunc=<sid>tmux_run_operator<CR>g@
-
-  function! s:tmux_run(creatnew, run, cmd) abort
-    "Create a new pane if demanded or if we are _in_ the target pane.
-    if a:creatnew || tbone#pane_id(".") == tbone#pane_id("bottom-right")
-      Tmux split-window -d -p 33
-    endif
-    call tbone#send_keys("bottom-right",
-          \ a:cmd.get(b:, 'end_trun_str', '').(a:run ? "\<cr>" : ""))
-  endf
-
-  command! -nargs=? -bang Trun call s:tmux_run(<bang>0, 1, <q-args>)
-endif
-
-" }}}
-
-" Projectionist: {{{
-let g:projectionist_heuristics = {
-      \ "build.fsx": {
-      \   "src/*.fs": {
-      \     "type": "source",
-      \     "alternate": "test/{}.fs",
-      \   },
-      \   "test/*.fs": {
-      \     "type": "test",
-      \     "alternate": "src/{}.fs",
-      \   },
-      \   "*.fsx": {"type": "script"}
-      \ }}
-" }}}
-
-" Targets: {{{
-" add curly braces
-let g:targets_argOpening = '[({[]'
-let g:targets_argClosing = '[]})]'
-" args separated by , and ;
-let g:targets_argSeparator = '[,;]'
-let g:targets_pairs = '()b {}B []q <>v'
-let g:targets_quotes = '"d '' `'
-" }}}
-
-" FSharp: {{{
-if s:has_plug('vim-fsharp')
-  let g:fsharpbinding_debug=1
-  autocmd vimrc FileType fsharp call s:fsharpbinding_settings()
-  function! s:fsharpbinding_settings()
-    setlocal include=^#load\ 
-    setlocal complete+=i
-
-    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
-    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel()<CR>
-    vmap <buffer> <leader>l ggVG:<C-U>call fsharpbinding#python#FsiSendSel()<CR>
-  endfunction
-endif
-" }}}
-
-" rust racer {{{
-if s:has_plug('vim-racer')
-  if !exists('$RUST_SRC_PATH')
-    let $RUST_SRC_PATH = expand('~/.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\src\rust\src\')
-  endif
-  let g:racer_cmd = "racer"
-  let g:racer_experimental_completer = 1
-endif
-" }}}
-
-" Ultisnips {{{
-let g:UltiSnipsExpandTrigger="<c-j>"
-let g:UltiSnipsJumpForwardTrigger="<c-j>"
-let g:UltiSnipsJumpBackwardTrigger="<c-k>"
-" }}}
-
-" Dirvish: {{{
-if s:has_plug('vim-dirvish')
-  nnoremap <silent> <leader>fj :call <SID>dirvish_open()<CR>
-  nnoremap <leader>pe :Dirvish<CR>
-
-  let s:dirvish_dir_search = '[\\\/]$'
-
-  function! s:dirvish_open()
-    let name = expand('%')
-    if empty(name)
-      Dirvish
-    else
-      Dirvish %
-    endif
-  endfunction
-
-  function! s:dirvish_keepcursor(cmd)
-    let l = getline('.')
-    execute a:cmd
-    keepjumps call search('\V\^'.escape(l,'\').'\$', 'cw')
-    unlet l
-  endfunction
-  command! -nargs=+ KeepCursor call s:dirvish_keepcursor(<q-args>)
-
-  function! s:dirvish_settings()
-    syntax match DirvishPathExe /\v[^\\]+\.(ps1|cmd|exe|bat)$/
-    syntax match DirvishPathHidden /\v\\@<=\.[^\\]+$/
-    highlight link DirvishPathExe Type
-    highlight link DirvishPathHidden Comment
-
-    " sort dirs top
-    KeepCursor sort ir /^.*[^\\\/]$/
-
-    nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
-    nmap <silent> <buffer> h <Plug>(dirvish_up)
-    nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
-    nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d<CR>
-    nnoremap <buffer> gR :Grep  %<left><left>
-    nnoremap <buffer> gr :<cfile><C-b>Grep  <left>
-    nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
-    nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
-    cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
-    nnoremap <buffer> vs :Gstatus<CR>
-    call fugitive#detect(@%)
-  endfunction
-
-  autocmd vimrc FileType dirvish :call s:dirvish_settings()
-endif
-" }}}
-
-" Syntastic: {{{
-if s:has_plug('syntastic')
-  let g:syntastic_stl_format = '[Syntax: %E{line:%fe }%W{#W:%w}%B{ }%E{#E:%e}]'
-endif
-" }}}
-
-" Slimux {{{
-if s:has_plug('slimux')
-  autocmd vimrc FileType scheme call s:slimux_scheme_settings()
-  autocmd vimrc FileType fsharp call s:slimux_fsharp_settings()
-  function! s:slimux_scheme_settings()
-    nnoremap <buffer> <silent> <leader>l :SlimuxSchemeEvalBuffer<CR>
-    nnoremap <buffer> <silent> <leader>i :SlimuxSchemeEvalDefun<CR>
-    xnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
-  endfunction
-  function! s:slimux_fsharp_settings()
-    nnoremap <buffer> <silent> <leader>l :SlimuxREPLSendBuffer<CR>
-    nnoremap <buffer> <silent> <leader>i :SlimuxREPLSendLine<CR>
-    xnoremap <buffer> <silent> <leader>i :SlimuxREPLSendSelection<CR>
-  endfunction
-  " Add ;; to the end of the fsharp sent text
-  function! SlimuxPost_fsharp(target_pane)
-    call system('tmux send-keys -t ' . a:target_pane . ' \\\; \\\; C-m')
-  endfunction
-  let g:slimux_scheme_keybindings=1
-endif
-"}}}
-
-" colorscheme gruvbox: {{{
-if s:has_plug('gruvbox')
-  if s:is_gui
-    let g:gruvbox_invert_selection=0
-    let g:gruvbox_contrast_dark='medium'
-    let g:gruvbox_contrast_light='hard'
-  endif
-  let g:gruvbox_italic=0
-endif
-"}}}
-
-" colorscheme molokai: {{{
-if s:has_plug('molokai')
-  function! s:MolokaiCustomise()
-    let slfg = s:get_colour('StatusLine', 'fg')
-    let slbg = s:get_colour('StatusLine', 'bg')
-    let sbg = s:get_colour('Special', 'bg')
-    let sfg = s:get_colour('Special', 'fg')
-    let cfg = s:get_colour('Comment', 'fg')
-    let wmbg = s:get_colour('WildMenu', 'bg')
-
-    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-    call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
-    call s:SetHiColour('User1', sfg, slbg, 'bold')
-    call s:SetHiColour('User2', sfg, wmbg, 'bold')
-    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-    call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
-  endfunction
-  autocmd vimrc ColorScheme molokai :call <SID>MolokaiCustomise()
-endif
-"}}}
-
-" colorscheme one: {{{
-if s:has_plug('vim-one')
-  function! s:OneCustomise()
-    " let slfg = s:get_colour('StatusLine', 'fg')
-    let slbg = s:get_colour('StatusLine', 'bg')
-    let sbg = s:get_colour('Special', 'bg')
-    let sfg = s:get_colour('Special', 'fg')
-    let s2fg = s:get_colour('Constant', 'fg')
-    let cfg = s:get_colour('Comment', 'fg')
-    let wmbg = s:get_colour('WildMenu', 'bg')
-    let vbg = s:get_colour('Visual', 'bg')
-
-    let slfg = &background=='dark' ? '#d3d7de' : '#202126'
-
-    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-    call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
-    call s:SetHiColour('User1', sfg, slbg, 'bold')
-    call s:SetHiColour('User2', s2fg, slbg, 'bold')
-    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-    call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
-
-    call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
-    call s:SetHiColour('Folded', 'fg', cfg, 'NONE')
-
-    call s:SetHiColour('MatchParen', 'NONE', vbg, 'underline')
-
-    highlight! link TabLine StatusLine
-    highlight! link TabLineFill StatusLine 
-    highlight! link TabLineSel User1 
-
-    highlight! link Pmenu StatusLine
-    highlight! link PmenuSbar StatusLine
-    highlight! link PmenuSel WildMenu
-
-    highlight link helpCommand Number
-    highlight link helpSectionDelim Comment
-    highlight link helpExample Special
-    highlight link helpHyperTextJump Underlined
-
-    highlight clear vimCommand
-    highlight link vimMapLhs Special
-    highlight link vimMapRhs Normal
-    highlight link vimMapMod Number
-    highlight link vimMapModKey Number
-    highlight link vimNotation Constant
-    highlight link vimBracket Constant
-
-    highlight link rustCommentLinedDoc NonText
-
-    if has('nvim')
-      let g:terminal_color_0  = '#282c34'
-      let g:terminal_color_1  = '#be5046'
-      let g:terminal_color_2  = '#50a14f'
-      let g:terminal_color_3  = '#d19a66'
-      let g:terminal_color_4  = '#5889F3'
-      let g:terminal_color_5  = '#a626a4'
-      let g:terminal_color_6  = '#2EABE5'
-      let g:terminal_color_7  = '#828997'
-      let g:terminal_color_8  = '#5c6370'
-      let g:terminal_color_9  = '#e06c75'
-      let g:terminal_color_10 = '#98c379'
-      let g:terminal_color_11 = '#e5c07b'
-      let g:terminal_color_12 = '#61afef'
-      let g:terminal_color_13 = '#c678dd'
-      let g:terminal_color_14 = '#56b6c2'
-      let g:terminal_color_15 = '#abb2bf'
-    endif
-  endfunction
-  autocmd vimrc ColorScheme one :call <SID>OneCustomise()
-endif
-"}}}
-
-" colorscheme apprentice: {{{
-if s:has_plug('Apprentice')
-  function! s:ApprenticeCustomise()
-    let slfg = s:get_colour('PMenu', 'fg')
-    let slbg = s:get_colour('PMenu', 'bg')
-    let sfg = s:get_colour('Constant', 'fg')
-    let s2fg = s:get_colour('Operator', 'fg')
-    let tfg = s:get_colour('TabLine', 'fg')
-
-    call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-    call s:SetHiColour('StatusLineNC', tfg, slbg, 'NONE')
-    call s:SetHiColour('User1', sfg, slbg, 'bold')
-    call s:SetHiColour('User2', s2fg, slbg, 'bold')
-    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-  endfunction
-  autocmd vimrc ColorScheme apprentice :call <SID>ApprenticeCustomise()
-endif
-"}}}
-
-" colorscheme nova: {{{
-if s:has_plug('nova-vim')
-  function! s:NovaCustomise()
-    let slfg = s:get_colour('StatusLine', 'fg')
-    let slbg = s:get_colour('StatusLine', 'bg')
-    let sfg = s:get_colour('Special', 'fg')
-    let s2fg = s:get_colour('Operator', 'fg')
-
-    call s:SetHiColour('User1', sfg, slbg, 'bold')
-    call s:SetHiColour('User2', s2fg, slbg, 'bold')
-    call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-
-    highlight! link TabLine StatusLine
-    highlight! link TabLineFill StatusLine 
-    highlight! link TabLineSel User1 
-  endfunction
-  autocmd vimrc ColorScheme nova :call <SID>NovaCustomise()
-endif
-"}}}
-
-" colorscheme nofrils: {{{
-if s:has_plug('nofrils')
-  let g:nofrils_strbackgrounds = 1
-
-  function! s:NofrilsCustomise()
-    highlight! link VertSplit NonText
-    highlight! link Folded String
-    if &background == 'dark'
-      highlight! WildMenu guibg=black guifg=yellow gui=bold
-      highlight! StatusLine guifg=black guibg=white gui=bold
-    else
-      highlight! WildMenu guifg=black guibg=yellow gui=bold
-      highlight! StatusLine guifg=white guibg=black gui=bold
-    endif
-    highlight! xmlAttrib gui=italic
-    highlight! Keyword gui=italic
-    highlight! Statement gui=italic
-  endfunction
-  autocmd vimrc ColorScheme nofrils-* :call <SID>NofrilsCustomise()
-
-  function! s:NofrilsBackgroundToggle()
-    if get(g:, 'colors_name', '') !~ "nofrils"
-      return
-    endif
-    if &background == 'dark'
-      colorscheme nofrils-dark
-    else
-      colorscheme nofrils-light
-    endif
-    call s:NofrilsCustomise()
-    call PrettyLittleStatus()
-  endfunction
-  autocmd vimrc OptionSet background :call <SID>NofrilsBackgroundToggle()
-endif
-" }}}
-
-" Tmux Navigator: {{{
-if has('nvim') && s:has_plug('vim-tmux-navigator')
-  " <C-H> is seen as <BS> with some terms.
-  " In ITerm map <c-h> to escape sequence [104;5u
-  tnoremap <C-h> <C-\><C-n>:TmuxNavigateLeft<CR>
-  tnoremap <C-j> <C-\><C-n>:TmuxNavigateDown<CR>
-  tnoremap <C-l> <C-\><C-n>:TmuxNavigateRight<CR>
-  tnoremap <C-k> <C-\><C-n>:TmuxNavigateUp<CR>
-endif
-" }}}
-
-" Unicode: {{{
-if s:has_plug('unicode.vim')
-  nnoremap ga :UnicodeName<CR>
-endif
-" }}}
-
-" Gutentags: {{{
-if s:has_plug('vim-gutentags')
-  let g:gutentags_project_root = ['pom.xml']
-  let g:gutentags_generate_on_missing = 0
-  let g:gutentags_cache_dir = '~/.vim/tags_cache'
-endif
-" }}}
-
-" Grepper {{{
-if s:has_plug('vim-grepper')
-  let g:grepper           = {}
-  let g:grepper.tools     = ['rg', 'git']
-  let g:grepper.rg        = {'grepprg': 'rg --vimgrep --no-heading -HS'}
-  let g:grepper.jump      = 0
-
-  command! -nargs=* Grep GrepperRg <args>
-endif
-" }}}
 
 "}}}
 
@@ -1559,13 +1136,6 @@ if exists('+guifont')
 endif
 " }}}
 
-" Evaluate Vim code regions {{{
-command! -range ExecRange execute substitute(join(getline(<line1>, <line2>), "\n"), '\n\s*\\', ' ', 'g')
-
-autocmd vimrc FileType vim nnoremap <buffer> <leader>xe :ExecRange<CR>|
-                         \ xnoremap <buffer> <leader>xe :ExecRange<CR>
-"}}}
-
 " copy to html {{{
 function! s:CpHtml(line1, line2)
   :call tohtml#Convert2HTML(a:line1, a:line2)
@@ -1971,6 +1541,328 @@ endfunction
 
 call PrettyLittleStatus()
 " }}}
+
+" Plugins config: {{{
+
+" LSP Client: {{{
+if s:has_plug('LanguageClient-neovim')
+  let g:LanguageClient_serverCommands = {
+  \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
+  \ }
+
+  " Automatically start language servers.
+  let g:LanguageClient_autoStart = 1
+endif
+" }}}
+
+" Wimproved: {{{
+if s:has_plug('wimproved.vim')
+  autocmd vimrc GUIEnter * silent! WToggleClean
+  nnoremap <silent> coF :WToggleFullscreen<CR>
+endif
+" }}}
+
+" VimPlug: {{{
+function! s:plug_gx()
+  let line = getline('.')
+  let sha  = matchstr(line, '^  [*|\/\\ ]*\zs[0-9a-f]\{7\}\ze ')
+  let name = empty(sha) ? matchstr(line, '^[-x+] \zs[^:]\+\ze:')
+                      \ : getline(search('^- .*:$', 'bn'))[2:-2]
+  let uri  = get(get(g:plugs, name, {}), 'uri', '')
+  if uri !~ 'github.com'
+    return
+  endif
+  let repo = matchstr(uri, '[^:/]*/'.name)
+  let url  = empty(sha) ? 'https://github.com/'.repo
+                      \ : printf('https://github.com/%s/commit/%s', repo, sha)
+  call netrw#BrowseX(url, 0)
+endfunction
+
+autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
+" }}}
+
+" Surround: {{{
+let g:surround_no_insert_mappings = 1
+" }}}
+
+" Targets: {{{
+" add curly braces
+let g:targets_argOpening = '[({[]'
+let g:targets_argClosing = '[]})]'
+" args separated by , and ;
+let g:targets_argSeparator = '[,;]'
+let g:targets_pairs = '()b {}B []q <>v'
+let g:targets_quotes = '"d '' `'
+" }}}
+
+" FSharp: {{{
+if s:has_plug('vim-fsharp')
+  let g:fsharpbinding_debug=1
+  autocmd vimrc FileType fsharp call s:fsharpbinding_settings()
+  function! s:fsharpbinding_settings()
+    setlocal include=^#load\ 
+    setlocal complete+=i
+
+    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
+    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel()<CR>
+    vmap <buffer> <leader>l ggVG:<C-U>call fsharpbinding#python#FsiSendSel()<CR>
+  endfunction
+endif
+" }}}
+
+" rust racer {{{
+if s:has_plug('vim-racer')
+  if !exists('$RUST_SRC_PATH')
+    let $RUST_SRC_PATH = expand('~/.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\src\rust\src\')
+  endif
+  let g:racer_cmd = "racer"
+  let g:racer_experimental_completer = 1
+endif
+" }}}
+
+" Ultisnips {{{
+let g:UltiSnipsExpandTrigger="<c-j>"
+let g:UltiSnipsJumpForwardTrigger="<c-j>"
+let g:UltiSnipsJumpBackwardTrigger="<c-k>"
+" }}}
+
+" Dirvish: {{{
+if s:has_plug('vim-dirvish')
+  nnoremap <silent> <leader>fj :call <SID>dirvish_open()<CR>
+  nnoremap <leader>pe :Dirvish<CR>
+
+  let s:dirvish_dir_search = '[\\\/]$'
+
+  function! s:dirvish_open()
+    let name = expand('%')
+    if empty(name)
+      Dirvish
+    else
+      Dirvish %
+    endif
+  endfunction
+
+  function! s:dirvish_keepcursor(cmd)
+    let l = getline('.')
+    execute a:cmd
+    keepjumps call search('\V\^'.escape(l,'\').'\$', 'cw')
+    unlet l
+  endfunction
+  command! -nargs=+ KeepCursor call s:dirvish_keepcursor(<q-args>)
+
+  function! s:ft_dirvish()
+    syntax match DirvishPathExe /\v[^\\]+\.(ps1|cmd|exe|bat)$/
+    syntax match DirvishPathHidden /\v\\@<=\.[^\\]+$/
+    highlight link DirvishPathExe Type
+    highlight link DirvishPathHidden Comment
+
+    " sort dirs top
+    KeepCursor sort ir /^.*[^\\\/]$/
+
+    nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
+    nmap <silent> <buffer> h <Plug>(dirvish_up)
+    nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
+    nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d<CR>
+    nnoremap <buffer> gR :Grep  %<left><left>
+    nnoremap <buffer> gr :<cfile><C-b>Grep  <left>
+    nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
+    nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
+    cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
+    nnoremap <buffer> vs :Gstatus<CR>
+    call fugitive#detect(@%)
+  endfunction
+endif
+" }}}
+
+" Syntastic: {{{
+if s:has_plug('syntastic')
+  let g:syntastic_stl_format = '[Syntax: %E{line:%fe }%W{#W:%w}%B{ }%E{#E:%e}]'
+endif
+" }}}
+
+" colorscheme gruvbox: {{{
+let g:gruvbox_invert_selection=0
+let g:gruvbox_contrast_dark='medium'
+let g:gruvbox_contrast_light='hard'
+let g:gruvbox_italic=0
+let g:gruvbox_bold=0
+"}}}
+
+" colorscheme molokai: {{{
+function! s:MolokaiCustomise()
+  let slfg = s:get_colour('StatusLine', 'fg')
+  let slbg = s:get_colour('StatusLine', 'bg')
+  let sbg = s:get_colour('Special', 'bg')
+  let sfg = s:get_colour('Special', 'fg')
+  let cfg = s:get_colour('Comment', 'fg')
+  let wmbg = s:get_colour('WildMenu', 'bg')
+
+  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+  call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
+  call s:SetHiColour('User1', sfg, slbg, 'bold')
+  call s:SetHiColour('User2', sfg, wmbg, 'bold')
+  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+  call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
+endfunction
+autocmd vimrc ColorScheme molokai :call <SID>MolokaiCustomise()
+"}}}
+
+" colorscheme one: {{{
+function! s:OneCustomise()
+  " let slfg = s:get_colour('StatusLine', 'fg')
+  let slbg = s:get_colour('StatusLine', 'bg')
+  let sbg = s:get_colour('Special', 'bg')
+  let sfg = s:get_colour('Special', 'fg')
+  let s2fg = s:get_colour('Constant', 'fg')
+  let cfg = s:get_colour('Comment', 'fg')
+  let wmbg = s:get_colour('WildMenu', 'bg')
+  let vbg = s:get_colour('Visual', 'bg')
+
+  let slfg = &background=='dark' ? '#d3d7de' : '#202126'
+
+  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+  call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
+  call s:SetHiColour('User1', sfg, slbg, 'bold')
+  call s:SetHiColour('User2', s2fg, slbg, 'bold')
+  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+  call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
+
+  call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
+  call s:SetHiColour('Folded', 'fg', cfg, 'NONE')
+
+  call s:SetHiColour('MatchParen', 'NONE', vbg, 'underline')
+
+  highlight! link TabLine StatusLine
+  highlight! link TabLineFill StatusLine 
+  highlight! link TabLineSel User1 
+
+  highlight! link Pmenu StatusLine
+  highlight! link PmenuSbar StatusLine
+  highlight! link PmenuSel WildMenu
+
+  highlight link helpCommand Number
+  highlight link helpSectionDelim Comment
+  highlight link helpExample Special
+  highlight link helpHyperTextJump Underlined
+
+  highlight clear vimCommand
+  highlight link vimMapLhs Special
+  highlight link vimMapRhs Normal
+  highlight link vimMapMod Number
+  highlight link vimMapModKey Number
+  highlight link vimNotation Constant
+  highlight link vimBracket Constant
+
+  highlight link rustCommentLinedDoc NonText
+
+  if has('nvim')
+    let g:terminal_color_0  = '#282c34'
+    let g:terminal_color_1  = '#be5046'
+    let g:terminal_color_2  = '#50a14f'
+    let g:terminal_color_3  = '#d19a66'
+    let g:terminal_color_4  = '#5889F3'
+    let g:terminal_color_5  = '#a626a4'
+    let g:terminal_color_6  = '#2EABE5'
+    let g:terminal_color_7  = '#828997'
+    let g:terminal_color_8  = '#5c6370'
+    let g:terminal_color_9  = '#e06c75'
+    let g:terminal_color_10 = '#98c379'
+    let g:terminal_color_11 = '#e5c07b'
+    let g:terminal_color_12 = '#61afef'
+    let g:terminal_color_13 = '#c678dd'
+    let g:terminal_color_14 = '#56b6c2'
+    let g:terminal_color_15 = '#abb2bf'
+  endif
+endfunction
+autocmd vimrc ColorScheme one :call <SID>OneCustomise()
+"}}}
+
+" colorscheme apprentice: {{{
+function! s:ApprenticeCustomise()
+  let slfg = s:get_colour('PMenu', 'fg')
+  let slbg = s:get_colour('PMenu', 'bg')
+  let sfg = s:get_colour('Constant', 'fg')
+  let s2fg = s:get_colour('Operator', 'fg')
+  let tfg = s:get_colour('TabLine', 'fg')
+
+  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+  call s:SetHiColour('StatusLineNC', tfg, slbg, 'NONE')
+  call s:SetHiColour('User1', sfg, slbg, 'bold')
+  call s:SetHiColour('User2', s2fg, slbg, 'bold')
+  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+endfunction
+autocmd vimrc ColorScheme apprentice :call <SID>ApprenticeCustomise()
+"}}}
+
+" colorscheme nova: {{{
+function! s:NovaCustomise()
+  let slfg = s:get_colour('StatusLine', 'fg')
+  let slbg = s:get_colour('StatusLine', 'bg')
+  let sfg = s:get_colour('Special', 'fg')
+  let s2fg = s:get_colour('Operator', 'fg')
+
+  call s:SetHiColour('User1', sfg, slbg, 'bold')
+  call s:SetHiColour('User2', s2fg, slbg, 'bold')
+  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+
+  highlight! link TabLine StatusLine
+  highlight! link TabLineFill StatusLine 
+  highlight! link TabLineSel User1 
+endfunction
+autocmd vimrc ColorScheme nova :call <SID>NovaCustomise()
+"}}}
+
+" colorscheme nofrils: {{{
+if s:has_plug('nofrils')
+  let g:nofrils_strbackgrounds = 1
+
+  function! s:NofrilsCustomise()
+    highlight! link VertSplit NonText
+    highlight! link Folded String
+    if &background == 'dark'
+      highlight! WildMenu guibg=black guifg=yellow gui=bold
+      highlight! StatusLine guifg=black guibg=white gui=bold
+    else
+      highlight! WildMenu guifg=black guibg=yellow gui=bold
+      highlight! StatusLine guifg=white guibg=black gui=bold
+    endif
+    highlight! xmlAttrib gui=italic
+    highlight! Keyword gui=italic
+    highlight! Statement gui=italic
+  endfunction
+  autocmd vimrc ColorScheme nofrils-* :call <SID>NofrilsCustomise()
+
+  function! s:NofrilsBackgroundToggle()
+    if get(g:, 'colors_name', '') !~ "nofrils"
+      return
+    endif
+    if &background == 'dark'
+      colorscheme nofrils-dark
+    else
+      colorscheme nofrils-light
+    endif
+    call s:NofrilsCustomise()
+    call PrettyLittleStatus()
+  endfunction
+  autocmd vimrc OptionSet background :call <SID>NofrilsBackgroundToggle()
+endif
+" }}}
+
+" Unicode: {{{
+if s:has_plug('unicode.vim')
+  nnoremap ga :UnicodeName<CR>
+endif
+" }}}
+
+" Gutentags: {{{
+if s:has_plug('vim-gutentags')
+  let g:gutentags_project_root = ['pom.xml']
+  let g:gutentags_generate_on_missing = 0
+  let g:gutentags_cache_dir = '~/.vim/tags_cache'
+endif
+" }}}
+
+"}}}
 
 " autocmd vimrc VimEnter * colorscheme gruvbox
 if has('vim_starting')
