@@ -18,14 +18,13 @@ if has('vim_starting')
   else
     set nocompatible
     set encoding=utf-8
+    set laststatus=2
     set viminfo='1000,s100,h
   endif
 endif
 
 " Windows Compatible: {{{
-let s:is_win = has('win32') || has('win64')
-let s:is_gui = has('gui_running')
-if s:is_win
+if has('win32')
   " On Windows, also use '.vim' instead of 'vimfiles'
   set runtimepath^=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
   " On windows, if gvim.exe is executed from cygwin bash shell, the shell
@@ -34,33 +33,6 @@ if s:is_win
   if &shell =~# 'bash$'
     set shell=$COMSPEC
   endif
-
-  if has('vim_starting')
-    let g:shell_defaults = { 'shell':&shell, 'shellcmdflag':&shellcmdflag,
-          \ 'shellquote':&shellquote, 'shellxquote':&shellxquote,
-          \ 'shellpipe':&shellpipe, 'shellredir':&shellredir,
-          \ 'shellslash':&shellslash, 'shelltemp':&shelltemp }
-  endif
-  function! s:toggle_powershell()
-    if &shell ==# 'powershell'
-      let s = g:shell_defaults
-      let &shell=s.shell
-      let &shellquote=s.shellquote
-      let &shellpipe=s.shellpipe
-      let &shellredir=s.shellredir
-      let &shellcmdflag=s.shellcmdflag
-      let &shellxquote=s.shellxquote
-      let &shellslash=s.shellslash
-      let &shelltemp=s.shelltemp
-    else
-      set shell=powershell shellquote=\" shellpipe=\| shellredir=>
-      set shellcmdflag=\ -NonInteractive\ -WindowStyle\ Hidden\ -NoProfile\ -ExecutionPolicy\ RemoteSigned\ -Command
-      let &shellxquote=' '
-      set shellslash noshelltemp
-    endif
-  endfunction
-  nnoremap co! :call <SID>toggle_powershell()<CR>
-
 endif
 
 "}}}
@@ -80,10 +52,9 @@ Plug 'kana/vim-textobj-user'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
-Plug 'justinmk/molokai'
-Plug 'romainl/Apprentice'
-Plug 'rakr/vim-one'
-Plug 'trevordmiller/nova-vim'
+Plug 'joshdick/onedark.vim'
+Plug 'w0ng/vim-hybrid'
+Plug 'sjl/badwolf'
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 
 " Motions and actions
@@ -100,15 +71,17 @@ Plug 'tommcdo/vim-lion'
 
 " Tools
 Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-rhubarb'
 Plug 'tpope/vim-ragtag'
-Plug 'tpope/vim-scriptease', {'on': 'Verbose'}
+Plug 'tpope/vim-scriptease'
 Plug 'SirVer/ultisnips' 
 Plug 'honza/vim-snippets'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
-Plug 'ludovicchabant/vim-gutentags'
+Plug 'srstevenson/vim-picker'
+" Plug 'ludovicchabant/vim-gutentags'
 
 " Filetypes
 Plug 'hail2u/vim-css3-syntax', {'for': 'css'}
@@ -146,7 +119,7 @@ Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
 Plug 'OrangeT/vim-csharp', {'for': 'cs'}
 Plug 'idris-hackers/idris-vim'
 
-if s:is_win && s:is_gui
+if has('win32') && has('gui_running')
   Plug 'kkoenig/wimproved.vim'
 endif
 
@@ -166,7 +139,7 @@ if has('nvim') && executable('fzy')
   Plug 'cloudhead/neovim-fuzzy'
 endif
 
-if has('mac') && !s:is_gui && !has('nvim')
+if has('mac') && !has('gui_running') && !has('nvim')
   Plug 'jszakmeister/vim-togglecursor'
 endif
 
@@ -213,7 +186,7 @@ endif
 command! -nargs=* Grep grep <args>
 
 if has('nvim')
-  autocmd vimrc CursorHold,FocusGained,FocusLost * wshada
+  autocmd vimrc BufRead * wshada
 else
   autocmd vimrc CursorHold,FocusGained,FocusLost * wviminfo
 endif
@@ -231,6 +204,8 @@ set lazyredraw
 set sidescroll=1
 set sidescrolloff=5
 set scrolloff=5
+
+set diffopt+=vertical
 
 set wildmode=longest:full,full
 set wildignorecase
@@ -264,14 +239,31 @@ autocmd vimrc QuickFixCmdPost [^l]* nested CWindow
 autocmd vimrc QuickFixCmdPost    l* nested LWindow
 
 if has('nvim')
-  autocmd vimrc BufEnter term://* setfiletype term|startinsert
+  autocmd vimrc TermOpen * setfiletype term|setlocal nonumber "|startinsert
 endif
 "}}}
 
 " GUI Settings: {{{
 if exists('+termguicolors')
   set termguicolors
-  if has('nvim')
+  if has('nvim') && has('win32')
+    let g:terminal_color_0  = '#282828'
+    let g:terminal_color_1  = '#cc241d'
+    let g:terminal_color_2  = '#98971a'
+    let g:terminal_color_3  = '#d79921'
+    let g:terminal_color_4  = '#458588'
+    let g:terminal_color_5  = '#b16286'
+    let g:terminal_color_6  = '#689d6a'
+    let g:terminal_color_7  = '#a89984'
+    let g:terminal_color_8  = '#928374'
+    let g:terminal_color_9  = '#fb4934'
+    let g:terminal_color_10 = '#b8bb26'
+    let g:terminal_color_11 = '#fabd2f'
+    let g:terminal_color_12 = '#83a598'
+    let g:terminal_color_13 = '#d3869b'
+    let g:terminal_color_14 = '#83c07c'
+    let g:terminal_color_15 = '#ebdbb2'
+  elseif has('nvim')
     let g:terminal_color_0  = '#282828'
     let g:terminal_color_1  = '#cc241d'
     let g:terminal_color_2  = '#98971a'
@@ -346,49 +338,27 @@ nnoremap g<C-P> :pwd<CR>
 onoremap ae :<C-u>normal vae<CR>
 xnoremap ae GoggV
 
-" in next/last word text objects
-onoremap inw :<C-u>normal vinw<CR>
-xnoremap inw wowiw
-onoremap ilw :<C-u>normal vilw<CR>
-xnoremap ilw geogeiw
-onoremap anw :<C-u>normal vanw<CR>
-xnoremap anw wowaw
-onoremap alw :<C-u>normal valw<CR>
-xnoremap alw geogeaw
-onoremap inW :<C-u>normal vinW<CR>
-xnoremap inW WoWiW
-onoremap ilW :<C-u>normal vilW<CR>
-xnoremap ilW gEogEiW
-onoremap anW :<C-u>normal vanW<CR>
-xnoremap anW WoWaW
-onoremap alW :<C-u>normal valW<CR>
-xnoremap alW gEogEaW
-
-onoremap inl :<C-u>normal vinl<CR>
-xnoremap inl jojV
-onoremap ill :<C-u>normal vill<CR>
-xnoremap ill kokV
-
 " disable exmode maps
 nnoremap Q :bdelete!<CR>
 nmap gQ <Nop>
 
 if has('nvim')
+  let g:tshell = 'term://' . (executable('fish') ? 'fish' : executable('powershell') ? 'powershell' : '')
   tnoremap <Esc><Esc> <C-\><C-n>
   " <C-Space> is <C-@>
-  tnoremap <C-@> <C-\><C-n>:
+  tnoremap <C-Space> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
   if empty($TMUX)
     tnoremap <C-a>n <C-\><C-n>gt
     nnoremap <C-a>n gt
     tnoremap <C-a>p <C-\><C-n>gT
     nnoremap <C-a>p gT
-    tnoremap <C-a>c <C-\><C-n>:tabnew term://fish<CR>
-    nnoremap <C-a>c :tabnew term://fish<CR>
-    tnoremap <C-a>s <C-\><C-n>:split term://fish<CR>
-    nnoremap <C-a>s :split term://fish<CR>
-    tnoremap <C-a>v <C-\><C-n>:vsplit term://fish<CR>
-    nnoremap <C-a>v :vsplit term://fish<CR>
+    tnoremap <C-a>c <C-\><C-n>:execute 'tabnew ' . g:tshell<CR>
+    nnoremap <C-a>c :execute 'tabnew ' . g:tshell<CR>
+    tnoremap <C-a>s <C-\><C-n>:execute 'split ' . g:tshell<CR>
+    nnoremap <C-a>s :execute 'split ' . g:tshell<CR>
+    tnoremap <C-a>v <C-\><C-n>:execute 'vsplit ' . g:tshell<CR>
+    nnoremap <C-a>v :execute 'vsplit ' . g:tshell<CR>
     tnoremap <C-a><C-l> <C-l>
     tnoremap <C-a><C-a> <C-a>
     tnoremap <C-h> <C-\><C-n><C-w>h
@@ -438,6 +408,7 @@ nmap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
 
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
+nnoremap =oC :let &conceallevel=&conceallevel == 0 ? 1 : 0<CR>
 
 nnoremap <leader>wsh :leftabove vsp<CR>
 nnoremap <leader>wsl :rightbelow vsp<CR>
@@ -597,7 +568,7 @@ function! s:ft_fsharp()
 endfunction
 " }}}
 
-" vim: {{{
+" vim {{{
 function! s:ft_vim()
   setlocal keywordprg=:help 
   setlocal omnifunc=syntaxcomplete#Complete 
@@ -609,15 +580,34 @@ function! s:ft_vim()
 endfunction
 " }}}
 
-" help: {{{
+" help {{{
 function! s:ft_help()
   nnoremap <buffer> q :wincmd c<CR>
 endfunction
 " }}}
 
+" quickfix {{{
+function! s:ft_qf()
+  " syntax clear
+  " syn match	qfDirName "^[^|]+[\\/]\ze[^|\\/]+" nextgroup=qfJustFileName conceal cchar=•
+  " syntax match	qfDirName "^[^|]*[\\/][^\\/|]+" nextgroup=qfSeparator conceal cchar=•
+  syntax match	qfDirName "^[^|]\+[\\/][^|\\/]\+" nextgroup=qfSeparator
+  " syntax match	qfSeparator "/|/" contained
+  " syn match	qfJustFileName "[^|\\/]+" nextgroup=qfSeparator
+endfunction
+" }}}
 " rust: {{{
 function! s:ft_rust()
   setlocal keywordprg=:DevDocs\ rust
+  nnoremap gd <Plug>(rust-def)
+  " nnoremap gs <Plug>(rust-def-split)
+  " nnoremap gx <Plug>(rust-def-vertical)
+  nnoremap K <Plug>(rust-doc)
+  if executable('rusty-tags')
+    command! RustyTags silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . '&' <bar> redraw!
+    setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
+    " autocmd BufWrite *.rs RustyTags
+  endif
 endfunction
 " }}}
 
@@ -641,11 +631,29 @@ endfunction
 
 " Commands & Functions: {{{
 
+" Replace Browse cmd {{{
+" Browse command is used by fugitive instead of netrw, so we can get rid of
+" those Press <cr> to continue messages.
+let g:browser_path='C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+function! Browse(url)
+  if filereadable(g:browser_path)
+    let cmd = g:browser_path
+  elseif has('mac')
+    let cmd = 'open'
+  else
+    let cmd = 'start'
+  endif
+  call system([cmd, a:url])
+endfunction
+command! -nargs=1 Browse :call Browse(<q-args>)
+"}}}
+" CWindow {{{
 " Hack buffer names relative to cwd, see
 " https://groups.google.com/forum/#!topic/vim_use/Vq0z2DJH2So
 " Useful to get relative paths in quickfix after grep
 command! CWindow 0split | lcd . | quit | cwindow
 command! LWindow 0split | lcd . | quit | lwindow
+"}}}
 
 " Custom fold display {{{
 
@@ -781,11 +789,7 @@ nnoremap <Bar> :<C-U>call <SID>zoom_or_goto_column(v:count)<CR>
 " DevDocs cmd {{{
 function! DevDocs(query)
   let q = 'https://devdocs.io/#q=' . substitute(a:query, ' ', '%20', 'g')
-  if has('mac')
-    call system('open ' . q)
-  else
-    call system('start ' . q)
-  endif
+  call Browse(q)
 endfunction
 command! -nargs=* DevDocs :call DevDocs(<q-args>)
 " }}}
@@ -841,10 +845,12 @@ function! BClose(force) abort
     endif
   endfor
   
+  if bufexists(bnr) && getbufvar(bnr, '&buflisted') && bnr != bufnr('%')
   if a:force
     execute 'bdelete!' bnr
   else
     execute 'bdelete' bnr
+    endif
   endif
 endfunction
 command! -bang -nargs=0 BClose :call BClose(<bang>0)
@@ -1066,7 +1072,7 @@ function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
   elseif pattern[-1:] != '*'
     let pattern .= '*'
   endif
-  return systemlist('rg -S --files --glob ' . pattern)
+  return systemlist('rg -S --files --iglob ' . pattern)
 endfunction
 
 function! s:Run(command, arg, mods)
@@ -1156,12 +1162,18 @@ command! ReloadDos :e ++ff=dos<CR>
 nnoremap <expr> <leader>m ToggleVisualMarker()
 nnoremap <expr> m UpdateVisualMarker()
 
-highlight GruvboxOrangeSign guifg=#fe8019 guibg=#3c3836
+highlight MarkerOrangeSign guifg=#fe8019 guibg=#3c3836
+highlight MarkerBlueSign guifg=#457588 guibg=#3c3836
+highlight MarkerGreenSign guifg=#86ab2b guibg=#3c3836
+highlight MarkerRedSign guifg=#cc241d guibg=#3c3836
+highlight MarkerPurpleSign guifg=#b16286 guibg=#3c3836
+highlight MarkerYellowSign guifg=#d79921 guibg=#3c3836
+highlight MarkerAquaSign guifg=#689d7a guibg=#3c3836
 let g:myvimrc_visual_marks_groups = [
-      \ 'GruvboxBlueSign',  'GruvboxGreenSign',
-      \ 'GruvboxRedSign', 'GruvboxPurpleSign',
-      \ 'GruvboxYellowSign', 'GruvboxAquaSign',
-      \ 'GruvboxOrangeSign']
+      \ 'MarkerBlueSign',  'MarkerGreenSign',
+      \ 'MarkerRedSign', 'MarkerPurpleSign',
+      \ 'MarkerYellowSign', 'MarkerAquaSign',
+      \ 'MarkerOrangeSign']
 
 function! s:remove_visual_mark(match, reg)
   call matchdelete(a:match)
@@ -1503,11 +1515,9 @@ function! TabLine()
     let s.= '%#TabLineSel#'
   endif
   let s.= '%='
+  let s.= ' '
   let s.= cwd
   let s.= ' '
-  " let s.= '%='
-  " let s.= '%#TabLine#'
-  " let s.= '%( %{strftime("%H:%M")} %)'
   return s
 endfunction
 
@@ -1544,14 +1554,19 @@ call PrettyLittleStatus()
 
 " Plugins config: {{{
 
-" LSP Client: {{{
-if s:has_plug('LanguageClient-neovim')
-  let g:LanguageClient_serverCommands = {
-  \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
-  \ }
+" Fugitive: {{{
+if s:has_plug('vim-fugitive')
+  nnoremap <leader>vc :Gstatus<CR>
+  nnoremap <leader>vl :Glog -- %<CR>
+  xnoremap <leader>vl :Glog -- %<CR>
+  nnoremap <leader>vm :Glog master.. -- %<CR>
+  nnoremap <leader>va :Gblame<CR>
+  xnoremap <leader>va :Gblame<CR>
+  nnoremap <leader>vb :Gbrowse -<CR>
+  xnoremap <leader>vb :Gbrowse -<CR>
 
-  " Automatically start language servers.
-  let g:LanguageClient_autoStart = 1
+  command! -nargs=* Glm :Glog master.. <args> --
+  command! -nargs=* Glp :Glog @{push}.. <args> --
 endif
 " }}}
 
@@ -1668,7 +1683,7 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
     nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
-    nnoremap <buffer> vs :Gstatus<CR>
+    nnoremap <buffer> vl :Glog -20 -- <cfile><CR>
     call fugitive#detect(@%)
   endfunction
 endif
@@ -1686,25 +1701,6 @@ let g:gruvbox_contrast_dark='medium'
 let g:gruvbox_contrast_light='hard'
 let g:gruvbox_italic=0
 let g:gruvbox_bold=0
-"}}}
-
-" colorscheme molokai: {{{
-function! s:MolokaiCustomise()
-  let slfg = s:get_colour('StatusLine', 'fg')
-  let slbg = s:get_colour('StatusLine', 'bg')
-  let sbg = s:get_colour('Special', 'bg')
-  let sfg = s:get_colour('Special', 'fg')
-  let cfg = s:get_colour('Comment', 'fg')
-  let wmbg = s:get_colour('WildMenu', 'bg')
-
-  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-  call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
-  call s:SetHiColour('User1', sfg, slbg, 'bold')
-  call s:SetHiColour('User2', sfg, wmbg, 'bold')
-  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-  call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
-endfunction
-autocmd vimrc ColorScheme molokai :call <SID>MolokaiCustomise()
 "}}}
 
 " colorscheme one: {{{
@@ -1725,13 +1721,12 @@ function! s:OneCustomise()
   call s:SetHiColour('User1', sfg, slbg, 'bold')
   call s:SetHiColour('User2', s2fg, slbg, 'bold')
   call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-  call s:SetHiColour('Conceal', sfg, 'bg', 'NONE')
 
   call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
-  call s:SetHiColour('Folded', 'fg', cfg, 'NONE')
 
   call s:SetHiColour('MatchParen', 'NONE', vbg, 'underline')
 
+  highlight! Folded guibg=#20242c
   highlight! link TabLine StatusLine
   highlight! link TabLineFill StatusLine 
   highlight! link TabLineSel User1 
@@ -1739,21 +1734,6 @@ function! s:OneCustomise()
   highlight! link Pmenu StatusLine
   highlight! link PmenuSbar StatusLine
   highlight! link PmenuSel WildMenu
-
-  highlight link helpCommand Number
-  highlight link helpSectionDelim Comment
-  highlight link helpExample Special
-  highlight link helpHyperTextJump Underlined
-
-  highlight clear vimCommand
-  highlight link vimMapLhs Special
-  highlight link vimMapRhs Normal
-  highlight link vimMapMod Number
-  highlight link vimMapModKey Number
-  highlight link vimNotation Constant
-  highlight link vimBracket Constant
-
-  highlight link rustCommentLinedDoc NonText
 
   if has('nvim')
     let g:terminal_color_0  = '#282c34'
@@ -1774,78 +1754,7 @@ function! s:OneCustomise()
     let g:terminal_color_15 = '#abb2bf'
   endif
 endfunction
-autocmd vimrc ColorScheme one :call <SID>OneCustomise()
-"}}}
-
-" colorscheme apprentice: {{{
-function! s:ApprenticeCustomise()
-  let slfg = s:get_colour('PMenu', 'fg')
-  let slbg = s:get_colour('PMenu', 'bg')
-  let sfg = s:get_colour('Constant', 'fg')
-  let s2fg = s:get_colour('Operator', 'fg')
-  let tfg = s:get_colour('TabLine', 'fg')
-
-  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-  call s:SetHiColour('StatusLineNC', tfg, slbg, 'NONE')
-  call s:SetHiColour('User1', sfg, slbg, 'bold')
-  call s:SetHiColour('User2', s2fg, slbg, 'bold')
-  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-endfunction
-autocmd vimrc ColorScheme apprentice :call <SID>ApprenticeCustomise()
-"}}}
-
-" colorscheme nova: {{{
-function! s:NovaCustomise()
-  let slfg = s:get_colour('StatusLine', 'fg')
-  let slbg = s:get_colour('StatusLine', 'bg')
-  let sfg = s:get_colour('Special', 'fg')
-  let s2fg = s:get_colour('Operator', 'fg')
-
-  call s:SetHiColour('User1', sfg, slbg, 'bold')
-  call s:SetHiColour('User2', s2fg, slbg, 'bold')
-  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-
-  highlight! link TabLine StatusLine
-  highlight! link TabLineFill StatusLine 
-  highlight! link TabLineSel User1 
-endfunction
-autocmd vimrc ColorScheme nova :call <SID>NovaCustomise()
-"}}}
-
-" colorscheme nofrils: {{{
-if s:has_plug('nofrils')
-  let g:nofrils_strbackgrounds = 1
-
-  function! s:NofrilsCustomise()
-    highlight! link VertSplit NonText
-    highlight! link Folded String
-    if &background == 'dark'
-      highlight! WildMenu guibg=black guifg=yellow gui=bold
-      highlight! StatusLine guifg=black guibg=white gui=bold
-    else
-      highlight! WildMenu guifg=black guibg=yellow gui=bold
-      highlight! StatusLine guifg=white guibg=black gui=bold
-    endif
-    highlight! xmlAttrib gui=italic
-    highlight! Keyword gui=italic
-    highlight! Statement gui=italic
-  endfunction
-  autocmd vimrc ColorScheme nofrils-* :call <SID>NofrilsCustomise()
-
-  function! s:NofrilsBackgroundToggle()
-    if get(g:, 'colors_name', '') !~ "nofrils"
-      return
-    endif
-    if &background == 'dark'
-      colorscheme nofrils-dark
-    else
-      colorscheme nofrils-light
-    endif
-    call s:NofrilsCustomise()
-    call PrettyLittleStatus()
-  endfunction
-  autocmd vimrc OptionSet background :call <SID>NofrilsBackgroundToggle()
-endif
+autocmd vimrc ColorScheme onedark :call <SID>OneCustomise()
 " }}}
 
 " Unicode: {{{
@@ -1856,6 +1765,7 @@ endif
 
 " Gutentags: {{{
 if s:has_plug('vim-gutentags')
+  let g:gutentags_enabled = 0
   let g:gutentags_project_root = ['pom.xml']
   let g:gutentags_generate_on_missing = 0
   let g:gutentags_cache_dir = '~/.vim/tags_cache'
@@ -1864,7 +1774,7 @@ endif
 
 "}}}
 
-" autocmd vimrc VimEnter * colorscheme gruvbox
 if has('vim_starting')
-  colorscheme gruvbox
+  let g:goodwolf_gruv = 1
+  colorscheme goodwolf
 endif
