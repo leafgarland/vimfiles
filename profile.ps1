@@ -1,6 +1,8 @@
 ﻿$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
-# $env:EDITOR = 'nvim-qt.exe -qwindowgeometry "1000x810"'
-$env:EDITOR = 'nvim.exe'
+$env:EDITOR = 'edit.cmd'
+# for latest nvim tui which wont do colours without a hint
+$env:COLORTERM='truecolor'
+$env:RUST_SRC_PATH="$(rustc --print sysroot)/lib/rustlib/src/rust/src/"
 
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -24,50 +26,9 @@ function Enable-VirtualTerminal() {
     }
 }
 
-function setbg([byte]$r, [byte]$g, [byte]$b) { "$([char]0x1b)[48;2;${r};${g};${b}m" }
-function setbg([object[]]$c) { "$([char]0x1b)[48;2;$($c[0]);$($c[1]);$($c[2])m" }
-function setfg([byte]$r, [byte]$g, [byte]$b) { "$([char]0x1b)[38;2;${r};${g};${b}m" }
-function setfg([object[]]$c) { "$([char]0x1b)[38;2;$($c[0]);$($c[1]);$($c[2])m" }
-function resetbgfg() { "$([char]0x1b)[0m" }
-$dark0_hard      =  29, 32, 33
-$dark0           =  40, 40, 40
-$dark0_soft      =  50, 48, 47
-$dark1           =  60, 56, 54
-$dark2           =  80, 73, 69
-$dark3           = 102, 92, 84
-$dark4           = 124,111,100
-$gray_245        = 146,131,116
-$gray_244        = 146,131,116
-$light0_hard     = 249,245,215
-$light0          = 251,241,199
-$light0_soft     = 242,229,188
-$light1          = 235,219,178
-$light2          = 213,196,161
-$light3          = 189,174,147
-$light4          = 168,153,132
-$bright_red      = 251, 73, 52
-$bright_green    = 184,187, 38
-$bright_yellow   = 250,189, 47
-$bright_blue     = 131,165,152
-$bright_purple   = 211,134,155
-$bright_aqua     = 142,192,124
-$bright_orange   = 254,128, 25
+function Start-PushpayPublic { &'C:\Program Files (x86)\IIS Express\iisexpress.exe' "/config:$(git home)\.vs\config\applicationhost.config" /site:Pushpay.Public }
 
-$neutral_red     = 204, 36, 29
-$neutral_green   = 152,151, 26
-$neutral_yellow  = 215,153, 33
-$neutral_blue    =  69,133,136
-$neutral_purple  = 177, 98,134
-$neutral_aqua    = 104,157,106
-$neutral_orange  = 214, 93, 14
-
-$faded_red       = 157,  0,  6
-$faded_green     = 121,116, 14
-$faded_yellow    = 181,118, 20
-$faded_blue      =   7,102,120
-$faded_purple    = 143, 63,113
-$faded_aqua      =  66,123, 88
-$faded_orange    = 175, 58,  3
+function Get-LockImages { ls "$env:userprofile\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\*" | ? length -gt 300000 | % { cp $_ "C:\Users\Leaf Garland\Pictures\lock\$($_.name).jpg" } }
 
 if (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
     & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
@@ -137,6 +98,10 @@ Register-ArgumentCompleter -Native -CommandName 'git' -ScriptBlock { param($last
     $AllGitCmds |
     ? { $_ -like "$lastword*" } |
     % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
+  } elseif ($line -match "(ori|orig|origi|origin)(/\S+)?$") {
+    git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/ |
+    ? { $_ -like "$lastword*" } |
+    % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
   } else {
     git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/ |
     ? { $_ -like "$lastword*" } |
@@ -177,49 +142,45 @@ function FitWindow($text) {
 
 $host.PrivateData.ProgressForegroundColor = 'White'
 $host.PrivateData.ProgressBackgroundColor = 'DarkBlue'
-$host.PrivateData.ErrorForegroundColor = 'White'
-$host.PrivateData.ErrorBackgroundColor = 'DarkRed'
+$host.PrivateData.ErrorForegroundColor = 'Red'
+$host.PrivateData.ErrorBackgroundColor = 'Black'
 $host.PrivateData.WarningForegroundColor = 'DarkYellow'
-$host.PrivateData.WarningBackgroundColor = 'DarkRed'
+$host.PrivateData.WarningBackgroundColor = 'Black'
 function Reset-Colours { $host.ui.rawui.foregroundcolor = 7 }
+function Show-Colors { 0..15 | % { Write-Host -NoNewline "["; Write-Host -NoNewLine -BackgroundColor $_ "   "; Write-Host -NoNewLine "] "; write-host ([consolecolor]$_) } }
 
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
 $PA = [char]0xE0B0
 $ShowTiming = $false
 function Prompt {
-    $waserror = if ($?) {1,9} else {4,12}
+    $host.ui.rawui.windowtitle = "PS $(get-location)"
+
+    $waserror = if ($?) {1} else {4}
     Enable-VirtualTerminal
 
     $lastcmd = get-history -count 1
     $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
 
-    Write-Host "$(setbg $dark2)$(setfg $neutral_aqua)$(get-location)" -nonewline
-    $lastbg = $dark2
+    Write-Host -ForegroundColor Yellow -nonewline "$(get-location) " 
     $branchName = if (git rev-parse --is-inside-work-tree 2>$null) { git rev-parse --abbrev-ref HEAD }
     if ($branchName) {
-        Write-Host -nonewline "$(setbg $dark1)$(setfg $dark2)$PA$(setfg $neutral_yellow)$(FitWindow($branchName))"
-        $lastbg = $dark1
+        Write-Host -NoNewline -ForegroundColor DarkGreen "$(FitWindow($branchName)) "
     }
 
     if ($ShowTiming) {
-        Write-Host "$(setbg $dark1; setfg $bright_yellow) $lastcmdtime" -nonewline
-        $lastbg = $dark1
+        Write-Host -NoNewline -ForegroundColor DarkYellow "$lastcmdtime "
     }
     elseif ($lastcmdtime.totalseconds -gt 3) {
-        Write-Host "$(setbg $dark1; setfg $bright_yellow) $(format-timespan($lastcmdtime))" -nonewline
-        $lastbg = $dark1
+        Write-Host -NoNewline -ForegroundColor DarkYellow "$(format-timespan($lastcmdtime)) "
     }
 
-    Write-Host "$(setfg $lastbg)$PA"
+    Write-Host ""
 
     if ($isElevated) {
-        Write-Host -ForegroundColor White -backgroundcolor $waserror[0] -NoNewline "ADMIN"
+        Write-Host -ForegroundColor White -BackgroundColor $waserror -NoNewline "ADMIN"
     }
-    Write-Host -foregroundcolor $waserror[0] "$PA" -nonewline
-    # Write-Host -foregroundcolor $waserror[1] "$PA" -nonewline
-
-    $host.ui.rawui.windowtitle = "PS $(get-location)"
+    Write-Host -ForegroundColor $waserror "$PA" -NoNewline
 
     " "
 }
@@ -253,8 +214,9 @@ Set-Alias stree Invoke-SourceTree
 Set-Alias vsvar Set-VisualStudioEnvironment
 Set-Alias sudo Start-Elevated
 Set-Alias de devenv.com
+Set-Alias rider 'C:\Program Files\JetBrains\Rider 2017.1.1\bin\rider64.exe'
 Set-Alias bc 'bcompare'
-set-alias code 'C:\Program Files (x86)\Microsoft VS Code Insiders\bin\code-insiders.cmd'
+set-alias code 'C:\Program Files\Microsoft VS Code Insiders\bin\code-insiders.cmd'
 Set-Alias cdb "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe"
 Set-Alias windbg "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\windbg.exe"
 set-alias python3 "$env:LOCALAPPDATA\Programs\Python\Python35\python.exe"
@@ -263,7 +225,7 @@ function icdiff { icdiff.py "--cols=$($Host.UI.RawUI.WindowSize.Width)" $args }
 
 function e { Invoke-Expression "$env:EDITOR $args" }
 function spe { sudo procexp $args }
-function rg { rg.exe --color=ansi --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cshtml $args }
+function rg { rg.exe --color=auto --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cshtml --type-add tsx:*.tsx --type-add ts:include:tsx $args }
 function grep() { $input | rg.exe --hidden $args }
 
 Import-Module Jump.Location
@@ -273,7 +235,8 @@ function jj ([switch]$All) {
 
 Import-Module PSReadLine
 Set-PSReadlineOption -BellStyle Visual
-Set-PSReadlineOption -EditMode Emacs -ViModeIndicator Cursor
+Set-PSReadlineOption -ViModeIndicator Cursor
+Set-PSReadlineOption -EditMode Windows
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -HistoryNoDuplicates
 Set-PSReadlineOption -ContinuationPrompt ">> "
@@ -281,11 +244,13 @@ Set-PSReadlineOption -ContinuationPromptForegroundColor DarkYellow
 Set-PSReadlineOption Operator -ForegroundColor Cyan
 Set-PSReadlineOption Parameter -ForegroundColor DarkCyan
 Set-PSReadlineOption Type -ForegroundColor Blue
-Set-PSReadlineOption String -ForegroundColor Magenta
+Set-PSReadlineOption String -ForegroundColor DarkGreen
+Set-PSReadlineOption Keyword -ForegroundColor Yellow
+Set-PSReadlineOption Variable -ForegroundColor Magenta
 Set-PSReadlineOption -ShowToolTips
 Set-PSReadlineKeyHandler -Key Ctrl+p -Function HistorySearchBackward
 Set-PSReadlineKeyHandler -Key Ctrl+n -Function HistorySearchForward
-Set-PSReadlineKeyHandler -Key Ctrl+q -Function TabCompleteNext
+Set-PSReadlineKeyHandler -Key Ctrl+q -Function Complete
 Set-PSReadlineKeyHandler -Key Ctrl+Shift+q -Function TabCompletePrevious
 Set-PSReadlineKeyHandler -Key Alt+d -Function ShellKillWord
 Set-PSReadlineKeyHandler -Key Alt+Backspace -Function ShellBackwardKillWord
@@ -300,8 +265,24 @@ Set-PSReadlineOption -MaximumHistoryCount 200000
 Set-PSReadlineKeyHandler `
      -Chord 'Ctrl+s' `
      -ScriptBlock {
-         $choices = $(rg --files . | hs)
+        if (git rev-parse --is-inside-work-tree 2>$null) {
+            $choices = git ls-files
+        } else {
+            $choices = rg --files .
+        }
+        $choices = $choices | hs
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert($choices -join " ")
+    }
+
+Set-PSReadlineKeyHandler `
+     -Chord 'Ctrl+x' `
+     -ScriptBlock {
+        $lastCmd = (Get-History -Count 1).CommandLine
+        if ($lastCmd.StartsWith('rg')) {
+            $choices = invoke-expression "$lastCmd -l"
+            $choices = $choices | hs
+            [Microsoft.PowerShell.PSConsoleReadLine]::Insert($choices -join " ")
+        }
     }
 
 function Start-Elevated($Command="powershell.exe", $Args) {
@@ -375,7 +356,8 @@ function Format-TimeSpan([TimeSpan]$ts) {
 }
 
 function Set-VisualStudioEnvironment([string]$Version="*", [string]$Platform="") {
-  $vsDevCmd = "C:\Program Files (x86)\Microsoft Visual Studio\$Version\*\Common7\Tools\VsDevCmd.bat"
+  $installationPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+  $vsDevCmd = "$installationPath\Common7\Tools\VsDevCmd.bat"
   if (test-path $vsDevCmd) {
     $command = Resolve-Path $vsDevCmd
     $output = cmd /c "`"$command`" -arch=$Platform 2>&1 && set"
@@ -390,3 +372,10 @@ function Set-VisualStudioEnvironment([string]$Version="*", [string]$Platform="")
     }
   }
 }
+
+
+function Start-AwsWithVault([ValidateSet("playpen", "playpen-mgmt")]$profile="playpen")
+{
+    aws-vault exec "$profile" -- $args
+}
+Set-Alias awsv Start-AwsWithVault
