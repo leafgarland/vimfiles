@@ -14,7 +14,7 @@ let g:loaded_vimballPlugin = 1
 
 if has('vim_starting')
   if has('nvim')
-    set shada=!,'1000,s100,h
+    set shada=!,'1000,s100,h,n$HOME/mine.shada
   else
     set nocompatible
     set encoding=utf-8
@@ -52,25 +52,26 @@ Plug 'kana/vim-textobj-user'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
+Plug 'leafgarland/badwolf'
 Plug 'joshdick/onedark.vim'
 Plug 'w0ng/vim-hybrid'
-Plug 'sjl/badwolf'
+Plug 'owickstrom/vim-colors-paramount'
 Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
 Plug 'tpope/vim-commentary'
-Plug 'tpope/vim-surround'
 Plug 'tpope/vim-unimpaired'
 Plug 'tpope/vim-abolish'
 Plug 'tommcdo/vim-exchange'
 Plug 'wellle/targets.vim'
 Plug 'AndrewRadev/splitjoin.vim'
-Plug 'justinmk/vim-sneak'
 Plug 'tommcdo/vim-lion'
+Plug 'machakann/vim-sandwich'
 
 " Tools
 Plug 'tpope/vim-fugitive'
+Plug 'lambdalisue/gina.vim'
 Plug 'tpope/vim-rhubarb'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-scriptease'
@@ -81,7 +82,7 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
 Plug 'srstevenson/vim-picker'
-" Plug 'ludovicchabant/vim-gutentags'
+Plug 'autozimu/LanguageClient-neovim', {'do': ':UpdateRemotePlugins'}
 
 " Filetypes
 Plug 'hail2u/vim-css3-syntax', {'for': 'css'}
@@ -91,7 +92,7 @@ Plug 'tpope/vim-jdaddy', {'for': 'json'}
 Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
 Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
 Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': 'make'}
+Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': './install.cmd FSharp.Autocomplete'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
 Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
@@ -596,17 +597,19 @@ function! s:ft_qf()
   " syn match	qfJustFileName "[^|\\/]+" nextgroup=qfSeparator
 endfunction
 " }}}
+
 " rust: {{{
 function! s:ft_rust()
   setlocal keywordprg=:DevDocs\ rust
-  nnoremap gd <Plug>(rust-def)
-  " nnoremap gs <Plug>(rust-def-split)
-  " nnoremap gx <Plug>(rust-def-vertical)
-  nnoremap K <Plug>(rust-doc)
   if executable('rusty-tags')
     command! RustyTags silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . '&' <bar> redraw!
     setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
     " autocmd BufWrite *.rs RustyTags
+  endif
+  if s:has_plug('LanguageClient-neovim')
+    nnoremap <silent> K :call LanguageClient_textDocument_hover()<CR>
+    nnoremap <silent> gd :call LanguageClient_textDocument_definition()<CR>
+    nnoremap <silent> <F2> :call LanguageClient_textDocument_rename()<CR>
   endif
 endfunction
 " }}}
@@ -647,6 +650,7 @@ function! Browse(url)
 endfunction
 command! -nargs=1 Browse :call Browse(<q-args>)
 "}}}
+
 " CWindow {{{
 " Hack buffer names relative to cwd, see
 " https://groups.google.com/forum/#!topic/vim_use/Vq0z2DJH2So
@@ -811,6 +815,7 @@ function! UnScratch() abort
   set buftype<
   set bufhidden<
   set swapfile<
+
 endfunction
 
 command! -nargs=? Scratch :call MkScratch('enew', <q-args>)
@@ -846,10 +851,10 @@ function! BClose(force) abort
   endfor
   
   if bufexists(bnr) && getbufvar(bnr, '&buflisted') && bnr != bufnr('%')
-  if a:force
-    execute 'bdelete!' bnr
-  else
-    execute 'bdelete' bnr
+    if a:force
+      execute 'bdelete!' bnr
+    else
+      execute 'bdelete' bnr
     endif
   endif
 endfunction
@@ -1677,7 +1682,7 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
     nmap <silent> <buffer> h <Plug>(dirvish_up)
     nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
-    nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d<CR>
+    nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d _<CR>
     nnoremap <buffer> gR :Grep  %<left><left>
     nnoremap <buffer> gr :<cfile><C-b>Grep  <left>
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
@@ -1727,6 +1732,7 @@ function! s:OneCustomise()
   call s:SetHiColour('MatchParen', 'NONE', vbg, 'underline')
 
   highlight! Folded guibg=#20242c
+
   highlight! link TabLine StatusLine
   highlight! link TabLineFill StatusLine 
   highlight! link TabLineSel User1 
@@ -1770,6 +1776,17 @@ if s:has_plug('vim-gutentags')
   let g:gutentags_generate_on_missing = 0
   let g:gutentags_cache_dir = '~/.vim/tags_cache'
 endif
+" }}}
+
+" LSP {{{
+if s:has_plug('LanguageClient-neovim')
+  let g:LanguageClient_serverCommands = {
+      \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
+      \ }
+
+  let g:LanguageClient_autoStart = 1
+endif
+
 " }}}
 
 "}}}
