@@ -40,6 +40,7 @@ endif
 "}}}
 
 " Plugins: {{{
+
 call plug#begin($VIMBUNDLEPATH)
 
 " Base
@@ -53,13 +54,12 @@ Plug 'kana/vim-textobj-user'
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/badwolf'
-Plug 'joshdick/onedark.vim'
 Plug 'w0ng/vim-hybrid'
-Plug 'owickstrom/vim-colors-paramount'
-Plug 'Rykka/colorv.vim', {'on': 'ColorV'}
+Plug 'cocopon/iceberg.vim'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
+Plug 'Julian/vim-textobj-variable-segment'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-unimpaired'
 Plug 'tpope/vim-abolish'
@@ -81,7 +81,6 @@ Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
-Plug 'srstevenson/vim-picker'
 Plug 'autozimu/LanguageClient-neovim', {'do': ':UpdateRemotePlugins'}
 
 " Filetypes
@@ -119,6 +118,7 @@ Plug 'cespare/vim-toml', {'for': 'toml'}
 Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
 Plug 'OrangeT/vim-csharp', {'for': 'cs'}
 Plug 'idris-hackers/idris-vim'
+Plug 'hashivim/vim-terraform'
 
 if has('win32') && has('gui_running')
   Plug 'kkoenig/wimproved.vim'
@@ -240,48 +240,16 @@ autocmd vimrc QuickFixCmdPost [^l]* nested CWindow
 autocmd vimrc QuickFixCmdPost    l* nested LWindow
 
 if has('nvim')
-  autocmd vimrc TermOpen * setfiletype term|setlocal nonumber "|startinsert
+  autocmd vimrc TermOpen * setfiletype term
+        \ |setlocal nonumber
+        \ |autocmd vimrc BufEnter <buffer> startinsert
+        \ |startinsert
 endif
 "}}}
 
 " GUI Settings: {{{
 if exists('+termguicolors')
   set termguicolors
-  if has('nvim') && has('win32')
-    let g:terminal_color_0  = '#282828'
-    let g:terminal_color_1  = '#cc241d'
-    let g:terminal_color_2  = '#98971a'
-    let g:terminal_color_3  = '#d79921'
-    let g:terminal_color_4  = '#458588'
-    let g:terminal_color_5  = '#b16286'
-    let g:terminal_color_6  = '#689d6a'
-    let g:terminal_color_7  = '#a89984'
-    let g:terminal_color_8  = '#928374'
-    let g:terminal_color_9  = '#fb4934'
-    let g:terminal_color_10 = '#b8bb26'
-    let g:terminal_color_11 = '#fabd2f'
-    let g:terminal_color_12 = '#83a598'
-    let g:terminal_color_13 = '#d3869b'
-    let g:terminal_color_14 = '#83c07c'
-    let g:terminal_color_15 = '#ebdbb2'
-  elseif has('nvim')
-    let g:terminal_color_0  = '#282828'
-    let g:terminal_color_1  = '#cc241d'
-    let g:terminal_color_2  = '#98971a'
-    let g:terminal_color_3  = '#d79921'
-    let g:terminal_color_4  = '#458588'
-    let g:terminal_color_5  = '#b16286'
-    let g:terminal_color_6  = '#689d6a'
-    let g:terminal_color_7  = '#a89984'
-    let g:terminal_color_8  = '#928374'
-    let g:terminal_color_9  = '#fb4934'
-    let g:terminal_color_10 = '#b8bb26'
-    let g:terminal_color_11 = '#fabd2f'
-    let g:terminal_color_12 = '#83a598'
-    let g:terminal_color_13 = '#d3869b'
-    let g:terminal_color_14 = '#83c07c'
-    let g:terminal_color_15 = '#ebdbb2'
-  endif
 endif
 
 if exists('+guicursor')
@@ -537,7 +505,11 @@ autocmd vimrc FileType * call s:ft_load(expand('<amatch>'))
 
 " json: {{{
 function! s:ft_json()
-    setlocal equalprg=python\ -m\ json.tool
+    if executable('jq')
+      setlocal equalprg=jq\ .
+    else
+      setlocal equalprg=python\ -m\ json.tool
+    endif
     setlocal shiftwidth=2
     setlocal concealcursor=n
 endfunction
@@ -592,9 +564,18 @@ function! s:ft_qf()
   " syntax clear
   " syn match	qfDirName "^[^|]+[\\/]\ze[^|\\/]+" nextgroup=qfJustFileName conceal cchar=•
   " syntax match	qfDirName "^[^|]*[\\/][^\\/|]+" nextgroup=qfSeparator conceal cchar=•
-  syntax match	qfDirName "^[^|]\+[\\/][^|\\/]\+" nextgroup=qfSeparator
+  " syntax match	qfDirName "^[^|]\+[\\/][^|\\/]\+" nextgroup=qfSeparator
   " syntax match	qfSeparator "/|/" contained
   " syn match	qfJustFileName "[^|\\/]+" nextgroup=qfSeparator
+
+  syntax match qfNoLineCol "||" conceal cchar=|
+
+  syntax match qfFugitive "^fugitive:\/\/.\+\/\/" conceal cchar=| nextgroup=qfFugitiveHash
+  syntax match qfFugitiveHash "[a-f0-9]\+" contained
+  highlight! link qfFugitiveHash Directory
+
+  setlocal conceallevel=2
+  setlocal concealcursor+=n
 endfunction
 " }}}
 
@@ -910,9 +891,9 @@ endfunction
 
 highlight link BufferNumber Number
 highlight link BufferFlags Special
-highlight link BufferCurrentName GruvboxYellowSign
+highlight link BufferCurrentName Function
 highlight link BufferAlternateName Include
-highlight link BufferName Conceal
+highlight link BufferName Normal
 
 cmap <expr> <C-k> CustomCmdPrevious()
 cmap <expr> <C-j> CustomCmdNext()
@@ -1506,7 +1487,7 @@ function! Status(active)
   endif
 endfunction
 
-set showtabline=2
+set showtabline=0
 function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
@@ -1689,7 +1670,6 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
     nnoremap <buffer> vl :Glog -20 -- <cfile><CR>
-    call fugitive#detect(@%)
   endfunction
 endif
 " }}}
@@ -1763,6 +1743,31 @@ endfunction
 autocmd vimrc ColorScheme onedark :call <SID>OneCustomise()
 " }}}
 
+" colorscheme iceberg: {{{
+function! s:IcebergCustomise()
+  let slfg = s:get_colour('CursorLineNr', 'fg')
+  let slbg = s:get_colour('CursorLineNr', 'bg')
+  let sbg = s:get_colour('Special', 'bg')
+  let sfg = s:get_colour('Special', 'fg')
+  let s2fg = s:get_colour('Function', 'fg')
+  let cfg = s:get_colour('Comment', 'fg')
+  let wmbg = s:get_colour('WildMenu', 'bg')
+  let vbg = s:get_colour('Visual', 'bg')
+
+  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
+  call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
+  call s:SetHiColour('User2', sfg, slbg, 'bold')
+  call s:SetHiColour('User1', s2fg, slbg, 'bold')
+  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
+
+  highlight! link TabLine StatusLine
+  highlight! link TabLineFill StatusLine 
+  highlight! link TabLineSel User1 
+  highlight! link Conceal LineNr 
+endfunction
+autocmd vimrc ColorScheme iceberg :call <SID>IcebergCustomise()
+" }}}
+
 " Unicode: {{{
 if s:has_plug('unicode.vim')
   nnoremap ga :UnicodeName<CR>
@@ -1793,5 +1798,13 @@ endif
 
 if has('vim_starting')
   let g:goodwolf_gruv = 1
-  colorscheme goodwolf
+  
+  " We might want to adjust the colorscheme by looking up colours which means
+  " this has to happen late enough that we can look up colours of highlight
+  " groups, so we need an event that happens after the gui is ready.
+  " Unfortunately VimEnter or GUIEnter are not right, so we use FocusGained
+  " and then remove our event handler.
+  augroup vimrc_setcolor
+    autocmd FocusGained * nested colorscheme iceberg | autocmd! vimrc_setcolor
+  augroup END
 endif

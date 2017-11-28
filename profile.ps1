@@ -28,7 +28,20 @@ function Enable-VirtualTerminal() {
 
 function Start-PushpayPublic { &'C:\Program Files (x86)\IIS Express\iisexpress.exe' "/config:$(git home)\.vs\config\applicationhost.config" /site:Pushpay.Public }
 
-function Get-LockImages { ls "$env:userprofile\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\*" | ? length -gt 300000 | % { cp $_ "C:\Users\Leaf Garland\Pictures\lock\$($_.name).jpg" } }
+function Get-LockImages {
+    ls "$env:userprofile\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\*" |
+        ? length -gt 300000 |
+        % {
+            $img = new-object -ComObject Wia.ImageFile
+            $img.LoadFile($_.fullname)
+            if ($img.Width -lt $img.Height) {
+                $extraFolder = 'portrait\'
+            } else {
+                $extraFolder = ''
+            }
+            cp $_ "C:\Users\Leaf Garland\Pictures\wallpaper\lock\$extraFolder$($_.name).jpg"
+        }
+}
 
 if (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
     & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
@@ -162,7 +175,7 @@ function Prompt {
     $lastcmd = get-history -count 1
     $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
 
-    Write-Host -ForegroundColor Yellow -nonewline "$(get-location) " 
+    Write-Host -ForegroundColor DarkCyan -nonewline "$(get-location) " 
     $branchName = if (git rev-parse --is-inside-work-tree 2>$null) { git rev-parse --abbrev-ref HEAD }
     if ($branchName) {
         Write-Host -NoNewline -ForegroundColor DarkGreen "$(FitWindow($branchName)) "
@@ -309,6 +322,10 @@ function Get-Path {
 
 function Invoke-Nvr([switch]$Tab, [switch]$Wait)
 {
+    if ($env:NVIM_LISTEN_ADDRESS) {
+        nvr.py -l $args
+        return
+    }
     rm env:VIM -ErrorAction SilentlyContinue
     rm env:VIMRUNTIME -ErrorAction SilentlyContinue
     $remote = if ($args) { '--remote-silent' } else { '' }
@@ -379,3 +396,4 @@ function Start-AwsWithVault([ValidateSet("playpen", "playpen-mgmt")]$profile="pl
     aws-vault exec "$profile" -- $args
 }
 Set-Alias awsv Start-AwsWithVault
+function Start-AwsLocalMetaData { start powershell {cd C:\Dev\git\awslocalmetadata\source\metadata-server\; awsv playpen -- dotnet run} }
