@@ -1,32 +1,73 @@
-
+[user]
+	name = Leaf Garland
+	email = leafgarland@users.noreply.github.com
+	signingKey = D1DBD1DD
+[color.diff] 
+    meta = bold white
+    func = bold yellow
+    new = bold green
+[merge]
+	tool = bc3
+	diffstat = false
+[diff]
+	guitool = bc3
+	tool = bc
 [core]
 	pager = less -x1,5
+	safecrlf = warn
+	# editor = \"C:/Dev/tools/GitExtensions/GitExtensions.exe\" fileeditor
+[difftool]
+	prompt = false
+[difftool "kdiff3"]
+	path = C:/Dev/tools/KDiff3/kdiff3.exe
+[difftool "vscode"]
+	cmd = code-insiders --wait --diff $LOCAL $REMOTE
+[difftool "vs"]
+	cmd = 'C:/Program Files (x86)/Microsoft Visual Studio 14.0/Common7/IDE/vsDiffMerge.exe' $LOCAL $REMOTE Source Target
+[difftool "nvim"]
+    cmd = nvim.exe -d $BASE $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
+[mergetool "kdiff3"]
+	path = C:/Dev/tools/KDiff3/kdiff3.exe
+[gpg]
+	program = C:/Dev/tools/GPG/gpg2.exe
+[commit]
+	gpgSign = false
+[tag]
+	gpgsign = false
 [pretty]
     one=%C(auto)%h %s %Cblue%an %Cgreen%ar
-    onebody=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,26)%s%n%w(100,26,26)%-b
+    onebody=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s%n%w(100,2,2)%-b
+    onebodydate=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s %w(0)%C(green)%cr%n%w(100,2,2)%-b
+    pulls=%Cblue%<(15,trunc)%an%Creset%w(100,0,15)%-b %w(0)%C(green)%cr
 [alias]
 	amend = commit --amend --no-edit
 	fixup = commit --fixup
 	rewrite = !git rebase -i --autosquash $(git merge-base master HEAD)
+    undorebase = reset --mixed ORIG_HEAD
 	uncommit = reset --mixed HEAD~
 	dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	branches = branch -l --list
+    recent = for-each-ref --count=10 --sort=-committerdate refs/heads/ --format="%(refname:short)"
+	nevermind = !git reset --hard HEAD && git clean -d -f
 	discard = checkout --
+	untrack = rm -r --cached
+    unstage = reset --
 	home = rev-parse --show-toplevel
 	last = log -1 --stat --decorate
 	log1 = log --pretty=one
 	logmore = log --name-status --decorate
 	mergetrail = log --ancestry-path --merges
-	nevermind = !git reset --hard HEAD && git clean -d -f
 	precommit = diff --cached --diff-algorithm=minimal -w
 	remotes = remote -v
 	stashes = stash list
-	tags = tag
-	untrack = rm -r --cached
 	what = show -w
+    ctmp = commit -nm TMP
+    sho = show --name-status --pretty=onebodydate
 	tidy = !git remote prune origin && git branch --merged master | grep -v master | xargs git branch -d
+    stage-non-whitespace = "!git diff -U0 -w --no-color | git apply --cached --ignore-whitespace --unidiff-zero -"
+    oldremote = "!for branch in `git branch -r --merged | grep -v HEAD`; do echo -e `git show --format='%Cgreen%ci %Creset%cr %Cblue%<(15,trunc)%an%Creset-' $branch | head -n 1` $branch; done | sort -r"
 	pulledwhat = "! git diff --name-only master@{1}..master | sort | uniq"
-    pulls = log master@{1}..master --pretty=format:'%w(100,0,9)%b%w(0) %C(blue)%an' --merges
+    pulls = log master@{1}..master --pretty=pulls --merges
 	pulld = log --no-merges --topo-order --pretty=onebody master@{1}..master
 	ffmaster = fetch origin master:master
 	pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
@@ -41,10 +82,16 @@
 	s = status -sb
 	st = status
 	rc = rebase --continue
-    mtool = mergetool
-    dtool = difftool
+    mt = mergetool
+    dt = difftool
+	ff = merge --ff-only @{u}
 [push]
 	default = current
 [gui]
 	fontdiff = -family \"Source Code Pro\" -size 10 -weight normal -slant roman -underline 0 -overstrike 0
 	tabsize = 4
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
