@@ -1629,6 +1629,8 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
 " Dirvish: {{{
 if s:has_plug('vim-dirvish')
+  let g:dirvish_mode="sort ir /^.*[^\\\/]$/"
+
   nnoremap <silent> <leader>fj :call <SID>dirvish_open()<CR>
   nnoremap <leader>pe :Dirvish<CR>
 
@@ -1654,11 +1656,8 @@ if s:has_plug('vim-dirvish')
   function! s:ft_dirvish()
     syntax match DirvishPathExe /\v[^\\]+\.(ps1|cmd|exe|bat)$/
     syntax match DirvishPathHidden /\v\\@<=\.[^\\]+$/
-    highlight link DirvishPathExe Type
+    highlight link DirvishPathExe Function
     highlight link DirvishPathHidden Comment
-
-    " sort dirs top
-    KeepCursor sort ir /^.*[^\\\/]$/
 
     nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
     nmap <silent> <buffer> h <Plug>(dirvish_up)
