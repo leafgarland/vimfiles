@@ -40,12 +40,13 @@
     onebodydate=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s %w(0)%C(green)%cr%n%w(100,2,2)%-b
     pulls=%Cblue%<(15,trunc)%an%Creset%w(100,0,15)%-b %w(0)%C(green)%cr
 [alias]
+    ismerged = "!if [ $(git rev-parse HEAD) == $(git merge-base master HEAD) ];then echo 'Merged'; else echo 'Not merged'; fi"
 	amend = commit --amend --no-edit
 	fixup = commit --fixup
 	rewrite = !git rebase -i --autosquash $(git merge-base master HEAD)
     undorebase = reset --mixed ORIG_HEAD
 	uncommit = reset --mixed HEAD~
-	dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && GIT_SEQUENCE_EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	branches = branch -l --list
     recent = for-each-ref --count=10 --sort=-committerdate refs/heads/ --format="%(refname:short)"
 	nevermind = !git reset --hard HEAD && git clean -d -f

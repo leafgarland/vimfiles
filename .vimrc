@@ -94,8 +94,8 @@ Plug 'PProvost/vim-ps1', {'for': 'ps1'}
 Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': './install.cmd FSharp.Autocomplete'}
 Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 Plug 'guns/vim-clojure-static', {'for': 'clojure'}
-Plug 'guns/vim-sexp', {'for': ['clojure', 'scheme']}
-Plug 'tpope/vim-sexp-mappings-for-regular-people', {'for': ['clojure', 'scheme']}
+Plug 'guns/vim-sexp' ", {'for': ['clojure', 'scheme']}
+Plug 'tpope/vim-sexp-mappings-for-regular-people' ", {'for': ['clojure', 'scheme']}
 Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
 Plug 'vim-erlang/vim-erlang-runtime', {'for': 'erlang'}
 Plug 'vim-erlang/vim-erlang-compiler', {'for': 'erlang'}
@@ -318,12 +318,12 @@ if has('nvim')
   tnoremap <C-Space> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
   if empty($TMUX)
-    tnoremap <C-a>n <C-\><C-n>gt
-    nnoremap <C-a>n gt
-    tnoremap <C-a>p <C-\><C-n>gT
-    nnoremap <C-a>p gT
-    tnoremap <C-a>c <C-\><C-n>:execute 'tabnew ' . g:tshell<CR>
-    nnoremap <C-a>c :execute 'tabnew ' . g:tshell<CR>
+    tnoremap <C-a>n <C-\><C-n>:bnext<CR>
+    nnoremap <C-a>n :bnext<CR>
+    tnoremap <C-a>p <C-\><C-n>:bprevious<CR>
+    nnoremap <C-a>p :bprevious<CR>
+    tnoremap <C-a>c <C-\><C-n>:execute 'edit ' . g:tshell<CR>
+    nnoremap <C-a>c :execute 'edit ' . g:tshell<CR>
     tnoremap <C-a>s <C-\><C-n>:execute 'split ' . g:tshell<CR>
     nnoremap <C-a>s :execute 'split ' . g:tshell<CR>
     tnoremap <C-a>v <C-\><C-n>:execute 'vsplit ' . g:tshell<CR>
@@ -599,6 +599,8 @@ endfunction
 function! s:ft_pandoc()
   setlocal foldcolumn=0 
   setlocal concealcursor+=n
+  setlocal textwidth=79
+  setlocal shiftwidth=2
 endfunction
 " }}}
 
@@ -608,6 +610,26 @@ function! s:ft_lua()
   command! -buffer -range LuaExecRange execute 'lua' 'assert(loadstring("'.escape(join(getline(<line1>,<line2>), "\\n"), '"').'"))()'
   nnoremap <buffer> <leader>xe :LuaExecRange<CR>
   xnoremap <buffer> <leader>xe :LuaExecRange<CR>
+  setlocal keywordprg=:help
+endfunction
+"}}}
+
+" lisp: {{{
+function! SendTerm(t)
+  let tid = get(b:, 'sendtermid', 0)
+  if !tid
+    botright split new
+    let tid = termopen('lua ./fennel')
+    wincmd 
+    let b:sendtermid = tid
+  endif
+  call chansend(b:sendtermid, a:t)
+endfunction
+
+function! s:ft_lisp()
+  command! -buffer -range LispExecRange call SendTerm(substitute(join(getline(<line1>, <line2>), "\r") . "\r", "\r\s*\\", ' ', 'g'))
+  nnoremap <buffer> <leader>xe :LispExecRange<CR>
+  xnoremap <buffer> <leader>xe :LispExecRange<CR>
 endfunction
 "}}}
 
@@ -1088,7 +1110,7 @@ xnoremap # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R>=@/<CR><CR>
 "}}}
 
 " Zoom font size {{{
-if exists('+guifont')
+if exists('+guifont') && !empty(&gfn)
   let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
   function! s:ChangeZoom(zoomInc)
     let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])

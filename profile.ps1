@@ -4,6 +4,8 @@ $env:EDITOR = 'edit.cmd'
 $env:COLORTERM='truecolor'
 $env:RUST_SRC_PATH="$(rustc --print sysroot)/lib/rustlib/src/rust/src/"
 
+$env:GOPATH="C:/dev/tools/gopath"
+
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -43,7 +45,10 @@ function Get-LockImages {
         }
 }
 
-if (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
+if (Get-Command pageant -CommandType Application -ErrorAction SilentlyContinue) {
+    pageant "$($env:HOME)\.ssh\github_rsa_private.ppk"
+    $env:GIT_SSH = (Get-Command plink -CommandType Application)[0].Source
+} elseif (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
     & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
     $env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
 }
@@ -64,7 +69,6 @@ Remove-Item -Force -ErrorAction Ignore Alias:gl
 function TabExpansion($line, $lastword) {
   switch ($line) {
       "g" { "git "; break }
-      "go" { "git checkout "; break }
       "gg" { "git gui "; break }
       "gs" { "git status -sb "; break }
       "gl" { "git log "; break }
@@ -81,7 +85,6 @@ function gl { git log $args }
 function gll { git logmore $args }
 function gl1 { git log1 $args }
 function glm { git lm $args }
-function go { git checkout $args }
 function gg { git gui $args }
 function grc { git rebase --continue $args }
 function gk { gitk $args }
@@ -105,29 +108,41 @@ function Get-GitCmds {
         }
 }
 
-Register-ArgumentCompleter -Native -CommandName 'git' -ScriptBlock { param($lastword, $line)
-  if (-not $global:AllGitCmds) { $global:AllGitCmds = Get-GitCmds }
-  if ($line -match "^git (-\S+ )*\S+$") {
-    $AllGitCmds |
-    ? { $_ -like "$lastword*" } |
-    % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
+Register-ArgumentCompleter -Native -CommandName 'git' -ScriptBlock { param($lastword, $line) 
+  if (-not $global:AllGitCmds) {
+    $global:AllGitCmds = Get-GitCmds | % { @{ Value=$_; Tip=$_ } }
+  }
+
+  $global:LastGitAllMatches = $null
+  if ($line -match "git( -\S+)* (dofixup|show?)( -\S+)*") {
+    $allMatches = git log master..HEAD --pretty=format:"%h|%s" | % { $x=$_.split('|'); @{ Value=$x[0]; Tip=$x[1] } }
+  } elseif ($line -match "git( -\S+)* (add|discard)( -\S+)*") {
+    $allMatches = git diff --name-status | % { $x=$_.split([char]0x09); @{ Value=$x[1]; Tip=$x[0] } }
+  } elseif ($line -match "git( -\S+)* unstage( -\S+)*") {
+    $allMatches = git diff --name-status --cached | % { $x=$_.split([char]0x09); @{ Value=$x[1]; Tip=$x[0] } }
+  } elseif ($line -match "^git (-\S+ )*(\S+)?$") {
+    $allMatches = $AllGitCmds
   } elseif ($line -match "(ori|orig|origi|origin)(/\S+)?$") {
-    git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/ |
-    ? { $_ -like "$lastword*" } |
-    % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
+    $allMatches = git for-each-ref --sort=-committerdate --format='%(refname:short)|%(committerdate:relative)' refs/remotes/origin/ | % { $x=$_.split('|'); @{ Value=$x[0]; Tip=$x[1] } }
   } else {
-    git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/ |
-    ? { $_ -like "$lastword*" } |
-    % { new-object System.Management.Automation.CompletionResult $_, $_, 'Text', $_ }
+    $allMatches = git for-each-ref --sort=-committerdate --format='%(refname:short)|%(committerdate:relative)' refs/heads/ | % { $x=$_.split('|'); @{ Value=$x[0]; Tip=$x[1] } } 
+  }
+
+  if ([string]::isnullorempty($lastword)) {
+    $allMatches |
+    % { new-object System.Management.Automation.CompletionResult $_.Value, $_.Value, 'Text', $_.Tip }
+  } else {
+    $allMatches | ? { $_.Value -like "*$lastword*" } |
+    % { new-object System.Management.Automation.CompletionResult $_.Value, $_.Value, 'Text', $_.Tip }
   }
 }
 
-function ppgulp {
+function ppyarn {
     $febuild = join-path (git home) "febuild"
     if (test-path $febuild) {
         try {
             pushd $febuild
-            ./node_modules/.bin/gulp $args
+            yarn $args
         }
         finally {
             popd
@@ -137,7 +152,7 @@ function ppgulp {
     }
 }
 
-function wsl { &"${env:LOCALAPPDATA}\wsltty\bin\mintty.exe" --wsl -o Locale=C -o Charset=UTF-8 -i "${env:LOCALAPPDATA}\lxss\bash.ico" /bin/wslbridge -t /usr/bin/fish }
+function wsl { &"${env:LOCALAPPDATA}\wsltty\bin\mintty.exe" --wsl -o Locale=C -o Charset=UTF-8 /bin/wslbridge -t /usr/bin/fish }
 
 # $env:_NT_SYMBOL_PATH="SRV*c:\dev\tmp\symbols*http://msdl.microsoft.com/download/symbols"
 # $env:_NT_DEBUGGER_EXTENSION_PATH="$env:TOOLS\debuggers\sosex_64;$env:TOOLS\Debuggers\SOS-4.0"
@@ -217,6 +232,8 @@ Add-Path "~\.cargo\bin\"
 Add-Path "$env:TOOLS\vim\vim80"
 Add-Path "$env:TOOLS\vim\Neovim\bin"
 Add-Path "$env:TOOLS\BeyondCompare"
+Add-Path "C:\dev\tools\jdk\bin"
+Add-Path "C:\dev\tools\gopath\bin"
 
 Set-Alias ss select-string
 Set-Alias gx gitex
@@ -241,10 +258,8 @@ function spe { sudo procexp $args }
 function rg { rg.exe --color=auto --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cshtml --type-add tsx:*.tsx --type-add ts:include:tsx $args }
 function grep() { $input | rg.exe --hidden $args }
 
-Import-Module Jump.Location
-function jj ([switch]$All) {
-  [System.IO.DirectoryInfo](jumpstat -First:(-not $All) $args).Path
-}
+Import-Module ZLocation
+Set-Alias j Set-ZLocation
 
 Import-Module PSReadLine
 Set-PSReadlineOption -BellStyle Visual
@@ -372,8 +387,10 @@ function Format-TimeSpan([TimeSpan]$ts) {
   $ts.ToString($format)
 }
 
-function Set-VisualStudioEnvironment([string]$Version="*", [string]$Platform="") {
-  $installationPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+function Set-VisualStudioEnvironment([string]$Version="*", [string]$Platform="", [switch]$Prerelease=$false) {
+  $vswhereArgs = "-latest","-property","installationPath"
+  if ($prerelease) { $vswhereArgs = ,"-prerelease" + $vswhereArgs }
+  $installationPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" $vswhereArgs
   $vsDevCmd = "$installationPath\Common7\Tools\VsDevCmd.bat"
   if (test-path $vsDevCmd) {
     $command = Resolve-Path $vsDevCmd
