@@ -1,88 +1,260 @@
 // Place your settings in this file to overwrite the default settings
 {
-    // typescript
-    "tslint.autoFixOnSave": true,
-    // vim
-    "vim.visualstar": true,
-    "vim.enableNeovim": true,
-    "vim.neovimPath": "nvim",
-    "vim.leader": "<space>",
-    "vim.handleKeys": {
-        "<C-E>": false,
-        "<C-F>": false,
-        "<C-G>": false,
-        "<C-D>": false,
-        "<C-X>": false,
-        "<C-b>": false
-    },
-    "vim.otherModesKeyBindingsNonRecursive": [
-        {
-            "before": ["<leader>","p"], "after": ["\"","*","p"]
-        },
-        {
-            "before": ["<leader>","y"], "after": ["\"","*","y"]
-        },
-        {
-            "before": ["L"], "after": ["$"]
-        },
-        {
-            "before": ["[", "<space>"], "after": ["O", "<esc>"]
-        },
-        {
-            "before": ["]", "<space>"], "after": ["o", "<esc>"]
-        },
-        {
-            "before": ["H"], "after": ["^"]
-        },
-        {
-            "before": ["<leader>", "f", "s"],
-            "after": [],
-            "commands": [
-                {
-                    "command": "workbench.action.files.save",
-                    "args": []
-                }
-            ]
-        },
-        {
-            "before": ["<leader>", "b", "d"],
-            "after": [],
-            "commands": [
-                {
-                    "command": "workbench.action.closeActiveEditor",
-                    "args": []
-                }
-            ]
-        },
-        {
-            //"before": ["c", "o", "b"],
-            "before": ["<leader>", "o", "b"],
-            "after": [],
-            "commands": [
-                {
-                    "command": "workbench.action.toggleSidebarVisibility",
-                    "args": []
-                }
-            ]
-        }
-    ],
-    "vim.disableAnnoyingNeovimMessage": true,
+	"git.path": "c:/Dev/tools/Git/cmd/git.exe",
+	// typescript
+	"tslint.autoFixOnSave": false,
+	// vim
+	"vim.visualstar": true,
+	"vim.enableNeovim": true,
+	"vim.neovimPath": "nvim",
+	"vim.leader": "<space>",
+	"vim.handleKeys": {
+		"<C-E>": false,
+		"<C-F>": false,
+		"<C-b>": false,
+		"<C-G>": false,
+		"<C-D>": false,
+		"<C-X>": false,
+		"<C-j>": false,
+		"<C-k>": false
+	},
+	"vim.otherModesKeyBindingsNonRecursive": [
+		{
+			"before": ["D"], "after": ["y", "P"]
+		},
+		{
+			"before": ["<leader>","p"], "after": ["\"","*","p"]
+		},
+		{
+			"before": ["<leader>","y"], "after": ["\"","*","y"]
+		},
+		{
+			"before": ["g","D"],
+			"after": [],
+			"commands": [
+				{
+					"command": "editor.action.goToTypeDefinition",
+					"args": []
+				}
+			]
+		},
+		{
+			"before": ["g","r"],
+			"after": [],
+			"commands": [
+				{
+					"command": "editor.action.referenceSearch.trigger",
+					"args": []
+				}
+			]
+		},
+		{
+			"before": ["<leader>", "g", "d"],
+			"after": [],
+			"commands": [
+				{
+					"command": "editor.action.previewDeclaration",
+					"args": []
+				}
+			]
+		},
+		{
+			"before": ["<leader>", "g", "D"],
+			"after": [],
+			"commands": [
+				{
+					"command": "editor.action.peekTypeDefinition",
+					"args": []
+				}
+			]
+		},
+		{
+			"before": ["<leader>","j"], "after": ["i", "<cr>", "<esc>"]
+		},
+		{
+			"before": ["L"], "after": ["$"]
+		},
+		{
+			"before": ["[", "<space>"], "after": ["O", "<esc>"]
+		},
+		{
+			"before": ["]", "<space>"], "after": ["o", "<esc>"]
+		},
+		{
+			"before": ["H"], "after": ["^"]
+		},
+		{
+			"before": ["<leader>", "f", "s"],
+			"after": [],
+			"commands": [
+				{
+					"command": "workbench.action.files.save",
+					"args": []
+				}
+			]
+		},
+		{
+			"before": ["<leader>", "b", "d"],
+			"after": [],
+			"commands": [
+				{
+					"command": "workbench.action.closeActiveEditor",
+					"args": []
+				}
+			]
+		},
+		{
+			//"before": ["c", "o", "b"],
+			"before": ["<leader>", "o", "b"],
+			"after": [],
+			"commands": [
+				{
+					"command": "workbench.action.toggleSidebarVisibility",
+					"args": []
+				}
+			]
+		}
+	],
+	"vim.disableAnnoyingNeovimMessage": true,
 
-    "editor.minimap.enabled": false,
-    "editor.fontFamily": "'Source Code Pro', Consolas, 'Courier New', monospace",
-    "editor.fontSize": 16,
-    "editor.fontLigatures": true,
-    "workbench.sideBar.location": "left",
-    "window.menuBarVisibility": "toggle",
-    "editor.renderWhitespace": "none",
-    "window.zoomLevel": 0,
-    "workbench.iconTheme": null,
+	"editor.minimap.enabled": false,
+	"editor.fontFamily": "'Source Code Pro', Consolas, 'Courier New', monospace",
+	"editor.fontSize": 16,
+	"editor.fontLigatures": true,
+	"editor.codeLens": false,
+	"workbench.sideBar.location": "right",
+	"window.menuBarVisibility": "toggle",
+	"editor.renderWhitespace": "none",
+	"window.zoomLevel": 0,
+	"workbench.iconTheme": null,
 
-    "debug.allowBreakpointsEverywhere": true,
+	"debug.allowBreakpointsEverywhere": true,
 
-    "FSharp.logLanguageServiceRequestsOutputWindowLevel": "DEBUG",
-    "FSharp.logLanguageServiceRequests": "both",
+	"FSharp.logLanguageServiceRequestsOutputWindowLevel": "DEBUG",
+	"FSharp.logLanguageServiceRequests": "both",
 
-    "workbench.activityBar.visible": false,
-    "workbench.colorTheme": "Visual Gruvbox (Medium Dark)"
+	"workbench.activityBar.visible": false,
+	"rust.rustup": {
+		"toolchain": "stable-x86_64-pc-windows-msvc",
+		"nightlyToolchain": "nightly-x86_64-pc-windows-msvc"
+	},
+	"typescript.check.tscVersion": false,
+	"workspace": {
+		"file:///c:/Dev/git/pushpay/Source/Pushpay.Public/JavaScript/LoggedInWeb": {
+			"folders": [
+				"file:///c:/Dev/git/pushpay/Source/Pushpay.Public/Content/LoggedInWeb"
+			]
+		}
+	},
+
+	"workbench.colorCustomizations": {
+		"editorCursor.foreground": "#0a9dff",
+		"editorCursor.background": "#0d1011",
+		"selection.background": "#0a9dff",
+		"terminal.ansiBrightWhite": "#ebdbb2",
+		"terminal.ansiWhite": "#a89984",
+		"terminal.ansiBlack": "#282828",
+		"terminal.ansiBrightBlack": "#928374",
+		"terminal.ansiRed": "#cc241d",
+		"terminal.ansiBrightRed": "#fb4934",
+		"terminal.ansiGreen": "#96bb3b",
+		"terminal.ansiBrightGreen": "#d8ea4d",
+		"terminal.ansiBlue": "#458588",
+		"terminal.ansiBrightBlue": "#83a598",
+		"terminal.ansiMagenta": "#b16286",
+		"terminal.ansiBrightMagenta": "#d3869b",
+		"terminal.ansiCyan": "#689d6a",
+		"terminal.ansiBrightCyan": "#8ec07c",
+		"terminal.ansiYellow": "#e88535",
+		"terminal.ansiBrightYellow": "#eab854",
+		"editorActiveLineNumber.foreground": "#bbbbbb"
+	},
+	"terminal.integrated.fontFamily": "'Source Code Pro', Consolas, 'Courier New', monospace",
+	"terminal.integrated.fontSize": 16,
+	"terminal.integrated.commandsToSkipShell": [
+		"editor.action.toggleTabFocusMode",
+		"workbench.action.debug.continue",
+		"workbench.action.debug.pause",
+		"workbench.action.debug.restart",
+		"workbench.action.debug.run",
+		"workbench.action.debug.start",
+		"workbench.action.debug.stop",
+		"workbench.action.focusActiveEditorGroup",
+		"workbench.action.focusFirstEditorGroup",
+		"workbench.action.focusSecondEditorGroup",
+		"workbench.action.focusThirdEditorGroup",
+		"workbench.action.navigateDown",
+		"workbench.action.navigateLeft",
+		"workbench.action.navigateRight",
+		"workbench.action.navigateUp",
+		"workbench.action.openNextRecentlyUsedEditorInGroup",
+		"workbench.action.openPreviousRecentlyUsedEditorInGroup",
+		// "workbench.action.quickOpen",
+		"workbench.action.showCommands",
+		"workbench.action.terminal.clear",
+		"workbench.action.terminal.copySelection",
+		"workbench.action.terminal.deleteWordLeft",
+		"workbench.action.terminal.deleteWordRight",
+		"workbench.action.terminal.focus",
+		"workbench.action.terminal.focusAtIndex1",
+		"workbench.action.terminal.focusAtIndex2",
+		"workbench.action.terminal.focusAtIndex3",
+		"workbench.action.terminal.focusAtIndex4",
+		"workbench.action.terminal.focusAtIndex5",
+		"workbench.action.terminal.focusAtIndex6",
+		"workbench.action.terminal.focusAtIndex7",
+		"workbench.action.terminal.focusAtIndex8",
+		"workbench.action.terminal.focusAtIndex9",
+		"workbench.action.terminal.focusFindWidget",
+		"workbench.action.terminal.focusNext",
+		"workbench.action.terminal.focusPrevious",
+		"workbench.action.terminal.hideFindWidget",
+		"workbench.action.terminal.kill",
+		"workbench.action.terminal.new",
+		"workbench.action.terminal.paste",
+		"workbench.action.terminal.runActiveFile",
+		"workbench.action.terminal.runSelectedText",
+		"workbench.action.terminal.scrollDown",
+		"workbench.action.terminal.scrollDownPage",
+		"workbench.action.terminal.scrollToBottom",
+		"workbench.action.terminal.scrollToTop",
+		"workbench.action.terminal.scrollUp",
+		"workbench.action.terminal.scrollUpPage",
+		"workbench.action.terminal.selectAll",
+		"workbench.action.terminal.toggleTerminal"
+	],
+	"terminal.integrated.cursorBlinking": true,
+	"editor.multiCursorModifier": "ctrlCmd",
+
+	// "rust.workspace_mode": false,
+	"rust.build_lib": false,
+	// "rust.build_lib": false,
+	// "rust-client.logToFile": true,
+	"rust-client.revealOutputChannelOn": "info",
+	"rust-client.showStdErr": true,
+	"workbench.startupEditor": "newUntitledFile",
+	"workbench.panel.location": "bottom",
+	"msbuildProjectTools": {
+		"logging": {
+			"level": "Information",
+			"seq": {},
+			"file": "",
+			"trace": false
+		},
+		"language": {
+			"disableFeature": {},
+			"useClassicProvider": false,
+			"disable": {
+				"hover": false
+			}
+		},
+		"nuget": {
+			"newestVersionsFirst": true,
+			"includePreRelease": true,
+			"disablePrefetch": false
+		},
+		"schemaVersion": 1
+	},
+	"workbench.editor.showTabs": true,
+	"workbench.colorTheme": "Nord"
 }
