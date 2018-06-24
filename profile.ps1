@@ -1,5 +1,6 @@
 ﻿$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
-$env:EDITOR = 'edit.cmd'
+$env:EDITOR='c:/dev/tools/vim/vim80/vim.exe'
+$env:RIPGREP_CONFIG_PATH="$($env:HOME)/.ripgrep"
 # for latest nvim tui which wont do colours without a hint
 $env:COLORTERM='truecolor'
 $env:RUST_SRC_PATH="$(rustc --print sysroot)/lib/rustlib/src/rust/src/"
@@ -8,6 +9,8 @@ $env:GOPATH="C:/dev/tools/gopath"
 
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 $OutputEncoding = [System.Text.Encoding]::UTF8
+
+function edit { & $env:EDITOR $args }
 
 Add-Type -MemberDefinition @"
 [DllImport("kernel32.dll", SetLastError=true)]
@@ -137,6 +140,14 @@ Register-ArgumentCompleter -Native -CommandName 'git' -ScriptBlock { param($last
   }
 }
 
+# PowerShell parameter completion shim for the dotnet CLI 
+Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock {
+  param($commandName, $wordToComplete, $cursorPosition)
+    dotnet complete --position $cursorPosition "$wordToComplete" | ForEach-Object {
+      [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+    }
+}
+
 function ppyarn {
     $febuild = join-path (git home) "febuild"
     if (test-path $febuild) {
@@ -151,8 +162,6 @@ function ppyarn {
         write-warning "not in repo"
     }
 }
-
-function wsl { &"${env:LOCALAPPDATA}\wsltty\bin\mintty.exe" --wsl -o Locale=C -o Charset=UTF-8 /bin/wslbridge -t /usr/bin/fish }
 
 # $env:_NT_SYMBOL_PATH="SRV*c:\dev\tmp\symbols*http://msdl.microsoft.com/download/symbols"
 # $env:_NT_DEBUGGER_EXTENSION_PATH="$env:TOOLS\debuggers\sosex_64;$env:TOOLS\Debuggers\SOS-4.0"
@@ -175,7 +184,8 @@ $host.PrivateData.ErrorBackgroundColor = 'Black'
 $host.PrivateData.WarningForegroundColor = 'DarkYellow'
 $host.PrivateData.WarningBackgroundColor = 'Black'
 function Reset-Colours { $host.ui.rawui.foregroundcolor = 7 }
-function Show-Colors { 0..15 | % { Write-Host -NoNewline "["; Write-Host -NoNewLine -BackgroundColor $_ "   "; Write-Host -NoNewLine "] "; write-host ([consolecolor]$_) } }
+function Show-Colours { 0..15 | % { Write-Host -NoNewline "["; Write-Host -NoNewLine -BackgroundColor $_ "   "; Write-Host -NoNewLine "] "; write-host ([consolecolor]$_) } }
+function Show-Colours24 { "$($ESC=[char]27; $w=$host.ui.rawui.windowsize.width-1; [string]::join('', (0..$w | % { $r=[int](255-($_*255/$w)); $g=[int]($_*510/$w); $b=[int]($_*255/$w); if ($g -gt 255) { $g=510-$g }; "$ESC[48;2;$r;$g;$($b)m$ESC[38;2;$(255-$r);$(255-$g);$(255-$b)m$('/\'[$_%2])$ESC[0m" })))" }
 
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
@@ -251,11 +261,11 @@ Set-Alias cdb "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe"
 Set-Alias windbg "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\windbg.exe"
 set-alias python3 "$env:LOCALAPPDATA\Programs\Python\Python35\python.exe"
 Set-Alias gitex "$env:TOOLS\GitExtensions\gitex.cmd"
+Set-Alias wsl "C:\Dev\tools\wsl-terminal\open-wsl.exe"
 function icdiff { icdiff.py "--cols=$($Host.UI.RawUI.WindowSize.Width)" $args }
 
 function e { Invoke-Expression "$env:EDITOR $args" }
 function spe { sudo procexp $args }
-function rg { rg.exe --color=auto --type-add xaml:*.xaml --type-add proj:*.*proj --type-add cshtml:*.cshtml --type-add cs:!*.generated.cs --type-add cs:include:cshtml --type-add tsx:*.tsx --type-add ts:include:tsx $args }
 function grep() { $input | rg.exe --hidden $args }
 
 Import-Module ZLocation
@@ -388,18 +398,9 @@ function Format-TimeSpan([TimeSpan]$ts) {
 }
 
 function Set-VisualStudioEnvironment([string]$Version="*", [string]$Platform="", [switch]$Prerelease=$false) {
-  $vswhereArgs = "-latest","-property","installationPath"
-  if ($prerelease) { $vswhereArgs = ,"-prerelease" + $vswhereArgs }
-  $installationPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" $vswhereArgs
-  $vsDevCmd = "$installationPath\Common7\Tools\VsDevCmd.bat"
-  if (test-path $vsDevCmd) {
-    $command = Resolve-Path $vsDevCmd
-    $output = cmd /c "`"$command`" -arch=$Platform 2>&1 && set"
-  } else {
-    $vsenvvar = "env:\VS$($Version)0COMNTOOLS"
-    $command = "$((ls $vsenvvar | sort name | select -last 1).value)vsvars32.bat"
-    $output = cmd /c "`"$command`" $Platform 2>&1 && set"
-  }
+  $vswArgs = arr -latest -property installationPath "$(if ($Prerelease) {'-prerelease'})"
+  $vsDevCmd = Resolve-Path "$(& "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" $vswArgs)/Common7/Tools/VsDevCmd.bat"
+  $output = cmd /c "`"$vsDevCmd`" -arch=$Platform 2>&1 && set"
   foreach($line in $output) {
     if ($line -match '^([^=]+)=(.*)') {
       [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
