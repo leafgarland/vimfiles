@@ -6,36 +6,44 @@ augroup vimrc
   autocmd!
 augroup END
 
-" quicker startup
-if exists('+guioptions')
-  set guioptions=M
-endif
-let g:loaded_vimballPlugin = 1
-
 if has('vim_starting')
+  " quicker startup
+  if exists('+guioptions')
+    set guioptions=M
+  endif
+  let g:loaded_vimballPlugin = 1
+  let g:netrw_menu = 0
+  let g:loaded_netrwPlugin = 1
+
+  " win vs unix
+  if has('win32')
+    let $NVIM_CONFIG="~/appdata/Local/nvim"
+    let $NVIM_DATA="~/appdata/Local/nvim-data"
+    if !has('nvim')
+      set runtimepath^=$NVIM_CONFIG
+      set runtimepath+=$NVIM_CONFIG/after
+    endif
+    " set shell=powershell shellquote=( shellpipe=\| shellredir=> shellxquote=
+    " set shellcmdflag=-NoLogo\ -NoProfile\ -ExecutionPolicy\ RemoteSigned\ -Command
+  else
+    let $NVIM_CONFIG=$XDG_CONFIG_HOME/nvim"
+    let $NVIM_DATA=$XDG_DATA_HOME/nvim"
+  endif
+
+  " nvim vs vim
   if has('nvim')
     set shada=!,'1000,s100,h,n$HOME/mine.shada
+    set backupdir-=.
   else
     set nocompatible
     set encoding=utf-8
     set laststatus=2
     set viminfo='1000,s100,h
+    set backupdir-=.
+    set directory-=.
+    set undodir=$NVIM_DATA/undo
   endif
 endif
-
-" Windows Compatible: {{{
-if has('win32')
-  " On Windows, also use '.vim' instead of 'vimfiles'
-  set runtimepath^=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
-  " On windows, if gvim.exe is executed from cygwin bash shell, the shell
-  " needs to be changed to the shell most plugins expect on windows.
-  " This does not change &shell inside cygwin or msys vim.
-  if &shell =~# 'bash$'
-    set shell=$COMSPEC
-  endif
-endif
-
-"}}}
 
 "}}}
 
@@ -48,14 +56,12 @@ if !has('nvim')
   Plug 'tpope/vim-sensible'
 endif
 Plug 'tpope/vim-repeat'
-Plug 'tpope/vim-dispatch'
 Plug 'kana/vim-textobj-user'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/badwolf'
-Plug 'w0ng/vim-hybrid'
-Plug 'cocopon/iceberg.vim'
+Plug 'leafgarland/iceberg.vim'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -73,52 +79,55 @@ Plug 'machakann/vim-sandwich'
 Plug 'tpope/vim-fugitive'
 Plug 'lambdalisue/gina.vim'
 Plug 'tpope/vim-rhubarb'
+Plug 'junegunn/gv.vim'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-scriptease'
-Plug 'SirVer/ultisnips' 
-Plug 'honza/vim-snippets'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
-Plug 'autozimu/LanguageClient-neovim', {'do': ':UpdateRemotePlugins'}
+Plug 'autozimu/LanguageClient-neovim', {
+  \ 'branch': 'next',
+  \ 'do': 'powershell ./install.ps1',
+  \ }
 
 " Filetypes
-Plug 'hail2u/vim-css3-syntax', {'for': 'css'}
-Plug 'othree/html5.vim', {'for': 'html'}
-Plug 'elzr/vim-json', {'for': 'json'}
-Plug 'tpope/vim-jdaddy', {'for': 'json'}
-Plug 'vim-pandoc/vim-pandoc-syntax', {'for': 'pandoc'}
-Plug 'vim-pandoc/vim-pandoc', {'for': 'pandoc'}
-Plug 'PProvost/vim-ps1', {'for': 'ps1'}
-Plug 'fsharp/vim-fsharp', {'for': 'fsharp', 'do': './install.cmd FSharp.Autocomplete'}
-Plug 'tpope/vim-fireplace', {'for': 'clojure'}
-Plug 'guns/vim-clojure-static', {'for': 'clojure'}
-Plug 'guns/vim-sexp' ", {'for': ['clojure', 'scheme']}
-Plug 'tpope/vim-sexp-mappings-for-regular-people' ", {'for': ['clojure', 'scheme']}
-Plug 'guns/vim-clojure-highlight', {'for': 'clojure'}
-Plug 'vim-erlang/vim-erlang-runtime', {'for': 'erlang'}
-Plug 'vim-erlang/vim-erlang-compiler', {'for': 'erlang'}
-Plug 'vim-erlang/vim-erlang-omnicomplete', {'for': 'erlang'}
-Plug 'vim-erlang/vim-erlang-tags', {'for': 'erlang'}
-Plug 'edkolev/erlang-motions.vim', {'for': 'erlang'}
-Plug 'elixir-lang/vim-elixir', {'for': 'elixir'}
-Plug 'pangloss/vim-javascript', {'for': 'javascript'}
-Plug 'mxw/vim-jsx', {'for': 'javascript'}
+Plug 'hail2u/vim-css3-syntax'
+Plug 'othree/html5.vim'
+Plug 'elzr/vim-json'
+Plug 'tpope/vim-jdaddy'
+Plug 'vim-pandoc/vim-pandoc-syntax'
+Plug 'vim-pandoc/vim-pandoc'
+Plug 'PProvost/vim-ps1'
+Plug 'fsharp/vim-fsharp'
+Plug 'tpope/vim-fireplace'
+Plug 'guns/vim-clojure-static'
+Plug 'guns/vim-sexp' "
+Plug 'tpope/vim-sexp-mappings-for-regular-people' "
+Plug 'guns/vim-clojure-highlight'
+Plug 'vim-erlang/vim-erlang-runtime'
+Plug 'vim-erlang/vim-erlang-compiler'
+Plug 'vim-erlang/vim-erlang-omnicomplete'
+Plug 'vim-erlang/vim-erlang-tags'
+Plug 'edkolev/erlang-motions.vim'
+Plug 'elixir-lang/vim-elixir'
+Plug 'pangloss/vim-javascript'
+Plug 'mxw/vim-jsx'
 Plug 'ianks/vim-tsx'
 Plug 'leafgarland/typescript-vim'
-Plug 'findango/vim-mdx', {'for': 'mdx'}
-Plug 'elmcast/elm-vim', {'for': 'elm'}
-Plug 'rust-lang/rust.vim', {'for': 'rust'}
-Plug 'racer-rust/vim-racer', {'for': 'rust'}
-Plug 'raichoo/purescript-vim', {'for': 'purescript'}
-Plug 'wlangstroth/vim-racket', {'for': 'racket'}
+Plug 'findango/vim-mdx'
+Plug 'elmcast/elm-vim'
+Plug 'rust-lang/rust.vim'
+Plug 'raichoo/purescript-vim'
+Plug 'wlangstroth/vim-racket'
 Plug 'beyondmarc/glsl.vim'
-Plug 'cespare/vim-toml', {'for': 'toml'}
-Plug 'dleonard0/pony-vim-syntax', {'for': 'pony'}
-Plug 'OrangeT/vim-csharp', {'for': 'cs'}
+Plug 'cespare/vim-toml'
+Plug 'dleonard0/pony-vim-syntax'
+Plug 'OrangeT/vim-csharp'
 Plug 'idris-hackers/idris-vim'
 Plug 'hashivim/vim-terraform'
+Plug 'https://github.com/davisdude/vim-love-docs'
+Plug 'aklt/plantuml-syntax'
 
 if has('win32') && has('gui_running')
   Plug 'kkoenig/wimproved.vim'
@@ -133,7 +142,7 @@ if !empty($TMUX)
 endif
 
 if executable('fish')
-  Plug 'dag/vim-fish', {'for': 'fish'}
+  Plug 'dag/vim-fish'
 endif
 
 if has('nvim') && executable('fzy')
@@ -165,14 +174,9 @@ set virtualedit=block
 set nojoinspaces
 set formatoptions+=n1
 
-set backupdir=~/.vim/backup//
-set directory=~/.vim/swap//
-set undodir=~/.vim/undo//
 set backup
 set undolevels=5000
 set undofile
-
-let g:netrw_menu = 0
 
 if executable('rg')
   set grepprg=rg\ --vimgrep\ --no-heading\ -HS\ --line-number
@@ -225,20 +229,6 @@ set fillchars=vert:┃,fold:-
 set splitright
 set switchbuf=useopen
 
-set tags=./tags,~/.vimtags
-
-" Show CursorLine in active window only
-let g:myvimrc_manage_cursorline=0
-if g:myvimrc_manage_cursorline
-  set cursorline
-  autocmd vimrc WinEnter,InsertLeave * setlocal cursorline
-  autocmd vimrc WinLeave,InsertEnter * setlocal nocursorline
-endif
-
-" Opens quick fix window when there are items, close it when empty
-autocmd vimrc QuickFixCmdPost [^l]* nested CWindow
-autocmd vimrc QuickFixCmdPost    l* nested LWindow
-
 if has('nvim')
   autocmd vimrc TermOpen * setfiletype term
         \ |setlocal nonumber
@@ -248,7 +238,7 @@ endif
 "}}}
 
 " GUI Settings: {{{
-if exists('+termguicolors')
+if exists('+termguicolors') && has('vim_starting')
   set termguicolors
 endif
 
@@ -256,18 +246,16 @@ if exists('+guicursor')
   set guicursor+=c:ver25-Cursor/lCursor,a:blinkon0
 endif
 
-if exists('+guioptions')
+if exists('+guioptions') && has('vim_starting')
   set guioptions+=c
   set linespace=0
   if exists('+renderoptions')
     set renderoptions=type:directx,taamode:1,renmode:5,geom:1
   endif
 
-  if has('vim_starting')
-    set lines=50
-    set columns=120
-    set guifont=Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
-  endif
+  " set lines=50
+  " set columns=120
+  set guifont=Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
 endif
 "}}}
 
@@ -330,7 +318,7 @@ if has('nvim')
     nnoremap <C-a>v :execute 'vsplit ' . g:tshell<CR>
     tnoremap <C-a><C-l> <C-l>
     tnoremap <C-a><C-a> <C-a>
-    tnoremap <C-h> <C-\><C-n><C-w>h
+    " tnoremap <C-h> <C-\><C-n><C-w>h
     tnoremap <C-l> <C-\><C-n><C-w>l
     tnoremap <C-j> <C-\><C-n><C-w>j
     tnoremap <C-k> <C-\><C-n><C-w>k
@@ -447,6 +435,7 @@ nnoremap gI `.
 xnoremap / <Esc>/\%V
 
 nnoremap <leader>sg :g//#<left><left>
+nnoremap <leader>sG :v//#<left><left>
 nnoremap <leader>sc :%s///gn<left><left><left><left>
 xnoremap <leader>sc :s///gn<left><left><left><left>
 
@@ -505,13 +494,13 @@ autocmd vimrc FileType * call s:ft_load(expand('<amatch>'))
 
 " json: {{{
 function! s:ft_json()
-    if executable('jq')
-      setlocal equalprg=jq\ .
-    else
-      setlocal equalprg=python\ -m\ json.tool
-    endif
-    setlocal shiftwidth=2
-    setlocal concealcursor=n
+  if executable('jq')
+    setlocal equalprg=jq\ .
+  else
+    setlocal equalprg=python\ -m\ json.tool
+  endif
+  setlocal shiftwidth=2
+  setlocal concealcursor=n
 endfunction
 " }}}
 
@@ -588,9 +577,10 @@ function! s:ft_rust()
     " autocmd BufWrite *.rs RustyTags
   endif
   if s:has_plug('LanguageClient-neovim')
-    nnoremap <silent> K :call LanguageClient_textDocument_hover()<CR>
-    nnoremap <silent> gd :call LanguageClient_textDocument_definition()<CR>
-    nnoremap <silent> <F2> :call LanguageClient_textDocument_rename()<CR>
+    nnoremap <silent> <buffer> K :call LanguageClient_textDocument_hover()<CR>
+    nnoremap <silent> <buffer> gd :call LanguageClient_textDocument_definition()<CR>
+    nnoremap <silent> <buffer> gr :call LanguageClient_textDocument_references()<CR>
+    nnoremap <silent> <buffer> <F2> :call LanguageClient_textDocument_rename()<CR>
   endif
 endfunction
 " }}}
@@ -637,6 +627,37 @@ endfunction
 
 " Commands & Functions: {{{
 
+" Terminal toggle {{{
+let s:term_buf = 0
+let s:term_win = 0
+
+function! TermToggle(shell, height)
+  if win_getid() == s:term_win
+    hide
+  elseif !win_gotoid(s:term_win)
+    new terminal
+    exec 'resize ' . a:height
+    try
+      exec 'buffer ' . s:term_buf
+      exec 'bd terminal'
+    catch
+      call termopen(a:shell, {"detach": 0})
+      let s:term_buf = bufnr('')
+      setlocal nonumber
+      setlocal norelativenumber
+      setlocal signcolumn=no
+      setlocal nocursorline
+    endtry
+    startinsert!
+    let s:term_win = win_getid()
+  endif
+endfunction
+
+command! TermToggle call TermToggle(has('win32') ? 'powershell' : 'fish', 12)
+nnoremap <A-t> :TermToggle<CR>
+tnoremap <A-t> <C-\><C-n>:TermToggle<CR>
+" }}}
+
 " Replace Browse cmd {{{
 " Browse command is used by fugitive instead of netrw, so we can get rid of
 " those Press <cr> to continue messages.
@@ -660,6 +681,11 @@ command! -nargs=1 Browse :call Browse(<q-args>)
 " Useful to get relative paths in quickfix after grep
 command! CWindow 0split | lcd . | quit | cwindow
 command! LWindow 0split | lcd . | quit | lwindow
+
+" Opens quick fix window when there are items, close it when empty
+autocmd vimrc QuickFixCmdPost [^l]* nested CWindow
+autocmd vimrc QuickFixCmdPost    l* nested LWindow
+
 "}}}
 
 " Custom fold display {{{
@@ -1170,13 +1196,13 @@ command! ReloadDos :e ++ff=dos<CR>
 nnoremap <expr> <leader>m ToggleVisualMarker()
 nnoremap <expr> m UpdateVisualMarker()
 
-highlight MarkerOrangeSign guifg=#fe8019 guibg=#3c3836
-highlight MarkerBlueSign guifg=#457588 guibg=#3c3836
-highlight MarkerGreenSign guifg=#86ab2b guibg=#3c3836
-highlight MarkerRedSign guifg=#cc241d guibg=#3c3836
-highlight MarkerPurpleSign guifg=#b16286 guibg=#3c3836
-highlight MarkerYellowSign guifg=#d79921 guibg=#3c3836
-highlight MarkerAquaSign guifg=#689d7a guibg=#3c3836
+highlight MarkerOrangeSign guifg=#e2a478 guibg=#2a3158
+highlight MarkerBlueSign guifg=#84a0c6 guibg=#2a3158
+highlight MarkerGreenSign guifg=#b3be82 guibg=#2a3158
+highlight MarkerRedSign guifg=#e27878 guibg=#2a3158
+highlight MarkerPurpleSign guifg=#a093c7 guibg=#2a3158
+highlight MarkerYellowSign guifg=#f9c199 guibg=#2a3158
+highlight MarkerAquaSign guifg=#89b8c2 guibg=#2a3158
 let g:myvimrc_visual_marks_groups = [
       \ 'MarkerBlueSign',  'MarkerGreenSign',
       \ 'MarkerRedSign', 'MarkerPurpleSign',
@@ -1268,6 +1294,14 @@ function! VerifyUndo ()
     return 'u'
   endif
 endfunction
+" }}}
+
+" Show CursorLine in active window only {{{
+if get(g:, 'myvimrc_manage_cursorline', 0)
+  set cursorline
+  autocmd vimrc WinEnter,InsertLeave * setlocal cursorline
+  autocmd vimrc WinLeave,InsertEnter * setlocal nocursorline
+endif
 " }}}
 
 "}}}
@@ -1411,7 +1445,7 @@ function! StatusLineFugitive()
   return ''
 endfunction
 
-function! s:GetBufType()
+function! StatusLineBufType()
   let bt = []
   if &buftype == 'nofile' && &bufhidden == 'hide' && !&swapfile
     call add(bt, 'scratch')
@@ -1421,10 +1455,6 @@ function! s:GetBufType()
     call add(bt, 'diff')
   endif 
   return join(bt)
-endfunction
-
-function! StatusLineBufType()
-  return s:GetBufType()
 endfunction
 
 function! StatusLineMode()
@@ -1439,40 +1469,6 @@ function! StatusLineMode()
         \ &ft
   endif
   return !empty(m) ? m : 'none'
-endfunction
-
-function! StatusLineGrep()
-  return get(s:, 'grepping', 0) ? 'GREP' : ''
-endfunction
-
-function! s:get_colour(higroup, attr)
-    let attr = a:attr
-    if synIDattr(synIDtrans(hlID(a:higroup)), 'reverse') == 1
-      let attr = attr == 'fg' ? 'bg' :
-            \    attr == 'bg' ? 'fg' :
-            \    attr
-    endif
-    let colour = synIDattr(synIDtrans(hlID(a:higroup)), attr)
-    if empty(colour) && a:higroup != 'Normal'
-      return s:get_colour('Normal', a:attr)
-    elseif empty(colour) && attr == 'fg'
-      let colour = 'fg'
-    elseif empty(colour) && attr == 'bg'
-      let colour = 'bg'
-    elseif colour == -1
-      throw "get_colour: -1 ".a:higroup.' '.a:attr
-    endif
-    return colour
-endfunction
-
-function! s:SetHiColour(group, fg, bg, attrs)
-  let gui = has('gui_running') || &termguicolors ?
-        \ 'gui='.a:attrs.' guifg='.a:fg.' guibg='.a:bg :
-        \ 'gui='.a:attrs
-  let cterm = a:fg[0] != '#' && a:bg[0] != '#' ?
-        \ 'cterm='.a:attrs.' ctermfg='.a:fg.' ctermbg='.a:bg :
-        \ 'cterm='.a:attrs
-  execute 'highlight' a:group gui cterm
 endfunction
 
 function! Status(active)
@@ -1492,9 +1488,6 @@ function! Status(active)
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
-    if s:has_plug('vim-gutentags')
-      let sl.= '%( %{gutentags#statusline()} %)'
-    endif
     let sl.= '%0*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     return sl
@@ -1604,10 +1597,6 @@ endfunction
 autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
 " }}}
 
-" Surround: {{{
-let g:surround_no_insert_mappings = 1
-" }}}
-
 " Targets: {{{
 " add curly braces
 let g:targets_argOpening = '[({[]'
@@ -1633,28 +1622,15 @@ if s:has_plug('vim-fsharp')
 endif
 " }}}
 
-" rust racer {{{
-if s:has_plug('vim-racer')
-  if !exists('$RUST_SRC_PATH')
-    let $RUST_SRC_PATH = expand('~/.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\src\rust\src\')
-  endif
-  let g:racer_cmd = "racer"
-  let g:racer_experimental_completer = 1
-endif
-" }}}
-
-" Ultisnips {{{
-let g:UltiSnipsExpandTrigger="<c-j>"
-let g:UltiSnipsJumpForwardTrigger="<c-j>"
-let g:UltiSnipsJumpBackwardTrigger="<c-k>"
-" }}}
-
 " Dirvish: {{{
 if s:has_plug('vim-dirvish')
   let g:dirvish_mode="sort ir /^.*[^\\\/]$/"
 
   nnoremap <silent> <leader>fj :call <SID>dirvish_open()<CR>
   nnoremap <leader>pe :Dirvish<CR>
+  command! -nargs=? -complete=dir Explore Dirvish <args>
+  command! -nargs=? -complete=dir Sexplore belowright split | silent Dirvish <args>
+  command! -nargs=? -complete=dir Vexplore leftabove vsplit | silent Dirvish <args>
 
   let s:dirvish_dir_search = '[\\\/]$'
 
@@ -1695,112 +1671,9 @@ if s:has_plug('vim-dirvish')
 endif
 " }}}
 
-" Syntastic: {{{
-if s:has_plug('syntastic')
-  let g:syntastic_stl_format = '[Syntax: %E{line:%fe }%W{#W:%w}%B{ }%E{#E:%e}]'
-endif
-" }}}
-
-" colorscheme gruvbox: {{{
-let g:gruvbox_invert_selection=0
-let g:gruvbox_contrast_dark='medium'
-let g:gruvbox_contrast_light='hard'
-let g:gruvbox_italic=0
-let g:gruvbox_bold=0
-"}}}
-
-" colorscheme one: {{{
-function! s:OneCustomise()
-  " let slfg = s:get_colour('StatusLine', 'fg')
-  let slbg = s:get_colour('StatusLine', 'bg')
-  let sbg = s:get_colour('Special', 'bg')
-  let sfg = s:get_colour('Special', 'fg')
-  let s2fg = s:get_colour('Constant', 'fg')
-  let cfg = s:get_colour('Comment', 'fg')
-  let wmbg = s:get_colour('WildMenu', 'bg')
-  let vbg = s:get_colour('Visual', 'bg')
-
-  let slfg = &background=='dark' ? '#d3d7de' : '#202126'
-
-  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-  call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
-  call s:SetHiColour('User1', sfg, slbg, 'bold')
-  call s:SetHiColour('User2', s2fg, slbg, 'bold')
-  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-
-  call s:SetHiColour('String', s:get_colour('String', 'fg'), slbg, 'NONE')
-
-  call s:SetHiColour('MatchParen', 'NONE', vbg, 'underline')
-
-  highlight! Folded guibg=#20242c
-
-  highlight! link TabLine StatusLine
-  highlight! link TabLineFill StatusLine 
-  highlight! link TabLineSel User1 
-
-  highlight! link Pmenu StatusLine
-  highlight! link PmenuSbar StatusLine
-  highlight! link PmenuSel WildMenu
-
-  if has('nvim')
-    let g:terminal_color_0  = '#282c34'
-    let g:terminal_color_1  = '#be5046'
-    let g:terminal_color_2  = '#50a14f'
-    let g:terminal_color_3  = '#d19a66'
-    let g:terminal_color_4  = '#5889F3'
-    let g:terminal_color_5  = '#a626a4'
-    let g:terminal_color_6  = '#2EABE5'
-    let g:terminal_color_7  = '#828997'
-    let g:terminal_color_8  = '#5c6370'
-    let g:terminal_color_9  = '#e06c75'
-    let g:terminal_color_10 = '#98c379'
-    let g:terminal_color_11 = '#e5c07b'
-    let g:terminal_color_12 = '#61afef'
-    let g:terminal_color_13 = '#c678dd'
-    let g:terminal_color_14 = '#56b6c2'
-    let g:terminal_color_15 = '#abb2bf'
-  endif
-endfunction
-autocmd vimrc ColorScheme onedark :call <SID>OneCustomise()
-" }}}
-
-" colorscheme iceberg: {{{
-function! s:IcebergCustomise()
-  let slfg = s:get_colour('CursorLineNr', 'fg')
-  let slbg = s:get_colour('CursorLineNr', 'bg')
-  let sbg = s:get_colour('Special', 'bg')
-  let sfg = s:get_colour('Special', 'fg')
-  let s2fg = s:get_colour('Function', 'fg')
-  let cfg = s:get_colour('Comment', 'fg')
-  let wmbg = s:get_colour('WildMenu', 'bg')
-  let vbg = s:get_colour('Visual', 'bg')
-
-  call s:SetHiColour('StatusLine', slfg, slbg, 'NONE')
-  call s:SetHiColour('StatusLineNC', cfg, slbg, 'NONE')
-  call s:SetHiColour('User2', sfg, slbg, 'bold')
-  call s:SetHiColour('User1', s2fg, slbg, 'bold')
-  call s:SetHiColour('VertSplit', slbg, 'bg', 'NONE')
-
-  highlight! link TabLine StatusLine
-  highlight! link TabLineFill StatusLine 
-  highlight! link TabLineSel User1 
-  highlight! link Conceal LineNr 
-endfunction
-autocmd vimrc ColorScheme iceberg :call <SID>IcebergCustomise()
-" }}}
-
 " Unicode: {{{
 if s:has_plug('unicode.vim')
   nnoremap ga :UnicodeName<CR>
-endif
-" }}}
-
-" Gutentags: {{{
-if s:has_plug('vim-gutentags')
-  let g:gutentags_enabled = 0
-  let g:gutentags_project_root = ['pom.xml']
-  let g:gutentags_generate_on_missing = 0
-  let g:gutentags_cache_dir = '~/.vim/tags_cache'
 endif
 " }}}
 
@@ -1808,9 +1681,11 @@ endif
 if s:has_plug('LanguageClient-neovim')
   let g:LanguageClient_serverCommands = {
       \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
+      \ 'javascript': ['tcp://127.0.0.1:2089'],
+      \ 'javascript.jsx': ['tcp://127.0.0.1:2089'],
+      \ 'typescript': ['tcp://127.0.0.1:2089'],
+      \ 'typescript.tsx': ['tcp://127.0.0.1:2089'],
       \ }
-
-  let g:LanguageClient_autoStart = 1
 endif
 
 " }}}
@@ -1818,14 +1693,5 @@ endif
 "}}}
 
 if has('vim_starting')
-  let g:goodwolf_gruv = 1
-  
-  " We might want to adjust the colorscheme by looking up colours which means
-  " this has to happen late enough that we can look up colours of highlight
-  " groups, so we need an event that happens after the gui is ready.
-  " Unfortunately VimEnter or GUIEnter are not right, so we use FocusGained
-  " and then remove our event handler.
-  augroup vimrc_setcolor
-    autocmd FocusGained * nested colorscheme iceberg | autocmd! vimrc_setcolor
-  augroup END
+  colorscheme iceberg
 endif
