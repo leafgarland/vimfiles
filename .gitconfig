@@ -1,39 +1,12 @@
-[user]
-	name = Leaf Garland
-	email = leafgarland@users.noreply.github.com
-	signingKey = D1DBD1DD
-[color.diff] 
-    meta = bold white
-    func = bold yellow
-    new = bold green
-[merge]
-	tool = bc3
-	diffstat = false
-[diff]
-	guitool = bc3
-	tool = bc
 [core]
 	pager = less -x1,5
 	safecrlf = warn
-	# editor = \"C:/Dev/tools/GitExtensions/GitExtensions.exe\" fileeditor
 [difftool]
 	prompt = false
-[difftool "kdiff3"]
-	path = C:/Dev/tools/KDiff3/kdiff3.exe
 [difftool "vscode"]
 	cmd = code-insiders --wait --diff $LOCAL $REMOTE
-[difftool "vs"]
-	cmd = 'C:/Program Files (x86)/Microsoft Visual Studio 14.0/Common7/IDE/vsDiffMerge.exe' $LOCAL $REMOTE Source Target
 [difftool "nvim"]
     cmd = nvim.exe -d $BASE $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
-[mergetool "kdiff3"]
-	path = C:/Dev/tools/KDiff3/kdiff3.exe
-[gpg]
-	program = C:/Dev/tools/GPG/gpg2.exe
-[commit]
-	gpgSign = false
-[tag]
-	gpgsign = false
 [pretty]
     one=%C(auto)%h %s %Cblue%an %Cgreen%ar
     onebody=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s%n%w(100,2,2)%-b
@@ -86,13 +59,9 @@
     mt = mergetool
     dt = difftool
 	ff = merge --ff-only @{u}
+	stat = diff --stat
 [push]
 	default = current
 [gui]
 	fontdiff = -family \"Source Code Pro\" -size 10 -weight normal -slant roman -underline 0 -overstrike 0
 	tabsize = 4
-[filter "lfs"]
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
