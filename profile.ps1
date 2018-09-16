@@ -1,5 +1,6 @@
 ﻿$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
-$env:EDITOR='c:/dev/tools/vim/vim80/vim.exe'
+# $env:EDITOR='c:/dev/tools/vim/vim80/vim.exe'
+$env:EDITOR='nvr --remote-wait-silent -cc ":call GuiForeground()"'
 $env:RIPGREP_CONFIG_PATH="$($env:HOME)/.ripgrep"
 # for latest nvim tui which wont do colours without a hint
 $env:COLORTERM='truecolor'
@@ -10,7 +11,7 @@ $env:GOPATH="C:/dev/tools/gopath"
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
-function edit { & $env:EDITOR $args }
+function edit { Invoke-Expression ([string]::join(' ', (,$env:EDITOR + $args))) }
 
 Add-Type -MemberDefinition @"
 [DllImport("kernel32.dll", SetLastError=true)]
@@ -32,6 +33,19 @@ function Enable-VirtualTerminal() {
 }
 
 function Start-PushpayPublic { &'C:\Program Files (x86)\IIS Express\iisexpress.exe' "/config:$(git home)\.vs\config\applicationhost.config" /site:Pushpay.Public }
+function pico ($size=256) { C:\dev\me\pico-8\pico8.exe -width $size+2 -height $size+2 $args }
+function d2b($d) { [System.Convert]::ToString($d, 2) }
+function d2h($d) { [System.Convert]::ToString($d, 16) }
+function b2d([string]$b) { [System.Convert]::ToInt32($b, 2) }
+
+function Update-GitGraphCache { git show-ref -s | git commit-graph write --stdin-commits }
+
+function Get-JiraIssues {
+    $json = curl --user "$($env:JIRA_USER):$($env:JIRA_PW)" `
+         -sn 'https://pushpay.atlassian.net/rest/api/latest/search?jql=assignee%20%3D%20currentUser()%20AND%20resolution%20%3D%20Unresolved%20AND%20status%20NOT%20IN%20(Closed%2C%20Done%2C%20Backlog)%20AND%20type%20NOT%20IN%20(Epic%2C%20Idea%2C%20Story)&fields=summary'
+    $objs = ConvertFrom-Json $json
+    $objs.issues | % { "$($_.key)-$($_.fields.summary.tolower() -replace '[^a-zA-Z0-9]','-')" } | sort -Descending
+}
 
 function Get-LockImages {
     ls "$env:userprofile\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\*" |
@@ -50,10 +64,7 @@ function Get-LockImages {
 
 if (Get-Command pageant -CommandType Application -ErrorAction SilentlyContinue) {
     pageant "$($env:HOME)\.ssh\github_rsa_private.ppk"
-    $env:GIT_SSH = (Get-Command plink -CommandType Application)[0].Source
-} elseif (test-path "$env:TOOLS\GitExtensions\PuTTY\pageant.exe") {
-    & "$env:TOOLS\GitExtensions\PuTTY\pageant.exe" "$($env:HOME)\.ssh\github_rsa_private.ppk"
-    $env:GIT_SSH="$env:TOOLS\GitExtensions\PuTTY\plink.exe"
+    $env:GIT_SSH = Resolve-Path (scoop which plink)
 }
 
 $HistoryPath = "~\pshistory.xml"
@@ -123,6 +134,8 @@ Register-ArgumentCompleter -Native -CommandName 'git' -ScriptBlock { param($last
     $allMatches = git diff --name-status | % { $x=$_.split([char]0x09); @{ Value=$x[1]; Tip=$x[0] } }
   } elseif ($line -match "git( -\S+)* unstage( -\S+)*") {
     $allMatches = git diff --name-status --cached | % { $x=$_.split([char]0x09); @{ Value=$x[1]; Tip=$x[0] } }
+  } elseif ($line -match "git( -\S+)* (checkout|co)( -\S+)* -b") {
+    $allMatches = Get-JiraIssues | % { @{ Value=$_; Tip=$_ } }
   } elseif ($line -match "^git (-\S+ )*(\S+)?$") {
     $allMatches = $AllGitCmds
   } elseif ($line -match "(ori|orig|origi|origin)(/\S+)?$") {
@@ -236,7 +249,6 @@ filter asXml { [xml](cat $_) }
 Add-Path -First "$env:TOOLS\Python27\"
 Add-Path "$env:LOCALAPPDATA\Programs\Python\Python35"
 Add-Path "$env:TOOLS\PSScripts"
-Add-Path "$env:TOOLS\Yarn\bin"
 Add-Path "$env:TOOLS\Utils"
 Add-Path "~\.cargo\bin\"
 Add-Path "$env:TOOLS\vim\vim80"
@@ -244,6 +256,7 @@ Add-Path "$env:TOOLS\vim\Neovim\bin"
 Add-Path "$env:TOOLS\BeyondCompare"
 Add-Path "C:\dev\tools\jdk\bin"
 Add-Path "C:\dev\tools\gopath\bin"
+Add-Path 'C:\Program Files (x86)\Meld'
 
 Set-Alias ss select-string
 Set-Alias gx gitex
@@ -254,12 +267,10 @@ Set-Alias stree Invoke-SourceTree
 Set-Alias vsvar Set-VisualStudioEnvironment
 Set-Alias sudo Start-Elevated
 Set-Alias de devenv.com
-Set-Alias rider 'C:\Program Files\JetBrains\Rider 2017.1.1\bin\rider64.exe'
 Set-Alias bc 'bcompare'
-set-alias code 'C:\Program Files\Microsoft VS Code Insiders\bin\code-insiders.cmd'
+set-alias code code-insiders.cmd
 Set-Alias cdb "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe"
 Set-Alias windbg "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\windbg.exe"
-set-alias python3 "$env:LOCALAPPDATA\Programs\Python\Python35\python.exe"
 Set-Alias gitex "$env:TOOLS\GitExtensions\gitex.cmd"
 Set-Alias wsl "C:\Dev\tools\wsl-terminal\open-wsl.exe"
 function icdiff { icdiff.py "--cols=$($Host.UI.RawUI.WindowSize.Width)" $args }
@@ -269,7 +280,7 @@ function spe { sudo procexp $args }
 function grep() { $input | rg.exe --hidden $args }
 
 Import-Module ZLocation
-Set-Alias j Set-ZLocation
+Set-Alias j Invoke-ZLocation
 
 Import-Module PSReadLine
 Set-PSReadlineOption -BellStyle Visual
@@ -278,13 +289,13 @@ Set-PSReadlineOption -EditMode Windows
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -HistoryNoDuplicates
 Set-PSReadlineOption -ContinuationPrompt ">> "
-Set-PSReadlineOption -ContinuationPromptForegroundColor DarkYellow
-Set-PSReadlineOption Operator -ForegroundColor Cyan
-Set-PSReadlineOption Parameter -ForegroundColor DarkCyan
-Set-PSReadlineOption Type -ForegroundColor Blue
-Set-PSReadlineOption String -ForegroundColor DarkGreen
-Set-PSReadlineOption Keyword -ForegroundColor Yellow
-Set-PSReadlineOption Variable -ForegroundColor Magenta
+# Set-PSReadlineOption -ContinuationPromptForegroundColor DarkYellow
+# Set-PSReadlineOption Operator -ForegroundColor Cyan
+# Set-PSReadlineOption Parameter -ForegroundColor DarkCyan
+# Set-PSReadlineOption Type -ForegroundColor Blue
+# Set-PSReadlineOption String -ForegroundColor DarkGreen
+# Set-PSReadlineOption Keyword -ForegroundColor Yellow
+# Set-PSReadlineOption Variable -ForegroundColor Magenta
 Set-PSReadlineOption -ShowToolTips
 Set-PSReadlineKeyHandler -Key Ctrl+p -Function HistorySearchBackward
 Set-PSReadlineKeyHandler -Key Ctrl+n -Function HistorySearchForward
@@ -360,9 +371,8 @@ function Invoke-Nvr([switch]$Tab, [switch]$Wait)
 }
 
 function Invoke-Vim([switch]$Tab, [switch]$Wait) {
-  $vimInstall="$env:TOOLS\vim\vim80"
-  $vim=join-path $vimInstall 'vim.exe'
-  $gvim=join-path $vimInstall 'gvim.exe'
+  $vim='vim.exe'
+  $gvim='gvim.exe'
   if ($global:VimServerName) { $serverName = $global:VimServerName }
   else { $serverName = "GVIM" }
   $servers = (& $vim --noplugin -u NORC --serverlist) | ? { $_ -eq $serverName }
