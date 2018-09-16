@@ -76,6 +76,7 @@ Plug 'tommcdo/vim-lion'
 Plug 'machakann/vim-sandwich'
 
 " Tools
+Plug 'neovim/nvim.net'
 Plug 'tpope/vim-fugitive'
 Plug 'lambdalisue/gina.vim'
 Plug 'tpope/vim-rhubarb'
@@ -126,8 +127,8 @@ Plug 'dleonard0/pony-vim-syntax'
 Plug 'OrangeT/vim-csharp'
 Plug 'idris-hackers/idris-vim'
 Plug 'hashivim/vim-terraform'
-Plug 'https://github.com/davisdude/vim-love-docs'
 Plug 'aklt/plantuml-syntax'
+Plug 'l04m33/vlime', {'rtp': 'vim/'}
 
 if has('win32') && has('gui_running')
   Plug 'kkoenig/wimproved.vim'
@@ -253,8 +254,8 @@ if exists('+guioptions') && has('vim_starting')
     set renderoptions=type:directx,taamode:1,renmode:5,geom:1
   endif
 
-  " set lines=50
-  " set columns=120
+  set lines=72
+  set columns=142
   set guifont=Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
 endif
 "}}}
@@ -318,10 +319,10 @@ if has('nvim')
     nnoremap <C-a>v :execute 'vsplit ' . g:tshell<CR>
     tnoremap <C-a><C-l> <C-l>
     tnoremap <C-a><C-a> <C-a>
-    " tnoremap <C-h> <C-\><C-n><C-w>h
-    tnoremap <C-l> <C-\><C-n><C-w>l
-    tnoremap <C-j> <C-\><C-n><C-w>j
-    tnoremap <C-k> <C-\><C-n><C-w>k
+    tnoremap <A-h> <C-\><C-n><C-w>h
+    tnoremap <A-l> <C-\><C-n><C-w>l
+    tnoremap <A-j> <C-\><C-n><C-w>j
+    tnoremap <A-k> <C-\><C-n><C-w>k
   endif
 endif
 
@@ -337,7 +338,7 @@ nnoremap <leader>fs :update<CR>
 nnoremap <leader>fq :update<bar>BClose<CR>
 nnoremap <leader>fn :VScratch<CR>
 nnoremap <leader>fN :Scratch<CR>
-nnoremap <leader>fL :Scratch<bar><CR>:let b:ycm_largfile=1<bar>file logs<C-r>=bufnr('%')<CR><bar>setf log4net<CR>
+nnoremap <silent> <leader>fL :Scratch<bar>file logs<C-r>=bufnr('%')<CR><bar>setf log4net<CR>
 nnoremap <leader>fo :edit **/*
 nnoremap <leader>fO :edit <C-R>=expand('%:p:h:.:~')<CR>/
 nnoremap <leader>fed :edit $MYVIMRC<CR>
@@ -356,16 +357,16 @@ nnoremap <leader>bD :BClose!<CR>
 
 nnoremap <leader>hq :helpclose<CR>
 
-nnoremap <C-J> <C-W>j
-nnoremap <C-K> <C-W>k
-nnoremap <C-L> <C-W>l
-nnoremap <C-H> <C-W>h
+nnoremap <A-j> <C-W>j
+nnoremap <A-k> <C-W>k
+nnoremap <A-l> <C-W>l
+nnoremap <A-h> <C-W>h
 
 nmap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
 
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
-nnoremap =oC :let &conceallevel=&conceallevel == 0 ? 1 : 0<CR>
+nnoremap yoC :let &conceallevel=&conceallevel == 0 ? 1 : 0<CR>
 
 nnoremap <leader>wsh :leftabove vsp<CR>
 nnoremap <leader>wsl :rightbelow vsp<CR>
@@ -414,16 +415,16 @@ xnoremap D y'>p
 nnoremap vv ^vg_
 
 " ⇅
-nnoremap <M-j> :m+<CR>
-nnoremap <M-k> :m-2<CR>
-xnoremap <M-j> :m'>+<<CR>gv
-xnoremap <M-k> :m-2<CR>gv
+nnoremap <S-A-j> :m+<CR>
+nnoremap <S-A-k> :m-2<CR>
+xnoremap <S-A-j> :m'>+<<CR>gv
+xnoremap <S-A-k> :m-2<CR>gv
 
 " ⇄
-nnoremap <M-h> <<
-nnoremap <M-l> >>
-xnoremap <M-h> <gv
-xnoremap <M-l> >gv
+nnoremap <S-A-h> <<
+nnoremap <S-A-l> >>
+xnoremap <S-A-h> <gv
+xnoremap <S-A-l> >gv
 
 nnoremap H ^
 nnoremap L $
@@ -627,19 +628,48 @@ endfunction
 
 " Commands & Functions: {{{
 
+" XXD {{{
+function! HexBin()
+  %y
+  vnew
+  0put
+  %!xxd -b
+  setf xxd
+  wincmd p
+  %!xxd -c 6
+  setf xxd
+  37wincmd |
+endfunction
+"}}}
+
+" Preview window looks {{{
+if has('nvim')
+  augroup PreviewLooks
+    autocmd!
+    autocmd WinNew,WinEnter,BufWinEnter * call HandleWinEnter()
+  augroup END
+
+  function! HandleWinEnter()
+    if &previewwindow
+      setlocal winhighlight=Normal:Folded
+    endif
+  endfunction
+endif
+" }}}
+
 " Terminal toggle {{{
 let s:term_buf = 0
 let s:term_win = 0
 
-function! TermToggle(shell, height)
+function! TermToggle(shell, mods)
   if win_getid() == s:term_win
     hide
   elseif !win_gotoid(s:term_win)
-    new terminal
-    exec 'resize ' . a:height
+    exec a:mods 'new' 'terminal'
+    exec a:mods 'resize' (a:mods =~ 'vertical' ? 70 : 12)
     try
-      exec 'buffer ' . s:term_buf
-      exec 'bd terminal'
+      exec 'buffer' s:term_buf
+      bdelete terminal
     catch
       call termopen(a:shell, {"detach": 0})
       let s:term_buf = bufnr('')
@@ -653,8 +683,9 @@ function! TermToggle(shell, height)
   endif
 endfunction
 
-command! TermToggle call TermToggle(has('win32') ? 'powershell' : 'fish', 12)
+command! TermToggle call TermToggle(has('win32') ? 'powershell' : 'fish', <q-mods>)
 nnoremap <A-t> :TermToggle<CR>
+nnoremap <A-T> :vertical TermToggle<CR>
 tnoremap <A-t> <C-\><C-n>:TermToggle<CR>
 " }}}
 
@@ -1424,8 +1455,8 @@ function! StatusLineFileEncoding()
 endfunction
 
 function! StatusLineModified()
-  let modified_char = get(g:, 'use_nerd_font', 0) ? "\UF040" : '+'
-  let readonly_char = get(g:, 'use_nerd_font', 0) ? "\UF023" : "\UE0A2"
+  let modified_char = get(g:, 'use_nerd_font', 0) ? "\UE09E" : '+'
+  let readonly_char = get(g:, 'use_nerd_font', 0) ? "\UE0A2" : "\UE0A2"
   if s:is_nofile()
     return ''
   endif
@@ -1457,11 +1488,21 @@ function! StatusLineBufType()
   return join(bt)
 endfunction
 
-function! StatusLineMode()
+function! StatusLineMode(...)
+  if get(a:, 1, 0) == 1
+    if &ft == 'term' && mode() == 't'
+      return &ft
+    else
+      return ''
+    endif
+  endif
+  if &ft == 'term' && mode() == 't'
+    return ''
+  endif
   if get(g:, 'use_nerd_font', 0)
-    let m = &ft == 'dirvish' ? "\UF07B" :
-        \ &ft == 'qf' ? (empty(getloclist(0)) ? "\UF002" : "\UF00E") :
-        \ &ft == 'grepr' ? "\UF002" :
+    let m = &ft == 'dirvish' ? "\U24B9" :
+        \ &ft == 'qf' ? (empty(getloclist(0)) ? "\U24C6" : "\U24C1") :
+        \ &ft == 'grepr' ? "\U24BC" :
         \ &ft
   else
     let m = &ft == 'dirvish' ? "dir" :
@@ -1475,6 +1516,9 @@ function! Status(active)
   if a:active
     let sl = '%0*'
     let sl.= '%( %{StatusLineMode()} %)'
+    let sl.= '%3*'
+    let sl.= '%( %{StatusLineMode(1)} %)'
+    let sl.= '%0*'
     let sl.= '%( %{StatusLinePath()}%1*%{StatusLineFilename()} %)'
     let sl.= '%<'
     let sl.= '%2*'
@@ -1554,6 +1598,10 @@ call PrettyLittleStatus()
 " }}}
 
 " Plugins config: {{{
+
+" Vlime: {{{
+let g:vlime_leader = '/'
+" }}}
 
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
@@ -1686,6 +1734,33 @@ if s:has_plug('LanguageClient-neovim')
       \ 'typescript': ['tcp://127.0.0.1:2089'],
       \ 'typescript.tsx': ['tcp://127.0.0.1:2089'],
       \ }
+
+  let g:LanguageClient_diagnosticsDisplay = {
+        \ 1: {
+        \     "name": "Error",
+        \     "texthl": "ALEError",
+        \     "signText": "‼",
+        \     "signTexthl": "ALEErrorSign",
+        \ },
+        \ 2: {
+        \     "name": "Warning",
+        \     "texthl": "ALEWarning",
+        \     "signText": "!",
+        \     "signTexthl": "ALEWarningSign",
+        \ },
+        \ 3: {
+        \     "name": "Information",
+        \     "texthl": "ALEInfo",
+        \     "signText": "i",
+        \     "signTexthl": "ALEInfoSign",
+        \ },
+        \ 4: {
+        \     "name": "Hint",
+        \     "texthl": "ALEInfo",
+        \     "signText": "~",
+        \     "signTexthl": "ALEInfoSign",
+        \ },
+        \ }
 endif
 
 " }}}
