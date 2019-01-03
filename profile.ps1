@@ -1,5 +1,4 @@
 ﻿$env:HOME = "$($env:HOMEDRIVE)$($env:HOMEPATH)"
-# $env:EDITOR='c:/dev/tools/vim/vim80/vim.exe'
 $env:EDITOR='nvr --remote-wait-silent -cc ":call GuiForeground()"'
 $env:RIPGREP_CONFIG_PATH="$($env:HOME)/.ripgrep"
 # for latest nvim tui which wont do colours without a hint
@@ -58,7 +57,7 @@ function Get-LockImages {
             } else {
                 $extraFolder = ''
             }
-            cp $_ "C:\Users\Leaf Garland\Pictures\wallpaper\lock\$extraFolder$($_.name).jpg"
+            cp $_ "$(Resolve-Path ~/pictures/wallpaper/lock)/$extraFolder$($_.name).jpg"
         }
 }
 

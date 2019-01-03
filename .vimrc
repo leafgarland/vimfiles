@@ -62,6 +62,9 @@ Plug 'kana/vim-textobj-user'
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/badwolf'
 Plug 'leafgarland/iceberg.vim'
+Plug 'leafgarland/flatwhite-vim'
+Plug 'lifepillar/vim-colortemplate'
+Plug 'ap/vim-css-color'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -76,21 +79,18 @@ Plug 'tommcdo/vim-lion'
 Plug 'machakann/vim-sandwich'
 
 " Tools
-Plug 'neovim/nvim.net'
+if has('nvim')
+  Plug 'neovim/nvim.net'
+endif
 Plug 'tpope/vim-fugitive'
-Plug 'lambdalisue/gina.vim'
 Plug 'tpope/vim-rhubarb'
-Plug 'junegunn/gv.vim'
 Plug 'tpope/vim-ragtag'
 Plug 'tpope/vim-scriptease'
 Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
-Plug 'autozimu/LanguageClient-neovim', {
-  \ 'branch': 'next',
-  \ 'do': 'powershell ./install.ps1',
-  \ }
+Plug 'neoclide/coc.nvim', {'tag': '*', 'do': { -> coc#util#install()}}
 
 " Filetypes
 Plug 'hail2u/vim-css3-syntax'
@@ -293,8 +293,12 @@ nnoremap <leader>t :tjump<space>
 nnoremap g<C-P> :pwd<CR>
 
 " buffer text object
-onoremap ae :<C-u>normal vae<CR>
-xnoremap ae GoggV
+onoremap <silent> ae :<C-u>keepjumps normal! ggVG<CR>
+xnoremap <silent> ae :<C-u>keepjumps normal! ggVG<CR>
+
+" inner line text object
+onoremap <silent> il :<c-u>keepjumps lockmarks normal! g_v^<cr>
+xnoremap <silent> il :<C-u>keepjumps lockmarks normal! g_v^<CR>
 
 " disable exmode maps
 nnoremap Q :bdelete!<CR>
@@ -414,6 +418,19 @@ xnoremap D y'>p
 
 nnoremap vv ^vg_
 
+nnoremap <silent> s :set opfunc=PasteReplace<CR>g@
+vnoremap <silent> s :<C-U>call PasteReplace(visualmode(), 1)<CR>
+
+function! PasteReplace(type, ...)
+  if a:0
+    normal! gv"0p
+  elseif a:type == 'line'
+    normal! '[V']"0p
+  else
+    normal! `[v`]"0p
+  endif
+endfunction
+
 " ⇅
 nnoremap <S-A-j> :m+<CR>
 nnoremap <S-A-k> :m-2<CR>
@@ -523,11 +540,25 @@ endfunction
 
 " fsharp: {{{
 function! s:ft_fsharp()
+  function! SendFSI(t)
+    let tid = get(b:, 'sendtermid', 0)
+    if !tid
+      botright split new
+      let tid = termopen('fsi')
+      wincmd 
+      let b:sendtermid = tid
+    endif
+    call chansend(b:sendtermid, a:t)
+  endfunction
+
+  command! -buffer -range FSIExecRange call SendFSI(substitute(join(getline(<line1>, <line2>), "\r") . ";;\r", "\r\s*\\", ' ', 'g'))
+  nnoremap <buffer> <leader>xe :FSIExecRange<CR>
+  xnoremap <buffer> <leader>xe :FSIExecRange<CR>
+
   if executable('fantomas')
     setlocal equalprg=fantomas\ --stdin\ --stdout
   endif
-  setlocal shiftwidth=2
-  let b:end_trun_str = ';;'
+  setlocal shiftwidth=4
 endfunction
 " }}}
 
@@ -582,6 +613,10 @@ function! s:ft_rust()
     nnoremap <silent> <buffer> gd :call LanguageClient_textDocument_definition()<CR>
     nnoremap <silent> <buffer> gr :call LanguageClient_textDocument_references()<CR>
     nnoremap <silent> <buffer> <F2> :call LanguageClient_textDocument_rename()<CR>
+  endif
+
+  if s:has_plug('coc.nvim')
+    call MyDefaultCocMappings()
   endif
 endfunction
 " }}}
@@ -642,21 +677,6 @@ function! HexBin()
 endfunction
 "}}}
 
-" Preview window looks {{{
-if has('nvim')
-  augroup PreviewLooks
-    autocmd!
-    autocmd WinNew,WinEnter,BufWinEnter * call HandleWinEnter()
-  augroup END
-
-  function! HandleWinEnter()
-    if &previewwindow
-      setlocal winhighlight=Normal:Folded
-    endif
-  endfunction
-endif
-" }}}
-
 " Terminal toggle {{{
 let s:term_buf = 0
 let s:term_win = 0
@@ -704,6 +724,8 @@ function! Browse(url)
   call system([cmd, a:url])
 endfunction
 command! -nargs=1 Browse :call Browse(<q-args>)
+nnoremap gx :Browse <C-R><C-f><CR>
+xnoremap gx :Browse
 "}}}
 
 " CWindow {{{
@@ -1140,6 +1162,14 @@ function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
   return systemlist('rg -S --files --iglob ' . pattern)
 endfunction
 
+function! s:FdFilesComplete(ArgLead, CmdLine, CursorPos)
+  let pattern = a:ArgLead
+  if empty(pattern)
+    return []
+  endif
+  return systemlist('fd ' . pattern)
+endfunction
+
 function! s:Run(command, arg, mods)
   execute a:mods a:command a:arg
 endfunction
@@ -1147,10 +1177,12 @@ endfunction
 command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>Run('tcd', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>MRUFComplete OldFiles call <sid>Run('edit', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>RgFilesComplete RgFiles call <sid>Run('edit', <q-args>, <q-mods>)
+command! -nargs=1 -complete=customlist,<sid>FdFilesComplete FdFiles call <sid>Run('edit', <q-args>, <q-mods>)
 nnoremap <leader>pr :OldDirs *
 nnoremap <leader>fr :OldFiles *
 nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>/*<C-z>
-nnoremap <leader>ff :RgFiles **/
+" nnoremap <leader>ff :RgFiles **/
+nnoremap <leader>ff :FdFiles 
 
 " }}}
 
@@ -1305,7 +1337,6 @@ nnoremap <expr> u  VerifyUndo()
 
 autocmd vimrc BufReadPost  *  :call s:remember_undo_start(0)
 autocmd vimrc BufWritePost *  :call s:remember_undo_start(1)
-
 function! s:remember_undo_start(reset)
   let undo_now = undotree().seq_cur
   if undo_now > 0 && (!exists('b:undo_start') || a:reset)
@@ -1414,6 +1445,18 @@ function! StatusLinePath()
     let path = PathShorten(path, maxPathLen)
   endif
   return path.(exists('+shellslash') && !&shellslash ? '\' : '/')
+endfunction
+
+function! StatusLineLSP()
+  if !exists('*coc#status')
+    return ''
+  endif
+  let lspStatus = trim(coc#status())
+  if empty(lspStatus)
+    return ''
+  endif
+
+  return lspStatus
 endfunction
 
 function! s:bufferIndex(bufName)
@@ -1527,6 +1570,9 @@ function! Status(active)
     let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
+    let sl.= '%3*'
+    let sl.= '%( %{StatusLineLSP()} %)'
+    let sl.= '%0*'
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
@@ -1599,6 +1645,31 @@ call PrettyLittleStatus()
 
 " Plugins config: {{{
 
+" COC: {{{
+if s:has_plug('coc.nvim')
+  function! MyDefaultCocMappings()
+    nmap <silent> [c <Plug>(coc-diagnostic-prev)
+    nmap <silent> ]c <Plug>(coc-diagnostic-next))
+
+    nmap <silent> gd <Plug>(coc-definition)
+    nmap <silent> gy <Plug>(coc-type-definition)
+    nmap <silent> gi <Plug>(coc-implementation)
+    nmap <silent> gr <Plug>(coc-references)
+
+    " Use K for show documentation in preview window
+    nnoremap <silent> K :call <SID>show_documentation()<CR>
+  endfunction
+
+  function! s:show_documentation()
+    if &filetype == 'vim'
+      execute 'h '.expand('<cword>')
+    else
+      call CocAction('doHover')
+    endif
+  endfunction
+endif
+" }}}
+
 " Vlime: {{{
 let g:vlime_leader = '/'
 " }}}
@@ -1639,7 +1710,7 @@ function! s:plug_gx()
   let repo = matchstr(uri, '[^:/]*/'.name)
   let url  = empty(sha) ? 'https://github.com/'.repo
                       \ : printf('https://github.com/%s/commit/%s', repo, sha)
-  call netrw#BrowseX(url, 0)
+  Browse url
 endfunction
 
 autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
@@ -1647,12 +1718,12 @@ autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx
 
 " Targets: {{{
 " add curly braces
-let g:targets_argOpening = '[({[]'
-let g:targets_argClosing = '[]})]'
+" let g:targets_argOpening = '[({[]'
+" let g:targets_argClosing = '[]})]'
 " args separated by , and ;
-let g:targets_argSeparator = '[,;]'
-let g:targets_pairs = '()b {}B []q <>v'
-let g:targets_quotes = '"d '' `'
+" let g:targets_argSeparator = '[,;]'
+" let g:targets_pairs = '()b {}B []q <>v'
+" let g:targets_quotes = '"d '' `'
 " }}}
 
 " FSharp: {{{
