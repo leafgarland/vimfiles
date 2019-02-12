@@ -65,6 +65,7 @@ Plug 'leafgarland/iceberg.vim'
 Plug 'leafgarland/flatwhite-vim'
 Plug 'lifepillar/vim-colortemplate'
 Plug 'ap/vim-css-color'
+Plug 'Lokaltog/vim-monotone'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -91,6 +92,10 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
 Plug 'neoclide/coc.nvim', {'tag': '*', 'do': { -> coc#util#install()}}
+Plug 'tpope/vim-dispatch'
+if has('nvim')
+  Plug 'radenling/vim-dispatch-neovim'
+endif
 
 " Filetypes
 Plug 'hail2u/vim-css3-syntax'
@@ -179,6 +184,10 @@ set backup
 set undolevels=5000
 set undofile
 
+set nostartofline
+
+set complete+=kspell
+
 if executable('rg')
   set grepprg=rg\ --vimgrep\ --no-heading\ -HS\ --line-number
   set grepformat=%f:%l:%c:%m
@@ -230,11 +239,32 @@ set fillchars=vert:┃,fold:-
 set splitright
 set switchbuf=useopen
 
+" fit the current window height to the selected text
+func! s:win_motion_resize(type) abort
+  let sel_save = &selection
+  let &selection = "inclusive"
+
+  if a:type ==# 'line' || line("']") > line("'[")
+    exe (line("']") - line("'[") + 1) 'wincmd _'
+    norm! `[zt
+  endif
+  if a:type !=# 'line'
+    "TODO: this assumes sign column is visible.
+    exe ( col("']") -  col("'[") + 3) 'wincmd |'
+  endif
+
+  let &selection = sel_save
+endfunction
+xnoremap <silent> <leader>wf  :<C-u>set winfixwidth winfixheight opfunc=<sid>win_motion_resize<CR>gvg@
+
 if has('nvim')
   autocmd vimrc TermOpen * setfiletype term
         \ |setlocal nonumber
         \ |autocmd vimrc BufEnter <buffer> startinsert
         \ |startinsert
+  set inccommand=split
+  set fillchars+=msgsep:┅ "━
+  highlight link MsgSeparator MoreMsg
 endif
 "}}}
 
@@ -269,9 +299,8 @@ if has('vim_starting')
   set showbreak=↪
   set autoindent
   set expandtab
-  set tabstop=4
   set shiftwidth=4
-  set softtabstop=4
+  set softtabstop=-1
 endif
 "}}}
 
@@ -305,12 +334,15 @@ nnoremap Q :bdelete!<CR>
 nmap gQ <Nop>
 
 if has('nvim')
-  let g:tshell = 'term://' . (executable('fish') ? 'fish' : executable('powershell') ? 'powershell' : '')
+  let g:tshell = 'term://' . (executable('fish') ? 'fish' : executable('pwsh') ? 'pwsh' : '')
   tnoremap <Esc><Esc> <C-\><C-n>
   " <C-Space> is <C-@>
   tnoremap <C-Space> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
+  tnoremap <C-u> <C-\><C-n><C-u>
+
   if empty($TMUX)
+    tnoremap <C-a>: <C-\><C-n>:
     tnoremap <C-a>n <C-\><C-n>:bnext<CR>
     nnoremap <C-a>n :bnext<CR>
     tnoremap <C-a>p <C-\><C-n>:bprevious<CR>
@@ -368,6 +400,15 @@ nnoremap <A-h> <C-W>h
 
 nmap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
+nnoremap <leader>w1 1<C-w><C-w>
+nnoremap <leader>w2 2<C-w><C-w>
+nnoremap <leader>w3 3<C-w><C-w>
+nnoremap <leader>w4 4<C-w><C-w>
+nnoremap <leader>w5 5<C-w><C-w>
+nnoremap <leader>w6 6<C-w><C-w>
+nnoremap <leader>w7 7<C-w><C-w>
+nnoremap <leader>w8 8<C-w><C-w>
+nnoremap <leader>w9 9<C-w><C-w>
 
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
 nnoremap yoC :let &conceallevel=&conceallevel == 0 ? 1 : 0<CR>
@@ -452,8 +493,21 @@ nnoremap gI `.
 
 xnoremap / <Esc>/\%V
 
-nnoremap <leader>sg :g//#<left><left>
-nnoremap <leader>sG :v//#<left><left>
+nnoremap <leader>sg :g/
+nnoremap <leader>sv :v/
+xnoremap <leader>sg :g/
+xnoremap <leader>sv :v/
+
+nnoremap <leader>sp :g//#<CR>
+nnoremap <leader>sP :v//#<CR>
+xnoremap <leader>sp :g//#<CR>
+xnoremap <leader>sP :v//#<CR>
+
+nnoremap <leader>sd :g//d<CR>
+nnoremap <leader>sD :v//d<CR>
+xnoremap <leader>sd :g//d<CR>
+xnoremap <leader>sD :v//d<CR>
+
 nnoremap <leader>sc :%s///gn<left><left><left><left>
 xnoremap <leader>sc :s///gn<left><left><left><left>
 
@@ -464,13 +518,11 @@ xnoremap <silent> <leader>s\ :s,\%V/,\\,g<CR>
 
 nnoremap <leader>sl :keeppatterns lvimgrep /<C-R><C-R>//j %<CR>
 
+nnoremap <leader>sr :%snomagic/
+xnoremap <leader>sr :snomagic/
+
 nnoremap <leader>8 :keeppatterns lvimgrep /<C-R><C-R><C-W>/j %<CR>
 xnoremap <leader>8 y:<C-U>keeppatterns lvimgrep /<C-R><C-R>"/j %<CR>
-
-nnoremap <leader>sv :v//d<CR>
-nnoremap <leader>sV :g//d<CR>
-xnoremap <leader>sv :v//d<CR>
-xnoremap <leader>sV :g//d<CR>
 
 inoremap (<CR> (<CR>)<Esc>O
 inoremap {<CR> {<CR>}<Esc>O
@@ -510,6 +562,11 @@ function! s:ft_load(ftype)
 endfunction
 autocmd vimrc FileType * call s:ft_load(expand('<amatch>'))
 
+function! SpellIgnoreSomeWords()
+  syntax match spellIgnoreAcronyms '\<\u\(\u\|\d\)\+s\?\>' contains=@NoSpell contained containedin=@Spell
+  syntax match spellIgnoreUrl '\w\+:\/\/[^[:space:]]\+' contains=@NoSpell contained containedin=@Spell
+endfunction
+
 " json: {{{
 function! s:ft_json()
   if executable('jq')
@@ -519,6 +576,10 @@ function! s:ft_json()
   endif
   setlocal shiftwidth=2
   setlocal concealcursor=n
+
+  if s:has_plug('coc.nvim')
+    call MyDefaultCocMappings()
+  endif
 endfunction
 " }}}
 
@@ -621,12 +682,27 @@ function! s:ft_rust()
 endfunction
 " }}}
 
+" typescript: {{{
+function! s:ft_typescript()
+  if s:has_plug('coc.nvim')
+    call MyDefaultCocMappings()
+  endif
+endfunction
+" }}}
+
 " pandoc/markdown: {{{
 function! s:ft_pandoc()
   setlocal foldcolumn=0 
   setlocal concealcursor+=n
   setlocal textwidth=79
   setlocal shiftwidth=2
+  call SpellIgnoreSomeWords()
+endfunction
+" }}}
+
+" text: {{{
+function! s:ft_text()
+  call SpellIgnoreSomeWords()
 endfunction
 " }}}
 
@@ -974,51 +1050,17 @@ nnoremap <leader>ux :XxdOrig<CR>
 "}}}
 
 " Buffers: {{{
-function! Execute(cmd) abort
-  if exists('*execute')
-    return execute(a:cmd)
-  elseif exists('*capture')
-    return capture(a:cmd)
-  else
-    let [save_verbose, save_verbosefile] = [&verbose, &verbosefile]
-    set verbose=0 verbosefile=
-    redir => res
-    silent! execute a:cmd
-    redir END
-    let [&verbose, &verbosefile] = [save_verbose, save_verbosefile]
-    return res
-  endif
-endfunction
 
 highlight link BufferNumber Number
 highlight link BufferFlags Special
-highlight link BufferCurrentName Function
+highlight link BufferCurrentName Title
 highlight link BufferAlternateName Include
 highlight link BufferName Normal
-
-cmap <expr> <C-k> CustomCmdPrevious()
-cmap <expr> <C-j> CustomCmdNext()
-function! CustomCmdPrevious()
-  let cmd = getcmdline()
-  if getcmdtype() != ':' || cmd != 'buffer '
-    return "\<C-k>"
-  endif
-
-  return "\<Esc>:bprevious\<CR>:redraw\<CR>:Buffers\<CR>:buffer "
-endfunction
-function! CustomCmdNext()
-  let cmd = getcmdline()
-  if getcmdtype() != ':' || cmd != 'buffer '
-    return "\<C-j>"
-  endif
-
-  return "\<Esc>:bnext\<CR>:redraw\<CR>:Buffers\<CR>:buffer "
-endfunction
 
 command! -bar -bang Buffers call Buffers(<bang>0)
 function! Buffers(show_all) abort
   let ls = a:show_all ? 'ls!' : 'ls'
-  let buffers = split(Execute(ls), "\n")
+  let buffers = split(execute(ls), "\n")
   echo "\n"
   for b in buffers
     let ms = matchlist(b, '\s*\(\d\+\)\(.....\)\s\+"\(.\+\)"\s\+line \(\d\+\)')
@@ -1048,8 +1090,11 @@ function! Buffers(show_all) abort
   echohl None
 endfunction
 
+" }}}
+
+" Highlights: {{{
 function! Highlight(...) abort
-  let lines = split(Execute('highlight'), "\n")
+  let lines = split(execute('highlight'), "\n")
   let groups = []
   for line in lines
     if match(line, '^\s\+')> -1
@@ -1351,7 +1396,9 @@ function! VerifyUndo ()
 
   let undo_now = undotree().seq_cur
   if undo_now > 0 && undo_now == b:undo_start
-    return confirm("Undo into previous session?", "&Yes\n&No") == 1 ? "\<C-L>u" : "\<C-L>"
+    let response = confirm("Undo into previous session?", "&Yes\n&No")
+    redraw
+    return response == 1 ? 'u' : ''
   else
     return 'u'
   endif
@@ -1413,6 +1460,16 @@ function! s:GetTermTitle()
   endif
 
   return [ms[1].' ', ms[2]]
+endfunction
+
+function! StatusLineWinNum()
+  if winnr('$')==1
+    return ''
+  endif
+  let n = winnr()
+  if n <= 10
+    return nr2char(0x2776 + n - 1)
+  endif
 endfunction
 
 function! StatusLineFilename()
@@ -1572,7 +1629,7 @@ function! Status(active)
     let sl.= '%='
     let sl.= '%3*'
     let sl.= '%( %{StatusLineLSP()} %)'
-    let sl.= '%0*'
+    let sl.= '%0* '
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
@@ -1580,6 +1637,8 @@ function! Status(active)
     let sl.= '%( %{StatusLineFugitive()} %)'
     let sl.= '%0*'
     let sl.= '%( %4l:%-3c %3p%% %)'
+    let sl.= '%2*'
+    let sl.= '%(%{StatusLineWinNum()} %)'
     return sl
   else
     let sl = '%0*'
@@ -1588,27 +1647,33 @@ function! Status(active)
     let sl.= '%<'
     let sl.= '%( %{StatusLineModified()} %)'
     let sl.= '%( %{StatusLineBufType()} %)'
+    let sl.= '%='
+    let sl.= '%2*'
+    let sl.= '%( %{StatusLineWinNum()} %)'
     return sl
   endif
 endfunction
 
-set showtabline=0
 function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
   let winnr = tabpagewinnr(tabnr)
   let cwd = PathShorten(getcwd(exists(':tcd') ? -1 : winnr, tabnr), &columns - 6)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
+  let gitDir = cwd.'/.git'
+  let gitHead = fugitive#Head(0, gitDir)
 
   let s = '%#TabLine#'
   let s.= ' ['.tabnr.'] '
+  let s.= '%='
+  let s.= '%2*'
+  let s.= '%( '.gitHead.' %)'
   if isLocalCwd
     let s.= '%#TabLineSel#'
+  else
+    let s.= '%#TabLine#'
   endif
-  let s.= '%='
-  let s.= ' '
-  let s.= cwd
-  let s.= ' '
+  let s.= ' '.cwd.' '
   return s
 endfunction
 
@@ -1648,16 +1713,17 @@ call PrettyLittleStatus()
 " COC: {{{
 if s:has_plug('coc.nvim')
   function! MyDefaultCocMappings()
-    nmap <silent> [c <Plug>(coc-diagnostic-prev)
-    nmap <silent> ]c <Plug>(coc-diagnostic-next))
+    nmap <silent> <buffer> [c <Plug>(coc-diagnostic-prev)
+    nmap <silent> <buffer> ]c <Plug>(coc-diagnostic-next))
+    nmap <silent> <buffer> <C-g>c <Plug>(coc-diagnostic-info))
 
-    nmap <silent> gd <Plug>(coc-definition)
-    nmap <silent> gy <Plug>(coc-type-definition)
-    nmap <silent> gi <Plug>(coc-implementation)
-    nmap <silent> gr <Plug>(coc-references)
+    nmap <silent> <buffer> gd <Plug>(coc-definition)
+    nmap <silent> <buffer> gy <Plug>(coc-type-definition)
+    nmap <silent> <buffer> gi <Plug>(coc-implementation)
+    nmap <silent> <buffer> gr <Plug>(coc-references)
 
     " Use K for show documentation in preview window
-    nnoremap <silent> K :call <SID>show_documentation()<CR>
+    nnoremap <silent> <buffer> K :call <SID>show_documentation()<CR>
   endfunction
 
   function! s:show_documentation()
@@ -1834,6 +1900,14 @@ if s:has_plug('LanguageClient-neovim')
         \ }
 endif
 
+" }}}
+
+" pandoc {{{
+let g:pandoc#syntax#codeblocks#embeds#langs = [
+      \ "rust",
+      \ "bash=sh"]
+let g:pandoc#modules#disabled = ['bibliographies']
+autocmd vimrc FileType markdown nested set filetype=markdown.pandoc
 " }}}
 
 "}}}
