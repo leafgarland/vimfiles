@@ -6,6 +6,11 @@ $env:COLORTERM = 'truecolor'
 
 $env:GOPATH = "C:/dev/tools/gopath"
 
+if ($env:NVIM_CONFIG) {
+    # running inside nvim
+    $env:EDITOR = 'nvr --remote-wait-silent -l'
+}
+
 function edit { Invoke-Expression ([string]::join(' ', (, $env:EDITOR + $args))) }
 
 function Start-PushpayPublic { &'C:\Program Files (x86)\IIS Express\iisexpress.exe' "/config:$(git home)\.vs\config\applicationhost.config" /site:Pushpay.Public }
@@ -13,6 +18,7 @@ function pico ($size = 256) { C:\dev\me\pico-8\pico8.exe -width $size+2 -height 
 function d2b($d) { [System.Convert]::ToString($d, 2) }
 function d2h($d) { [System.Convert]::ToString($d, 16) }
 function b2d([string]$b) { [System.Convert]::ToInt32($b, 2) }
+function rgl { rg.exe --color=always --heading -n $args | less -r }
 
 function Update-GitGraphCache { git show-ref -s | git commit-graph write --stdin-commits }
 
@@ -38,10 +44,13 @@ function Get-LockImages {
     }
 }
 
-if ((Get-Command pageant -CommandType Application -ErrorAction SilentlyContinue) -and (-not (Get-Process pageant -erroraction silentlycontinue))) {
-    pageant "$($env:HOME)\.ssh\github_rsa_private.ppk"
-    $env:GIT_SSH = Resolve-Path (scoop which plink)
-}
+# ssh-agent service should be AutomaticDelay, so it runs at startup and ssh-add should have cached previous identities too,
+# so the below (or ssh equivalent) should not be needed. Might need to tell git to use the right ssh via $env:GIT_SSH
+
+# if ((Get-Command pageant -CommandType Application -ErrorAction SilentlyContinue) -and (-not (Get-Process pageant -erroraction silentlycontinue))) {
+#     pageant "$($env:HOME)\.ssh\github_rsa_private.ppk"
+#     $env:GIT_SSH = Resolve-Path (scoop which plink)
+# }
 
 $HistoryPath = "~\pshistory.xml"
 Register-EngineEvent PowerShell.Exiting -Action { Get-History -Count 3000 | Export-CliXml $HistoryPath} | Out-Null
@@ -173,7 +182,7 @@ $host.PrivateData.ErrorBackgroundColor = 'Black'
 $host.PrivateData.WarningForegroundColor = 'DarkYellow'
 $host.PrivateData.WarningBackgroundColor = 'Black'
 function Reset-Colours { $host.ui.rawui.foregroundcolor = 7 }
-function Show-Colours { 0..15 | % { Write-Host -NoNewline "["; Write-Host -NoNewLine -BackgroundColor $_ "   "; Write-Host -NoNewLine "] "; write-host ([consolecolor]$_) } }
+function Show-Colours { 0..7 | % { Write-Host -NoNewLine -BackgroundColor $_ "   "; Write-Host -NoNewLine -BackgroundColor ($_+8) "   "; write-host } }
 function Show-Colours24 { "$($ESC=[char]27; $w=$host.ui.rawui.windowsize.width-1; [string]::join('', (0..$w | % { $r=[int](255-($_*255/$w)); $g=[int]($_*510/$w); $b=[int]($_*255/$w); if ($g -gt 255) { $g=510-$g }; "$ESC[48;2;$r;$g;$($b)m$ESC[38;2;$(255-$r);$(255-$g);$(255-$b)m$('/\'[$_%2])$ESC[0m" })))" }
 
 $isElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
