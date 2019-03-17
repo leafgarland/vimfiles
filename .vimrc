@@ -83,6 +83,7 @@ Plug 'machakann/vim-sandwich'
 if has('nvim')
   Plug 'neovim/nvim.net'
 endif
+Plug 'samoshkin/vim-mergetool'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-rhubarb'
 Plug 'tpope/vim-ragtag'
@@ -260,11 +261,11 @@ xnoremap <silent> <leader>wf  :<C-u>set winfixwidth winfixheight opfunc=<sid>win
 if has('nvim')
   autocmd vimrc TermOpen * setfiletype term
         \ |setlocal nonumber
-        \ |autocmd vimrc BufEnter <buffer> startinsert
+        \ |autocmd vimrc WinEnter,BufEnter <buffer> startinsert
         \ |startinsert
   set inccommand=split
-  set fillchars+=msgsep:┅ "━
-  highlight link MsgSeparator MoreMsg
+  set fillchars+=msgsep:━
+  highlight link MsgSeparator Title
 endif
 "}}}
 
@@ -315,6 +316,9 @@ xnoremap <C-space> :
 " because Ctrl clears bits 6+7 :echo and(char2nr(' '), 31) == and(char2nr('@'), 31)
 nnoremap <C-@> :
 xnoremap <C-@> :
+" Windows console doesn't do C-Space or C-@, so this is an alternative
+nnoremap <M-;> :
+xnoremap <M-;> :
 
 xnoremap . :normal .<CR>
 
@@ -338,6 +342,8 @@ if has('nvim')
   tnoremap <Esc><Esc> <C-\><C-n>
   " <C-Space> is <C-@>
   tnoremap <C-Space> <C-\><C-n>:
+  " <C-Space> doesn't work in Windows console
+  tnoremap <M-;> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
   tnoremap <C-u> <C-\><C-n><C-u>
 
@@ -398,7 +404,6 @@ nnoremap <A-k> <C-W>k
 nnoremap <A-l> <C-W>l
 nnoremap <A-h> <C-W>h
 
-nmap <leader>w <C-w>
 nnoremap <leader>ww <C-w>p
 nnoremap <leader>w1 1<C-w><C-w>
 nnoremap <leader>w2 2<C-w><C-w>
@@ -560,7 +565,7 @@ function! s:ft_load(ftype)
     call s:ft_{a:ftype}()
   endif
 endfunction
-autocmd vimrc FileType * call s:ft_load(expand('<amatch>'))
+autocmd vimrc FileType * call <SID>ft_load(expand('<amatch>'))
 
 function! SpellIgnoreSomeWords()
   syntax match spellIgnoreAcronyms '\<\u\(\u\|\d\)\+s\?\>' contains=@NoSpell contained containedin=@Spell
@@ -684,6 +689,7 @@ endfunction
 
 " typescript: {{{
 function! s:ft_typescript()
+    call MyDefaultCocMappings()
   if s:has_plug('coc.nvim')
     call MyDefaultCocMappings()
   endif
@@ -754,21 +760,40 @@ endfunction
 "}}}
 
 " Terminal toggle {{{
-let s:term_buf = 0
-let s:term_win = 0
+function! TermReset(...)
+  let s:term_buf = 0
+  let s:term_win = 0
+  let s:term_mods = ''
+  let s:term_size = 0
+endfunction
 
 function! TermToggle(shell, mods)
   if win_getid() == s:term_win
+    " hide window
+    let s:term_size = s:term_mods =~ 'vertical' ? winwidth(0) : winheight(0)
     hide
   elseif !win_gotoid(s:term_win)
-    exec a:mods 'new' 'terminal'
-    exec a:mods 'resize' (a:mods =~ 'vertical' ? 70 : 12)
+    " create window
+    let mods = empty(s:term_mods) ? a:mods : s:term_mods
+    let isVertical = mods =~ 'vertical'
+    let size = empty(s:term_size) ? (isVertical ? 80 : 12) : s:term_size
+    exec mods 'new' 'terminal'
+    exec mods 'resize' size
+    if isVertical
+      setlocal winfixwidth
+    else
+      setlocal winfixheight
+    endif
     try
+      " switch to existing term buffer
       exec 'buffer' s:term_buf
       bdelete terminal
     catch
-      call termopen(a:shell, {"detach": 0})
+      " create new term buffer
+      call termopen(a:shell, {"detach": 0, "on_exit": function("TermReset")})
+      let s:term_size = 0
       let s:term_buf = bufnr('')
+      let s:term_mods = a:mods
       setlocal nonumber
       setlocal norelativenumber
       setlocal signcolumn=no
@@ -779,10 +804,16 @@ function! TermToggle(shell, mods)
   endif
 endfunction
 
-command! TermToggle call TermToggle(has('win32') ? 'powershell' : 'fish', <q-mods>)
+if has('vim_starting')
+  call TermReset()
+endif
+
+command! TermToggle call TermToggle(has('win32') ? 'pwsh' : 'fish', <q-mods>)
 nnoremap <A-t> :TermToggle<CR>
 nnoremap <A-T> :vertical TermToggle<CR>
 tnoremap <A-t> <C-\><C-n>:TermToggle<CR>
+nnoremap <leader>rl :TermToggle<CR><up><CR>
+
 " }}}
 
 " Replace Browse cmd {{{
@@ -1462,6 +1493,18 @@ function! s:GetTermTitle()
   return [ms[1].' ', ms[2]]
 endfunction
 
+function! StatusLineDiffMerge()
+  if get(g:, 'mergetool_in_merge_mode', 0)
+    return '↸'
+  endif
+
+  if &diff
+    return '↹'
+  endif
+
+  return ''
+endfunction
+
 function! StatusLineWinNum()
   if winnr('$')==1
     return ''
@@ -1497,7 +1540,7 @@ function! StatusLinePath()
   if path == '.'
     return ''
   endif
-  let maxPathLen = winwidth(0) - 50
+  let maxPathLen = winwidth(0) - 80
   if strlen(path) > maxPathLen
     let path = PathShorten(path, maxPathLen)
   endif
@@ -1633,6 +1676,7 @@ function! Status(active)
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
+    let sl.= '%( %{StatusLineDiffMerge()} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineFugitive()} %)'
     let sl.= '%0*'
@@ -1648,6 +1692,7 @@ function! Status(active)
     let sl.= '%( %{StatusLineModified()} %)'
     let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%='
+    let sl.= '%( %{StatusLineDiffMerge()} %)'
     let sl.= '%2*'
     let sl.= '%( %{StatusLineWinNum()} %)'
     return sl
@@ -1713,14 +1758,15 @@ call PrettyLittleStatus()
 " COC: {{{
 if s:has_plug('coc.nvim')
   function! MyDefaultCocMappings()
-    nmap <silent> <buffer> [c <Plug>(coc-diagnostic-prev)
-    nmap <silent> <buffer> ]c <Plug>(coc-diagnostic-next))
-    nmap <silent> <buffer> <C-g>c <Plug>(coc-diagnostic-info))
+    nnoremap <silent> <buffer> [c <Plug>(coc-diagnostic-prev)
+    nnoremap <silent> <buffer> ]c <Plug>(coc-diagnostic-next))
+    nnoremap <silent> <buffer> <C-g>c <Plug>(coc-diagnostic-info))
 
-    nmap <silent> <buffer> gd <Plug>(coc-definition)
-    nmap <silent> <buffer> gy <Plug>(coc-type-definition)
-    nmap <silent> <buffer> gi <Plug>(coc-implementation)
-    nmap <silent> <buffer> gr <Plug>(coc-references)
+    nnoremap <silent> <buffer> gd <Plug>(coc-definition)
+    nnoremap <silent> <buffer> gy <Plug>(coc-type-definition)
+    nnoremap <silent> <buffer> gi <Plug>(coc-implementation)
+    nnoremap <silent> <buffer> gr <Plug>(coc-references)
+    nnoremap <silent> <buffer> <leader>cl :CocList<CR>
 
     " Use K for show documentation in preview window
     nnoremap <silent> <buffer> K :call <SID>show_documentation()<CR>
