@@ -12,6 +12,7 @@ if ($env:NVIM_CONFIG) {
 }
 
 function edit { Invoke-Expression ([string]::join(' ', (, $env:EDITOR + $args))) }
+function vsedit { devenv /edit $args }
 
 function Start-PushpayPublic { &'C:\Program Files (x86)\IIS Express\iisexpress.exe' "/config:$(git home)\.vs\config\applicationhost.config" /site:Pushpay.Public }
 function pico ($size = 256) { C:\dev\me\pico-8\pico8.exe -width $size+2 -height $size+2 $args }
