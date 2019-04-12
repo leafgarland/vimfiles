@@ -60,12 +60,9 @@ Plug 'kana/vim-textobj-user'
 
 " Colour schemes and pretty things
 Plug 'leafgarland/gruvbox/'
-Plug 'leafgarland/badwolf'
 Plug 'leafgarland/iceberg.vim'
 Plug 'leafgarland/flatwhite-vim'
-Plug 'lifepillar/vim-colortemplate'
-Plug 'ap/vim-css-color'
-Plug 'Lokaltog/vim-monotone'
+Plug 'RRethy/vim-hexokinase'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
@@ -92,8 +89,10 @@ Plug 'justinmk/vim-dirvish'
 Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
-Plug 'neoclide/coc.nvim', {'tag': '*', 'do': { -> coc#util#install()}}
+Plug 'neoclide/coc.nvim', {'do': 'yarn install'}
 Plug 'tpope/vim-dispatch'
+Plug 'junegunn/fzf'
+Plug 'junegunn/fzf.vim'
 if has('nvim')
   Plug 'radenling/vim-dispatch-neovim'
 endif
@@ -225,7 +224,7 @@ set diffopt+=vertical
 
 set wildmode=longest:full,full
 set wildignorecase
-set wildoptions=tagfile
+set wildoptions=tagfile,pum
 set wildcharm=<C-z>
 set number
 set winminheight=0
@@ -745,6 +744,26 @@ endfunction
 
 " Commands & Functions: {{{
 
+" shada clean {{{
+function! ShadaClean()
+  let tshada = expand('~/mine.shada')
+  let mpack = readfile(tshada, 'b')
+  call writefile(mpack, expand('~/mine.tmp.shada'), 'b')
+  let shada_objects = msgpackparse(mpack)
+  let new_shada = []
+  for item in shada_objects
+    if type(item) != 4 || !has_key(item, 'f') 
+      let new_shada += [item]
+      continue
+    endif
+    let f2 = deepcopy(item)
+    let f2['f'] = tr(item.f, '\', '/')
+    let new_shada += [f2]
+  endfor
+  call writefile(msgpackdump(new_shada), tshada, 'b')
+endfunction
+autocmd vimrc VimLeave * call ShadaClean()
+" }}}
 " XXD {{{
 function! HexBin()
   %y
