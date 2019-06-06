@@ -8,60 +8,63 @@
 [difftool "nvim"]
     cmd = nvim.exe -d $BASE $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [pretty]
-    one=%C(auto)%h %s %Cblue%an %Cgreen%ar
+    one=%C(auto)%h %s %Cblue%an %Cgreen%cd
     onebody=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s%n%w(100,2,2)%-b
-    onebodydate=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s %w(0)%C(green)%cr%n%w(100,2,2)%-b
-    pulls=%Cblue%<(15,trunc)%an%Creset%w(100,0,15)%-b %w(0)%C(green)%cr
+    onebodydate=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s %w(0)%C(green)%cd%n%w(100,2,2)%-b
+    pulls=%Cblue%<(15,trunc)%an%Creset%w(100,0,15)%-b %w(0)%C(green)%cd
 [alias]
+    find-merge = "!sh -c 'commit=$0 && branch=${1:-master} && (git rev-list $commit..$branch --ancestry-path | cat -n; git rev-list $commit..$branch --first-parent | cat -n) | sort -k2 -s | uniq -f1 -d | sort -n | tail -1 | cut -f2'"
     ismerged = "!if [ $(git rev-parse HEAD) == $(git merge-base master HEAD) ];then echo 'Merged'; else echo 'Not merged'; fi"
-	amend = commit --amend --no-edit
-	fixup = commit --fixup
-	rewrite = !git rebase -i --autosquash $(git merge-base master HEAD)
+    merges = log master --merges --pretty=pulls
+    amend = commit --amend --no-edit
+    fixup = commit --fixup
+    rewrite = !git rebase -i --autosquash $(git merge-base master HEAD)
     undorebase = reset --mixed ORIG_HEAD
-	uncommit = reset --mixed HEAD~
-	dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && GIT_SEQUENCE_EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
-	branches = branch -l --list
+    uncommit = reset --mixed HEAD~
+    dofixup = "!f() { TARGET=$(git rev-parse $1); git commit --fixup=$TARGET ${@:2} && GIT_SEQUENCE_EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+    branches = branch -l --list
     recent = for-each-ref --count=10 --sort=-committerdate refs/heads/ --format="%(refname:short)"
-	nevermind = !git reset --hard HEAD && git clean -d -f
-	discard = checkout --
-	untrack = rm -r --cached
+    nevermind = !git reset --hard HEAD && git clean -d -f
+    discard = checkout --
+    untrack = rm -r --cached
     unstage = reset --
-	home = rev-parse --show-toplevel
-	last = log -1 --stat --decorate
-	log1 = log --pretty=one
-	logmore = log --name-status --decorate
-	mergetrail = log --ancestry-path --merges
-	precommit = diff --cached --diff-algorithm=minimal -w
-	remotes = remote -v
-	stashes = stash list
-	what = show -w
+    home = rev-parse --show-toplevel
+    last = log -1 --stat --decorate
+    log1 = log --pretty=one
+    logmore = log --name-status --decorate
+    mergetrail = log --ancestry-path --merges
+    staged = diff --cached --diff-algorithm=minimal -w
+    remotes = remote -v
+    stashes = stash list
+    what = show -w
     ctmp = commit -nm TMP
     sho = show --name-status --pretty=onebodydate
-	tidy = !git remote prune origin && git branch --merged master | grep -v master | xargs git branch -d
+    tidy = !git remote prune origin && git branch --merged master | grep -v master | xargs git branch -d
     stage-non-whitespace = "!git diff -U0 -w --no-color | git apply --cached --ignore-whitespace --unidiff-zero -"
     oldremote = "!for branch in `git branch -r --merged | grep -v HEAD`; do echo -e `git show --format='%Cgreen%ci %Creset%cr %Cblue%<(15,trunc)%an%Creset-' $branch | head -n 1` $branch; done | sort -r"
-	pulledwhat = "! git diff --name-only master@{1}..master | sort | uniq"
+    pulledwhat = "! git diff --name-only master@{1}..master | sort | uniq"
     pulls = log master@{1}..master --pretty=pulls --merges
-	pulld = log --no-merges --topo-order --pretty=onebody master@{1}..master
-	ffmaster = fetch origin master:master
-	pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
-	prtidy = "!git for-each-ref refs/heads/pr/* --format='%(refname)' | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
-	co = checkout
-	l = log
-	l1 = log --pretty=one
-	lm = log --pretty=one origin/master..
-	lu = log --pretty=one @{upstream}..
-	lp = log --pretty=one @{push}..
-	ll = log --name-status --decorate
-	s = status -sb
-	st = status
-	rc = rebase --continue
+    pulld = log --no-merges --topo-order --pretty=onebody master@{1}..master
+    ffmaster = fetch origin master:master
+    pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
+    prtidy = "!git for-each-ref refs/heads/pr/* --format='%(refname)' | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
+    showtool = "!showci () { rev=$(git rev-parse \"${*:-HEAD}\"); git difftool $rev~1 $rev; }; showci"
+    co = checkout
+    l = log
+    l1 = log --pretty=one
+    lm = log --pretty=one origin/master..
+    lu = log --pretty=one @{upstream}..
+    lp = log --pretty=one @{push}..
+    ll = log --name-status --decorate
+    s = status -sb
+    st = status
+    rc = rebase --continue
     mt = mergetool
     dt = difftool
-	ff = merge --ff-only @{u}
-	stat = diff --stat
+    ff = merge --ff-only @{u}
+    stat = diff --stat
 [push]
-	default = current
+    default = current
 [gui]
-	fontdiff = -family \"Source Code Pro\" -size 10 -weight normal -slant roman -underline 0 -overstrike 0
-	tabsize = 4
+    fontdiff = -family Iosevka -size 12 -weight normal -slant roman -underline 0 -overstrike 0
+    tabsize = 4

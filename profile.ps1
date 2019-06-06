@@ -194,6 +194,8 @@ $ShowTiming = $false
 function Prompt {
     $waserror = if ($?) {1} else {4}
     $host.ui.rawui.windowtitle = "PS $(get-location)"
+    $host.ui.rawui.foregroundcolor = 7
+    $host.ui.rawui.backgroundcolor = 0
 
     $lastcmd = get-history -count 1
     $lastcmdtime = $lastcmd.endexecutiontime - $lastcmd.startexecutiontime
@@ -237,10 +239,8 @@ Add-Path "$env:LOCALAPPDATA\Programs\Python\Python35"
 Add-Path "$env:TOOLS\PSScripts"
 Add-Path "$env:TOOLS\Utils"
 Add-Path "~\.cargo\bin\"
-Add-Path "$env:TOOLS\vim\vim80"
 Add-Path "$env:TOOLS\vim\Neovim\bin"
 Add-Path "$env:TOOLS\BeyondCompare"
-Add-Path "C:\dev\tools\jdk\bin"
 Add-Path "C:\dev\tools\gopath\bin"
 Add-Path 'C:\Program Files (x86)\Meld'
 
@@ -269,7 +269,7 @@ Set-Alias j Invoke-ZLocation
 Import-Module PSReadLine
 Set-PSReadlineOption -BellStyle Visual
 Set-PSReadlineOption -ViModeIndicator Cursor
-Set-PSReadlineOption -EditMode Windows
+Set-PSReadlineOption -EditMode Vi
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -HistoryNoDuplicates
 Set-PSReadlineOption -ContinuationPrompt ">> "
@@ -281,21 +281,13 @@ Set-PSReadlineOption -ContinuationPrompt ">> "
 # Set-PSReadlineOption Keyword -ForegroundColor Yellow
 # Set-PSReadlineOption Variable -ForegroundColor Magenta
 Set-PSReadlineOption -ShowToolTips
-Set-PSReadlineKeyHandler -Key Ctrl+p -Function HistorySearchBackward
-Set-PSReadlineKeyHandler -Key Ctrl+n -Function HistorySearchForward
-Set-PSReadlineKeyHandler -Key Ctrl+q -Function Complete
-Set-PSReadlineKeyHandler -Key Ctrl+Shift+q -Function TabCompletePrevious
-Set-PSReadlineKeyHandler -Key Alt+d -Function ShellKillWord
-Set-PSReadlineKeyHandler -Key Alt+Backspace -Function ShellBackwardKillWord
-Set-PSReadlineKeyHandler -Key Alt+b -Function ShellBackwardWord
-Set-PSReadlineKeyHandler -Key Alt+f -Function ShellForwardWord
-Set-PSReadlineKeyHandler -Key Shift+Alt+b -Function SelectShellBackwardWord
-Set-PSReadlineKeyHandler -Key Shift+Alt+f -Function SelectShellForwardWord
-Set-PSReadlineKeyHandler -Key Ctrl+v -Function Paste
-Set-PSReadlineKeyHandler -Key Ctrl+Alt+s -Function CaptureScreen
-Set-PSReadlineKeyHandler -Key Ctrl+5 -Function GotoBrace
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+p -Function HistorySearchBackward
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+n -Function Complete
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+v -Function Paste
+Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+Alt+s -Function CaptureScreen
 Set-PSReadlineOption -MaximumHistoryCount 200000
 Set-PSReadlineKeyHandler `
+    -ViMode Insert `
     -Chord 'Ctrl+s,Ctrl+f' `
     -ScriptBlock {
     if (git rev-parse --is-inside-work-tree 2>$null) {
@@ -308,6 +300,7 @@ Set-PSReadlineKeyHandler `
 }
 
 Set-PSReadlineKeyHandler `
+    -ViMode Insert `
     -Chord 'Ctrl+s,Ctrl+b' `
     -ScriptBlock {
     if (git rev-parse --is-inside-work-tree 2>$null) {
@@ -320,6 +313,7 @@ Set-PSReadlineKeyHandler `
 }
 
 Set-PSReadlineKeyHandler `
+    -ViMode Insert `
     -Chord 'Ctrl+s,Ctrl+o' `
     -ScriptBlock {
     if (git rev-parse --is-inside-work-tree 2>$null) {
@@ -332,6 +326,7 @@ Set-PSReadlineKeyHandler `
 }
 
 Set-PSReadlineKeyHandler `
+    -ViMode Insert `
     -Chord 'Ctrl+s,Ctrl+c' `
     -ScriptBlock {
     if (git rev-parse --is-inside-work-tree 2>$null) {
@@ -344,24 +339,14 @@ Set-PSReadlineKeyHandler `
 }
 
 Set-PSReadlineKeyHandler `
+    -ViMode Insert `
     -Chord 'Ctrl+s,Ctrl+j' `
     -ScriptBlock {
     $choices = Get-JiraIssues | hs | % { ($_ -split " ")[0] }
     [Microsoft.PowerShell.PSConsoleReadLine]::Insert($choices -join " ")
 }
 
-Set-PSReadlineKeyHandler `
-    -Chord 'Ctrl+x' `
-    -ScriptBlock {
-    $lastCmd = (Get-History -Count 1).CommandLine
-    if ($lastCmd.StartsWith('rg')) {
-        $choices = invoke-expression "$lastCmd -l"
-        $choices = $choices | hs
-        [Microsoft.PowerShell.PSConsoleReadLine]::Insert($choices -join " ")
-    }
-}
-
-function Start-Elevated($Command = "powershell.exe", $Args) {
+function Start-Elevated($Command = "pwsh.exe", $Args) {
     if ($Args) {
         Start-Process -Verb runAs -workingdirectory $pwd -FilePath $Command -Args:$Args
     } else {

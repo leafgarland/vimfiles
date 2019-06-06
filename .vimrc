@@ -15,24 +15,10 @@ if has('vim_starting')
   let g:netrw_menu = 0
   let g:loaded_netrwPlugin = 1
 
-  " win vs unix
-  if has('win32')
-    let $NVIM_CONFIG="~/appdata/Local/nvim"
-    let $NVIM_DATA="~/appdata/Local/nvim-data"
-    if !has('nvim')
-      set runtimepath^=$NVIM_CONFIG
-      set runtimepath+=$NVIM_CONFIG/after
-    endif
-    " set shell=powershell shellquote=( shellpipe=\| shellredir=> shellxquote=
-    " set shellcmdflag=-NoLogo\ -NoProfile\ -ExecutionPolicy\ RemoteSigned\ -Command
-  else
-    let $NVIM_CONFIG=$XDG_CONFIG_HOME/nvim"
-    let $NVIM_DATA=$XDG_DATA_HOME/nvim"
-  endif
-
   " nvim vs vim
   if has('nvim')
-    set shada=!,'1000,s100,h,n$HOME/mine.shada
+    set shada=!,'1000,s100,h
+    let &shadafile = expand(stdpath('data').'/shada/main.shada')
     set backupdir-=.
   else
     set nocompatible
@@ -41,7 +27,6 @@ if has('vim_starting')
     set viminfo='1000,s100,h
     set backupdir-=.
     set directory-=.
-    set undodir=$NVIM_DATA/undo
   endif
 endif
 
@@ -105,11 +90,11 @@ Plug 'tpope/vim-jdaddy'
 Plug 'vim-pandoc/vim-pandoc-syntax'
 Plug 'vim-pandoc/vim-pandoc'
 Plug 'PProvost/vim-ps1'
-Plug 'fsharp/vim-fsharp'
+Plug 'leafgarland/vim-fsharp'
 Plug 'tpope/vim-fireplace'
 Plug 'guns/vim-clojure-static'
-Plug 'guns/vim-sexp' "
-Plug 'tpope/vim-sexp-mappings-for-regular-people' "
+Plug 'guns/vim-sexp'
+Plug 'tpope/vim-sexp-mappings-for-regular-people'
 Plug 'guns/vim-clojure-highlight'
 Plug 'vim-erlang/vim-erlang-runtime'
 Plug 'vim-erlang/vim-erlang-compiler'
@@ -119,8 +104,9 @@ Plug 'edkolev/erlang-motions.vim'
 Plug 'elixir-lang/vim-elixir'
 Plug 'pangloss/vim-javascript'
 Plug 'mxw/vim-jsx'
-Plug 'ianks/vim-tsx'
-Plug 'leafgarland/typescript-vim'
+  " Plug 'ianks/vim-tsx'
+  " Plug 'leafgarland/typescript-vim'
+  Plug 'HerringtonDarkholme/yats.vim'
 Plug 'findango/vim-mdx'
 Plug 'elmcast/elm-vim'
 Plug 'rust-lang/rust.vim'
@@ -134,6 +120,9 @@ Plug 'idris-hackers/idris-vim'
 Plug 'hashivim/vim-terraform'
 Plug 'aklt/plantuml-syntax'
 Plug 'l04m33/vlime', {'rtp': 'vim/'}
+Plug 'ziglang/zig.vim'
+Plug 'OmniSharp/omnisharp-vim'
+Plug 'janet-lang/janet.vim'
 
 if has('win32') && has('gui_running')
   Plug 'kkoenig/wimproved.vim'
@@ -168,6 +157,7 @@ endfunction
 
 " General: {{{
 
+set nomodeline
 set mouse=a
 
 set belloff=all
@@ -605,18 +595,7 @@ endfunction
 
 " fsharp: {{{
 function! s:ft_fsharp()
-  function! SendFSI(t)
-    let tid = get(b:, 'sendtermid', 0)
-    if !tid
-      botright split new
-      let tid = termopen('fsi')
-      wincmd 
-      let b:sendtermid = tid
-    endif
-    call chansend(b:sendtermid, a:t)
-  endfunction
-
-  command! -buffer -range FSIExecRange call SendFSI(substitute(join(getline(<line1>, <line2>), "\r") . ";;\r", "\r\s*\\", ' ', 'g'))
+  command! -buffer -range FSIExecRange call SendTerm('dotnet fsi', substitute(join(getline(<line1>, <line2>), "\r") . ";;\r", "\r\s*\\", ' ', 'g'))
   nnoremap <buffer> <leader>xe :FSIExecRange<CR>
   xnoremap <buffer> <leader>xe :FSIExecRange<CR>
 
@@ -632,6 +611,8 @@ function! s:ft_vim()
   setlocal keywordprg=:help 
   setlocal omnifunc=syntaxcomplete#Complete 
   setlocal shiftwidth=2
+  setlocal foldmethod=marker
+  setlocal foldlevel=0
 
   command! -range ExecRange execute substitute(join(getline(<line1>, <line2>), "\n"), '\n\s*\\', ' ', 'g')
   nnoremap <buffer> <leader>xe :ExecRange<CR>
@@ -722,19 +703,16 @@ endfunction
 "}}}
 
 " lisp: {{{
-function! SendTerm(t)
-  let tid = get(b:, 'sendtermid', 0)
-  if !tid
-    botright split new
-    let tid = termopen('lua ./fennel')
-    wincmd 
-    let b:sendtermid = tid
-  endif
-  call chansend(b:sendtermid, a:t)
-endfunction
-
 function! s:ft_lisp()
-  command! -buffer -range LispExecRange call SendTerm(substitute(join(getline(<line1>, <line2>), "\r") . "\r", "\r\s*\\", ' ', 'g'))
+  command! -buffer -range LispExecRange call SendTerm('lua fennel', substitute(join(getline(<line1>, <line2>), "\r") . "\r", "\r\s*\\", ' ', 'g'))
+  nnoremap <buffer> <leader>xe :LispExecRange<CR>
+  xnoremap <buffer> <leader>xe :LispExecRange<CR>
+endfunction
+"}}}
+
+" janet: {{{
+function! s:ft_janet()
+  command! -buffer -range LispExecRange call SendTerm('janet', substitute(join(getline(<line1>, <line2>), "\r") . "\r", "\r\s*\\", ' ', 'g'))
   nnoremap <buffer> <leader>xe :LispExecRange<CR>
   xnoremap <buffer> <leader>xe :LispExecRange<CR>
 endfunction
@@ -746,24 +724,30 @@ endfunction
 
 " shada clean {{{
 function! ShadaClean()
-  let tshada = expand('~/mine.shada')
+  let tshada = expand(&shadafile)
   let mpack = readfile(tshada, 'b')
-  call writefile(mpack, expand('~/mine.tmp.shada'), 'b')
+  call writefile(mpack, tshada.'.tmp', 'b')
   let shada_objects = msgpackparse(mpack)
+
   let new_shada = []
   for item in shada_objects
     if type(item) != 4 || !has_key(item, 'f') 
       let new_shada += [item]
       continue
     endif
+
     let f2 = deepcopy(item)
     let f2['f'] = tr(item.f, '\', '/')
     let new_shada += [f2]
   endfor
+
   call writefile(msgpackdump(new_shada), tshada, 'b')
 endfunction
+
 autocmd vimrc VimLeave * call ShadaClean()
+
 " }}}
+
 " XXD {{{
 function! HexBin()
   %y
@@ -1463,6 +1447,19 @@ if get(g:, 'myvimrc_manage_cursorline', 0)
 endif
 " }}}
 
+" SendTerm: {{{
+function! SendTerm(c, t)
+  let tid = get(b:, 'sendtermid', 0)
+  if !tid
+    botright split new
+    let tid = termopen(a:c)
+    wincmd p
+    let b:sendtermid = tid
+  endif
+  call chansend(b:sendtermid, a:t)
+endfunction
+" }}}
+
 "}}}
 
 " PrettyLittleStatus: {{{
@@ -1973,6 +1970,12 @@ let g:pandoc#syntax#codeblocks#embeds#langs = [
       \ "bash=sh"]
 let g:pandoc#modules#disabled = ['bibliographies']
 autocmd vimrc FileType markdown nested set filetype=markdown.pandoc
+" }}}
+
+" vim-sexp: {{{
+if s:has_plug('vim-sexp')
+  let g:sexp_filetypes='clojure,scheme,lisp,timl,janet'
+endif
 " }}}
 
 "}}}
