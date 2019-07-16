@@ -45,6 +45,10 @@ function Get-LockImages {
     }
 }
 
+function Set-ProcessorAffinity([int]$affinity = 63) {
+    (ps -Id $pid).ProcessorAffinity = $affinity
+}
+
 # ssh-agent service should be AutomaticDelay, so it runs at startup and ssh-add should have cached previous identities too,
 # so the below (or ssh equivalent) should not be needed. Might need to tell git to use the right ssh via $env:GIT_SSH
 
