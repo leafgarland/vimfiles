@@ -47,14 +47,12 @@ Plug 'kana/vim-textobj-user'
 Plug 'leafgarland/gruvbox/'
 Plug 'leafgarland/iceberg.vim'
 Plug 'leafgarland/flatwhite-vim'
-Plug 'RRethy/vim-hexokinase'
 
 " Motions and actions
 Plug 'kana/vim-textobj-indent'
 Plug 'Julian/vim-textobj-variable-segment'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-unimpaired'
-Plug 'tpope/vim-abolish'
 Plug 'tommcdo/vim-exchange'
 Plug 'wellle/targets.vim'
 Plug 'AndrewRadev/splitjoin.vim'
@@ -75,12 +73,7 @@ Plug 'chrisbra/unicode.vim'
 Plug 'romainl/vim-cool'
 Plug 'sgur/vim-editorconfig'
 Plug 'neoclide/coc.nvim', {'do': 'yarn install'}
-Plug 'tpope/vim-dispatch'
-Plug 'junegunn/fzf'
-Plug 'junegunn/fzf.vim'
-if has('nvim')
-  Plug 'radenling/vim-dispatch-neovim'
-endif
+Plug 'OmniSharp/omnisharp-vim'
 
 " Filetypes
 Plug 'hail2u/vim-css3-syntax'
@@ -91,11 +84,9 @@ Plug 'vim-pandoc/vim-pandoc-syntax'
 Plug 'vim-pandoc/vim-pandoc'
 Plug 'PProvost/vim-ps1'
 Plug 'leafgarland/vim-fsharp'
-Plug 'tpope/vim-fireplace'
 Plug 'guns/vim-clojure-static'
 Plug 'guns/vim-sexp'
 Plug 'tpope/vim-sexp-mappings-for-regular-people'
-Plug 'guns/vim-clojure-highlight'
 Plug 'vim-erlang/vim-erlang-runtime'
 Plug 'vim-erlang/vim-erlang-compiler'
 Plug 'vim-erlang/vim-erlang-omnicomplete'
@@ -106,8 +97,7 @@ Plug 'pangloss/vim-javascript'
 Plug 'mxw/vim-jsx'
   " Plug 'ianks/vim-tsx'
   " Plug 'leafgarland/typescript-vim'
-  Plug 'HerringtonDarkholme/yats.vim'
-Plug 'findango/vim-mdx'
+Plug 'HerringtonDarkholme/yats.vim'
 Plug 'elmcast/elm-vim'
 Plug 'rust-lang/rust.vim'
 Plug 'raichoo/purescript-vim'
@@ -119,33 +109,16 @@ Plug 'OrangeT/vim-csharp'
 Plug 'idris-hackers/idris-vim'
 Plug 'hashivim/vim-terraform'
 Plug 'aklt/plantuml-syntax'
-Plug 'l04m33/vlime', {'rtp': 'vim/'}
 Plug 'ziglang/zig.vim'
-Plug 'OmniSharp/omnisharp-vim'
 Plug 'janet-lang/janet.vim'
+Plug 'dag/vim-fish'
 
 if has('win32') && has('gui_running')
   Plug 'kkoenig/wimproved.vim'
 endif
 
-if !empty($TMUX)
-  Plug 'tpope/vim-tbone'
-  Plug 'wellle/tmux-complete.vim' 
-  Plug 'tmux-plugins/vim-tmux-focus-events'
-  Plug 'christoomey/vim-tmux-navigator'
-  Plug 'tmux-plugins/vim-tmux'
-endif
-
-if executable('fish')
-  Plug 'dag/vim-fish'
-endif
-
 if has('nvim') && executable('fzy')
   Plug 'cloudhead/neovim-fuzzy'
-endif
-
-if has('mac') && !has('gui_running') && !has('nvim')
-  Plug 'jszakmeister/vim-togglecursor'
 endif
 
 call plug#end()
@@ -247,9 +220,15 @@ func! s:win_motion_resize(type) abort
 endfunction
 xnoremap <silent> <leader>wf  :<C-u>set winfixwidth winfixheight opfunc=<sid>win_motion_resize<CR>gvg@
 
+function! TermBufferMappings()
+  nnoremap <buffer> <C-p> ?<CR>
+  nnoremap <buffer> <C-n> /<CR>
+endfunction
+
 if has('nvim')
   autocmd vimrc TermOpen * setfiletype term
         \ |setlocal nonumber
+        \ |call TermBufferMappings()
         \ |autocmd vimrc WinEnter,BufEnter <buffer> startinsert
         \ |startinsert
   set inccommand=split
@@ -276,7 +255,7 @@ if exists('+guioptions') && has('vim_starting')
 
   set lines=72
   set columns=142
-  set guifont=Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
+  set guifont=Iosevka:h12,Source_Code_Pro:h11,Monaco:h16,Consolas:h11,Courier\ New:h14
 endif
 "}}}
 
@@ -328,13 +307,12 @@ nmap gQ <Nop>
 
 if has('nvim')
   let g:tshell = 'term://' . (executable('fish') ? 'fish' : executable('pwsh') ? 'pwsh' : '')
-  tnoremap <Esc><Esc> <C-\><C-n>
+  tnoremap <C-a> <C-\><C-n>
   " <C-Space> is <C-@>
   tnoremap <C-Space> <C-\><C-n>:
   " <C-Space> doesn't work in Windows console
   tnoremap <M-;> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
-  tnoremap <C-u> <C-\><C-n><C-u>
 
   if empty($TMUX)
     tnoremap <C-a>: <C-\><C-n>:
@@ -517,6 +495,16 @@ xnoremap <leader>sr :snomagic/
 
 nnoremap <leader>8 :keeppatterns lvimgrep /<C-R><C-R><C-W>/j %<CR>
 xnoremap <leader>8 y:<C-U>keeppatterns lvimgrep /<C-R><C-R>"/j %<CR>
+
+nnoremap <C-j> :call SameColumnDown(line('.'), virtcol('.'))<CR>
+function! SameColumnDown(line, col)
+  call search('\%>'.a:line.'l\(\%'.a:col.'v\zs\S\|\%<'.a:col.'v\S\%'.a:col.'v\zs\)')
+endfunction
+
+nnoremap <C-k> :call SameColumnUp(line('.'), virtcol('.'))<CR>
+function! SameColumnUp(line, col)
+  call search('\%<'.a:line.'l\(\%'.a:col.'v\zs\S\|\%<'.a:col.'v\S\%'.a:col.'v\zs\)', 'b')
+endfunction
 
 inoremap (<CR> (<CR>)<Esc>O
 inoremap {<CR> {<CR>}<Esc>O
@@ -1774,18 +1762,22 @@ call PrettyLittleStatus()
 " COC: {{{
 if s:has_plug('coc.nvim')
   function! MyDefaultCocMappings()
-    nnoremap <silent> <buffer> [c <Plug>(coc-diagnostic-prev)
-    nnoremap <silent> <buffer> ]c <Plug>(coc-diagnostic-next))
-    nnoremap <silent> <buffer> <C-g>c <Plug>(coc-diagnostic-info))
+    nmap <buffer> [c <Plug>(coc-diagnostic-prev)
+    nmap <buffer> ]c <Plug>(coc-diagnostic-next))
+    nmap <buffer> <C-k> <Plug>(coc-diagnostic-info))
 
-    nnoremap <silent> <buffer> gd <Plug>(coc-definition)
-    nnoremap <silent> <buffer> gy <Plug>(coc-type-definition)
-    nnoremap <silent> <buffer> gi <Plug>(coc-implementation)
-    nnoremap <silent> <buffer> gr <Plug>(coc-references)
-    nnoremap <silent> <buffer> <leader>cl :CocList<CR>
+    nmap <buffer> gd <Plug>(coc-definition)
+    nmap <buffer> gy <Plug>(coc-type-definition)
+    nmap <buffer> gi <Plug>(coc-implementation)
+    nmap <buffer> gr <Plug>(coc-references)
+    nmap <buffer> <C-.> <Plug>(coc-codeaction)
+    nmap <buffer> <leader>w <Plug>(coc-range-select)
+    xmap <buffer> <leader>w <Plug>(coc-range-select)
+    xmap <buffer> <leader>W <Plug>(coc-range-select-backward)
+    nmap <buffer> <leader>cl :CocList<CR>
 
     " Use K for show documentation in preview window
-    nnoremap <silent> <buffer> K :call <SID>show_documentation()<CR>
+    nmap <buffer> K :call <SID>show_documentation()<CR>
   endfunction
 
   function! s:show_documentation()
@@ -1908,8 +1900,8 @@ if s:has_plug('vim-dirvish')
     nmap <silent> <buffer> h <Plug>(dirvish_up)
     nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
     nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d _<CR>
-    nnoremap <buffer> gR :Grep  %<left><left>
-    nnoremap <buffer> gr :<cfile><C-b>Grep  <left>
+    nnoremap <buffer> gR :grep!  %<left><left>
+    nnoremap <buffer> gr :<cfile><C-b>grep!  <left>
     nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
     nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
     cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
