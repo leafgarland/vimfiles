@@ -1891,7 +1891,7 @@ if s:has_plug('vim-dirvish')
   command! -nargs=+ KeepCursor call s:dirvish_keepcursor(<q-args>)
 
   function! s:ft_dirvish()
-    syntax match DirvishPathExe /\v[^\\]+\.(ps1|cmd|exe|bat)$/
+    syntax match DirvishPathExe /\v[^\\\/]+\.(ps1|cmd|exe|bat)$/
     syntax match DirvishPathHidden /\v\\@<=\.[^\\]+$/
     highlight link DirvishPathExe Function
     highlight link DirvishPathHidden Comment
