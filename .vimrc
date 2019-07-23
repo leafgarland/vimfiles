@@ -33,100 +33,103 @@ endif
 "}}}
 
 " Plugins: {{{
+command! PackUpdate call PackInit() | call minpac#update('', {'do': 'call minpac#status()'})
+command! PackClean  call PackInit() | call minpac#clean()
+command! PackStatus call PackInit() | call minpac#status()
 
-call plugpac#begin()
+function! PackInit()
+  command! -nargs=+ Pack call minpac#add(<args>)
+  packadd minpac
+  call minpac#init()
 
-Pack 'k-takata/minpac', {'type': 'opt'}
+  Pack 'k-takata/minpac', {'type': 'opt'}
 
-" Base
-if !has('nvim')
-  Pack 'tpope/vim-sensible'
-endif
-Pack 'tpope/vim-repeat'
-Pack 'kana/vim-textobj-user'
+  " Base
+  if !has('nvim')
+    Pack 'tpope/vim-sensible'
+  endif
+  Pack 'tpope/vim-repeat'
+  Pack 'kana/vim-textobj-user'
 
-" Colour schemes and pretty things
-Pack 'leafgarland/gruvbox/'
-Pack 'leafgarland/iceberg.vim'
-Pack 'leafgarland/flatwhite-vim'
+  " Colour schemes and pretty things
+  Pack 'leafgarland/gruvbox', {'type': 'opt'}
+  Pack 'leafgarland/iceberg.vim', {'type': 'opt'}
+  Pack 'leafgarland/flatwhite-vim', {'type': 'opt'}
 
-" Motions and actions
-Pack 'kana/vim-textobj-indent'
-Pack 'Julian/vim-textobj-variable-segment'
-Pack 'tpope/vim-commentary'
-Pack 'tpope/vim-unimpaired'
-Pack 'tommcdo/vim-exchange'
-Pack 'wellle/targets.vim'
-Pack 'AndrewRadev/splitjoin.vim'
-Pack 'tommcdo/vim-lion'
-Pack 'machakann/vim-sandwich'
+  " Motions and actions
+  Pack 'kana/vim-textobj-indent'
+  Pack 'Julian/vim-textobj-variable-segment'
+  Pack 'tpope/vim-commentary'
+  Pack 'tpope/vim-unimpaired'
+  Pack 'tommcdo/vim-exchange'
+  Pack 'wellle/targets.vim'
+  Pack 'AndrewRadev/splitjoin.vim'
+  Pack 'tommcdo/vim-lion'
+  Pack 'machakann/vim-sandwich'
 
-" Tools
-if has('nvim')
-  Pack 'neovim/nvim.net'
-endif
-Pack 'samoshkin/vim-mergetool'
-Pack 'tpope/vim-fugitive'
-Pack 'tpope/vim-rhubarb'
-Pack 'tpope/vim-ragtag'
-Pack 'tpope/vim-scriptease'
-Pack 'justinmk/vim-dirvish'
-Pack 'chrisbra/unicode.vim'
-Pack 'romainl/vim-cool'
-Pack 'sgur/vim-editorconfig'
-Pack 'neoclide/coc.nvim', {'do': 'yarn install'}
-Pack 'OmniSharp/omnisharp-vim'
+  " Tools
+  if has('nvim')
+    Pack 'neovim/nvim.net'
+  endif
+  Pack 'samoshkin/vim-mergetool'
+  Pack 'tpope/vim-fugitive'
+  Pack 'tpope/vim-rhubarb'
+  Pack 'tpope/vim-ragtag'
+  Pack 'tpope/vim-scriptease'
+  Pack 'justinmk/vim-dirvish'
+  Pack 'chrisbra/unicode.vim'
+  Pack 'romainl/vim-cool'
+  Pack 'sgur/vim-editorconfig'
+  Pack 'neoclide/coc.nvim', {'do': 'yarn install'}
+  Pack 'OmniSharp/omnisharp-vim'
 
-" Filetypes
-Pack 'hail2u/vim-css3-syntax'
-Pack 'othree/html5.vim'
-Pack 'elzr/vim-json'
-Pack 'tpope/vim-jdaddy'
-Pack 'vim-pandoc/vim-pandoc-syntax'
-Pack 'vim-pandoc/vim-pandoc'
-Pack 'PProvost/vim-ps1'
-Pack 'leafgarland/vim-fsharp'
-Pack 'guns/vim-clojure-static'
-Pack 'guns/vim-sexp'
-Pack 'tpope/vim-sexp-mappings-for-regular-people'
-Pack 'vim-erlang/vim-erlang-runtime'
-Pack 'vim-erlang/vim-erlang-compiler'
-Pack 'vim-erlang/vim-erlang-omnicomplete'
-Pack 'vim-erlang/vim-erlang-tags'
-Pack 'edkolev/erlang-motions.vim'
-Pack 'elixir-lang/vim-elixir'
-Pack 'pangloss/vim-javascript'
-Pack 'mxw/vim-jsx'
-  " Pack 'ianks/vim-tsx'
-  " Pack 'leafgarland/typescript-vim'
-Pack 'HerringtonDarkholme/yats.vim'
-Pack 'elmcast/elm-vim'
-Pack 'rust-lang/rust.vim'
-Pack 'raichoo/purescript-vim'
-Pack 'wlangstroth/vim-racket'
-Pack 'beyondmarc/glsl.vim'
-Pack 'cespare/vim-toml'
-Pack 'dleonard0/pony-vim-syntax'
-Pack 'OrangeT/vim-csharp'
-Pack 'idris-hackers/idris-vim'
-Pack 'hashivim/vim-terraform'
-Pack 'aklt/plantuml-syntax'
-Pack 'ziglang/zig.vim'
-Pack 'janet-lang/janet.vim'
-Pack 'dag/vim-fish'
+  " Filetypes
+  Pack 'hail2u/vim-css3-syntax'
+  Pack 'othree/html5.vim'
+  Pack 'elzr/vim-json'
+  Pack 'tpope/vim-jdaddy'
+  Pack 'vim-pandoc/vim-pandoc-syntax'
+  Pack 'vim-pandoc/vim-pandoc'
+  Pack 'PProvost/vim-ps1'
+  Pack 'leafgarland/vim-fsharp'
+  Pack 'guns/vim-clojure-static'
+  Pack 'guns/vim-sexp'
+  Pack 'tpope/vim-sexp-mappings-for-regular-people'
+  Pack 'vim-erlang/vim-erlang-runtime'
+  Pack 'vim-erlang/vim-erlang-compiler'
+  Pack 'vim-erlang/vim-erlang-omnicomplete'
+  Pack 'vim-erlang/vim-erlang-tags'
+  Pack 'edkolev/erlang-motions.vim'
+  Pack 'elixir-lang/vim-elixir'
+  Pack 'pangloss/vim-javascript'
+  Pack 'mxw/vim-jsx'
+    " Pack 'ianks/vim-tsx'
+    " Pack 'leafgarland/typescript-vim'
+  Pack 'HerringtonDarkholme/yats.vim'
+  Pack 'elmcast/elm-vim'
+  Pack 'rust-lang/rust.vim'
+  Pack 'raichoo/purescript-vim'
+  Pack 'wlangstroth/vim-racket'
+  Pack 'beyondmarc/glsl.vim'
+  Pack 'cespare/vim-toml'
+  Pack 'dleonard0/pony-vim-syntax'
+  Pack 'OrangeT/vim-csharp'
+  Pack 'idris-hackers/idris-vim'
+  Pack 'hashivim/vim-terraform'
+  Pack 'aklt/plantuml-syntax'
+  Pack 'ziglang/zig.vim'
+  Pack 'janet-lang/janet.vim'
+  Pack 'dag/vim-fish'
 
-if has('win32') && has('gui_running')
-  Pack 'kkoenig/wimproved.vim'
-endif
+  if has('nvim') && executable('fzy')
+    Pack 'cloudhead/neovim-fuzzy'
+  endif
+endfunction
 
-if has('nvim') && executable('fzy')
-  Pack 'cloudhead/neovim-fuzzy'
-endif
-
-call plugpac#end()
+packloadall
 
 function! s:has_plug(name)
-  return empty(minpac#getpluginfo(a:name))
+  return &runtimepath =~ a:name
 endfunction
 "}}}
 
@@ -222,9 +225,19 @@ func! s:win_motion_resize(type) abort
 endfunction
 xnoremap <silent> <leader>wf  :<C-u>set winfixwidth winfixheight opfunc=<sid>win_motion_resize<CR>gvg@
 
+function! SearchPreviousLine(pattern)
+  call search('\%<'.line('.').'l'.a:pattern, 'b')
+endfunction
+
+function! SearchNextLine(pattern)
+  call search('\%>'.line('.').'l'.a:pattern)
+endfunction
+
 function! TermBufferMappings()
-  nnoremap <buffer> <C-p> ?<CR>
-  nnoremap <buffer> <C-n> /<CR>
+  nnoremap <buffer> <C-p> :call SearchPreviousLine('')<CR>
+  xnoremap <buffer> <C-p> :call SearchPreviousLine('')<CR>
+  nnoremap <buffer> <C-n> :call SearchNextLine('')<CR>
+  xnoremap <buffer> <C-n> :call SearchNextLine('')<CR>
 endfunction
 
 if has('nvim')
@@ -341,7 +354,7 @@ endif
 nnoremap <leader>xm q:?\([Mm]ake\\|Dispatch\)<CR><CR>
 
 " Show syntax groups under cursor
-map <silent> <F11> :for id in synstack(line("."), col("."))<bar>
+map <silent> zs :for id in synstack(line("."), col("."))<bar>
       \ echo synIDattr(id, "name").' '<bar> execute 'echohl' synIDattr(synIDtrans(id), "name") <bar> echon synIDattr(synIDtrans(id), "name") <bar> echohl None <bar>
       \ endfor<CR>
 
@@ -1764,18 +1777,18 @@ call PrettyLittleStatus()
 " COC: {{{
 if s:has_plug('coc.nvim')
   function! MyDefaultCocMappings()
-    nmap <buffer> [c <Pack>(coc-diagnostic-prev)
-    nmap <buffer> ]c <Pack>(coc-diagnostic-next))
-    nmap <buffer> <C-k> <Pack>(coc-diagnostic-info))
+    nmap <buffer> [c <Plug>(coc-diagnostic-prev)
+    nmap <buffer> ]c <Plug>(coc-diagnostic-next))
+    nmap <buffer> <C-k> <Plug>(coc-diagnostic-info))
 
-    nmap <buffer> gd <Pack>(coc-definition)
-    nmap <buffer> gy <Pack>(coc-type-definition)
-    nmap <buffer> gi <Pack>(coc-implementation)
-    nmap <buffer> gr <Pack>(coc-references)
-    nmap <buffer> <C-.> <Pack>(coc-codeaction)
-    nmap <buffer> <leader>w <Pack>(coc-range-select)
-    xmap <buffer> <leader>w <Pack>(coc-range-select)
-    xmap <buffer> <leader>W <Pack>(coc-range-select-backward)
+    nmap <buffer> gd <Plug>(coc-definition)
+    nmap <buffer> gy <Plug>(coc-type-definition)
+    nmap <buffer> gi <Plug>(coc-implementation)
+    nmap <buffer> gr <Plug>(coc-references)
+    nmap <buffer> <C-.> <Plug>(coc-codeaction)
+    nmap <buffer> <leader>w <Plug>(coc-range-select)
+    xmap <buffer> <leader>w <Plug>(coc-range-select)
+    xmap <buffer> <leader>W <Plug>(coc-range-select-backward)
     nmap <buffer> <leader>cl :CocList<CR>
 
     " Use K for show documentation in preview window
@@ -1792,10 +1805,6 @@ if s:has_plug('coc.nvim')
 endif
 " }}}
 
-" Vlime: {{{
-let g:vlime_leader = '/'
-" }}}
-
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
   nnoremap <leader>vc :Gstatus<CR>
@@ -1809,13 +1818,6 @@ if s:has_plug('vim-fugitive')
 
   command! -nargs=* Glm :Glog master.. <args> --
   command! -nargs=* Glp :Glog @{push}.. <args> --
-endif
-" }}}
-
-" Wimproved: {{{
-if s:has_plug('wimproved.vim')
-  autocmd vimrc GUIEnter * silent! WToggleClean
-  nnoremap <silent> coF :WToggleFullscreen<CR>
 endif
 " }}}
 
@@ -1899,7 +1901,7 @@ if s:has_plug('vim-dirvish')
     highlight link DirvishPathHidden Comment
 
     nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
-    nmap <silent> <buffer> h <Pack>(dirvish_up)
+    nmap <silent> <buffer> h <Plug>(dirvish_up)
     nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
     nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d _<CR>
     nnoremap <buffer> gR :grep!  %<left><left>
