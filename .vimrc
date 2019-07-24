@@ -1542,7 +1542,7 @@ function! StatusLineFilename()
        \ &filetype == 'peekaboo' ? '' :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ &filetype == 'term' ? s:GetTermTitle()[1] :
-       \ empty(fname) ? ('[no name'.':'.bufnr('').']') : fname 
+       \ empty(fname) ? ('['.bufnr('').']') : fname 
 endfunction
 
 function! StatusLinePath()
@@ -1821,23 +1821,13 @@ if s:has_plug('vim-fugitive')
 endif
 " }}}
 
-" VimPlug: {{{
-function! s:plug_gx()
-  let line = getline('.')
-  let sha  = matchstr(line, '^  [*|\/\\ ]*\zs[0-9a-f]\{7\}\ze ')
-  let name = empty(sha) ? matchstr(line, '^[-x+] \zs[^:]\+\ze:')
-                      \ : getline(search('^- .*:$', 'bn'))[2:-2]
-  let uri  = get(get(g:plugs, name, {}), 'uri', '')
-  if uri !~ 'github.com'
-    return
-  endif
-  let repo = matchstr(uri, '[^:/]*/'.name)
-  let url  = empty(sha) ? 'https://github.com/'.repo
-                      \ : printf('https://github.com/%s/commit/%s', repo, sha)
-  Browse url
+" Minpac: {{{
+function! PackList(...)
+  return join(sort(keys(minpac#getpluglist())), "\n")
 endfunction
 
-autocmd vimrc FileType vim-plug nnoremap <buffer> <silent> gx :call <sid>plug_gx()<cr>
+command! -nargs=1 -complete=custom,PackList PackDir call PackInit() | execute 'edit' minpac#getpluginfo(<q-args>).dir
+command! -nargs=1 -complete=custom,PackList PackBrowse call PackInit() | execute 'Browse' minpac#getpluginfo(<q-args>).url
 " }}}
 
 " Targets: {{{
