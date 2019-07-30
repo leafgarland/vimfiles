@@ -80,7 +80,7 @@ function! PackInit()
   Pack 'chrisbra/unicode.vim'
   Pack 'romainl/vim-cool'
   Pack 'sgur/vim-editorconfig'
-  Pack 'neoclide/coc.nvim', {'do': 'yarn install'}
+  Pack 'neoclide/coc.nvim', {'do': '!yarn install'}
   Pack 'OmniSharp/omnisharp-vim'
 
   " Filetypes
@@ -234,10 +234,10 @@ function! SearchNextLine(pattern)
 endfunction
 
 function! TermBufferMappings()
-  nnoremap <buffer> <C-p> :call SearchPreviousLine('')<CR>
-  xnoremap <buffer> <C-p> :call SearchPreviousLine('')<CR>
-  nnoremap <buffer> <C-n> :call SearchNextLine('')<CR>
-  xnoremap <buffer> <C-n> :call SearchNextLine('')<CR>
+  nnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('')<CR>
+  xnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('')<CR>
+  nnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
+  xnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
 endfunction
 
 if has('nvim')
@@ -1823,6 +1823,9 @@ endif
 
 " Minpac: {{{
 function! PackList(...)
+  if !exists('*minpack#getpluglist')
+    call PackInit()
+  endif
   return join(sort(keys(minpac#getpluglist())), "\n")
 endfunction
 
