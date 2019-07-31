@@ -725,6 +725,27 @@ endfunction
 
 " Commands & Functions: {{{
 
+" Window Swap: {{{
+nnoremap <C-w>x :<C-U>call <sid>SwapWindowBuffer(v:count)<CR>
+nnoremap <C-w><C-x> :<C-U>call <sid>SwapWindowBuffer(v:count)<CR>
+
+function! s:SwapWindowBuffer(winnum)
+  let currentWin = winnr()
+  let otherWin = a:winnum == 0 ? winnr('#') : a:winnum
+  if otherWin == 0
+    return
+  endif
+
+  let currentBuffer = winbufnr(0)
+  let otherBuffer = winbufnr(otherWin)
+
+  execute otherWin 'wincmd w'
+  execute 'buffer' currentBuffer
+  execute currentWin 'wincmd w'
+  execute 'buffer' otherBuffer
+endfunction
+" }}}
+
 " shada clean {{{
 function! ShadaClean()
   let tshada = expand(&shadafile)
