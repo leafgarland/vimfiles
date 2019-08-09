@@ -82,6 +82,7 @@ function! PackInit()
   Pack 'sgur/vim-editorconfig'
   Pack 'neoclide/coc.nvim', {'do': '!yarn install'}
   Pack 'OmniSharp/omnisharp-vim'
+  Pack 'eraserhd/parinfer-rust'
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -188,7 +189,7 @@ set sidescroll=1
 set sidescrolloff=5
 set scrolloff=5
 
-set diffopt+=vertical
+set diffopt+=vertical,algorithm:histogram,indent-heuristic
 
 set wildmode=longest:full,full
 set wildignorecase
@@ -786,60 +787,101 @@ function! HexBin()
 endfunction
 "}}}
 
-" Terminal toggle {{{
-function! TermReset(...)
-  let s:term_buf = 0
-  let s:term_win = 0
-  let s:term_mods = ''
-  let s:term_size = 0
-endfunction
+" Terminal Toggle: {{{
 
-function! TermToggle(shell, mods)
-  if win_getid() == s:term_win
-    " hide window
-    let s:term_size = s:term_mods =~ 'vertical' ? winwidth(0) : winheight(0)
-    hide
-  elseif !win_gotoid(s:term_win)
-    " create window
-    let mods = empty(s:term_mods) ? a:mods : s:term_mods
-    let isVertical = mods =~ 'vertical'
-    let size = empty(s:term_size) ? (isVertical ? 80 : 12) : s:term_size
-    exec mods 'new' 'terminal'
-    exec mods 'resize' size
-    if isVertical
-      setlocal winfixwidth
-    else
-      setlocal winfixheight
+function! ToggleTerminal(height, width)
+  let found_winnr = 0
+  for winnr in range(1, winnr('$'))
+    if getbufvar(winbufnr(winnr), '&buftype') == 'terminal'
+      let found_winnr = winnr
     endif
-    try
-      " switch to existing term buffer
-      exec 'buffer' s:term_buf
-      bdelete terminal
-    catch
-      " create new term buffer
-      call termopen(a:shell, {"detach": 0, "on_exit": function("TermReset")})
-      let s:term_size = 0
-      let s:term_buf = bufnr('')
-      let s:term_mods = a:mods
-      setlocal nonumber
-      setlocal norelativenumber
-      setlocal signcolumn=no
-      setlocal nocursorline
-    endtry
-    startinsert!
-    let s:term_win = win_getid()
+  endfor
+
+  if found_winnr > 0
+    if &buftype == 'terminal'
+      " if current window is the terminal window, close it
+      execute found_winnr . ' wincmd q'
+    else
+      " if current window is not terminal, go to the terminal window
+      execute found_winnr . ' wincmd w'
+    endif
+  else
+    let found_bufnr = 0
+    for bufnr in filter(range(1, bufnr('$')), 'bufexists(v:val)')
+      let buftype = getbufvar(bufnr, '&buftype')
+      if buftype == 'terminal'
+        let found_bufnr = bufnr
+      endif
+    endfor
+
+    let terminal_type = get(g:, 'terminal_type', 'floating')
+    if terminal_type == 'floating'
+      call s:openTermFloating(found_bufnr, a:height, a:width)
+    else
+      call s:openTermNormal(found_bufnr, a:height, a:width)
+    endif
   endif
 endfunction
 
-if has('vim_starting')
-  call TermReset()
-endif
+function! s:openTermFloating(found_bufnr, height, width) abort
+  let row=(&lines-a:height)/2
+  let col=(&columns-a:width)/2
+  let opts = {
+        \ 'relative': 'editor',
+        \ 'width': a:width,
+        \ 'height': a:height,
+        \ 'col': col,
+        \ 'row': row,
+        \ 'anchor': 'NW',
+        \ 'style': 'minimal'
+        \ }
 
-command! TermToggle call TermToggle(has('win32') ? 'pwsh' : 'fish', <q-mods>)
-nnoremap <A-t> :TermToggle<CR>
-nnoremap <A-T> :vertical TermToggle<CR>
-tnoremap <A-t> <C-\><C-n>:TermToggle<CR>
-nnoremap <leader>rl :TermToggle<CR><up><CR>
+  if a:found_bufnr == 0
+    let bufnr = nvim_create_buf(v:false, v:true)
+    call nvim_open_win(bufnr, 1, opts)
+    terminal pwsh
+    autocmd TermClose <buffer> if &buftype=='terminal' | wincmd c | endif
+  else
+    call nvim_open_win(a:found_bufnr, 1, opts)
+  endif
+
+  setlocal winblend=10
+  setlocal bufhidden=hide
+  setlocal signcolumn=no
+  setlocal nobuflisted
+  setlocal nocursorline
+  setlocal nonumber
+endfunction
+
+function! s:openTermNormal(found_bufnr, height, width)
+  if a:found_bufnr > 0
+    if &lines > 30
+      execute 'botright ' . a:height . 'split'
+      execute 'buffer ' . a:found_bufnr
+    else
+      botright split
+      execute 'buffer ' . a:found_bufnr
+    endif
+  else
+    if &lines > 30
+      if has('nvim')
+        execute 'botright ' . a:height . 'split term://' . &shell
+      else
+        botright terminal
+        resize a:height
+      endif
+    else
+      if has('nvim')
+        execute 'botright split term://' . &shell
+      else
+        botright terminal
+      endif
+    endif
+  endif
+endfunction
+
+nnoremap <A-t> :call ToggleTerminal(&lines-10,&columns-30)<CR>
+tnoremap <A-t> <C-\><C-n>:call ToggleTerminal(&lines-10,&columns-30)<CR>
 
 " }}}
 
@@ -1466,8 +1508,8 @@ endfunction
 " Show CursorLine in active window only {{{
 if get(g:, 'myvimrc_manage_cursorline', 0)
   set cursorline
-  autocmd vimrc WinEnter,InsertLeave * setlocal cursorline
-  autocmd vimrc WinLeave,InsertEnter * setlocal nocursorline
+  autocmd vimrc WinEnter * setlocal cursorline
+  autocmd vimrc WinLeave * setlocal nocursorline
 endif
 " }}}
 
