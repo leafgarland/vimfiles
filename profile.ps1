@@ -3,19 +3,25 @@ $env:EDITOR = 'nvim.exe'
 $env:RIPGREP_CONFIG_PATH = "$($env:HOME)/.ripgrep"
 # for latest nvim tui which wont do colours without a hint
 $env:COLORTERM = 'truecolor'
-
 $env:GOPATH = "C:/dev/tools/gopath"
 
-if ($env:NVIM_CONFIG) {
+if ($env:NVIM_LISTEN_ADDRESS) {
     # running inside nvim
     $env:EDITOR = 'nvr --remote-wait-silent -l'
+    $env:TERM = 'xterm'
 }
 
+function vg { nvim "$(git home)/.git/index" }
 function edit { Invoke-Expression ([string]::join(' ', (, $env:EDITOR + $args))) }
 function vsedit { devenv /edit $args }
+function nvim { 
+    if ($env:NVIM_LISTEN_ADDRESS) {
+        nvr -l $args
+    } else {
+        nvim.exe $args
+    }
+}
 
-function Start-PushpayPublic { &'C:\Program Files (x86)\IIS Express\iisexpress.exe' "/config:$(git home)\.vs\config\applicationhost.config" /site:Pushpay.Public }
-function pico ($size = 256) { C:\dev\me\pico-8\pico8.exe -width $size+2 -height $size+2 $args }
 function d2b($d) { [System.Convert]::ToString($d, 2) }
 function d2h($d) { [System.Convert]::ToString($d, 16) }
 function b2d([string]$b) { [System.Convert]::ToInt32($b, 2) }
@@ -48,14 +54,6 @@ function Get-LockImages {
 function Set-ProcessorAffinity([int]$affinity = 63) {
     (ps -Id $pid).ProcessorAffinity = $affinity
 }
-
-# ssh-agent service should be AutomaticDelay, so it runs at startup and ssh-add should have cached previous identities too,
-# so the below (or ssh equivalent) should not be needed. Might need to tell git to use the right ssh via $env:GIT_SSH
-
-# if ((Get-Command pageant -CommandType Application -ErrorAction SilentlyContinue) -and (-not (Get-Process pageant -erroraction silentlycontinue))) {
-#     pageant "$($env:HOME)\.ssh\github_rsa_private.ppk"
-#     $env:GIT_SSH = Resolve-Path (scoop which plink)
-# }
 
 $HistoryPath = "~\pshistory.xml"
 Register-EngineEvent PowerShell.Exiting -Action { Get-History -Count 3000 | Export-CliXml $HistoryPath} | Out-Null
@@ -238,8 +236,8 @@ function arr { $args }
 function d2o([HashTable]$dictionary) { new-object -typename psobject -property $dictionary }
 filter asXml { [xml](cat $_) }
 
-Add-Path -First "$env:TOOLS\Python27\"
-Add-Path "$env:LOCALAPPDATA\Programs\Python\Python35"
+Add-Path "~/scoop/apps/python/current/Scripts/"
+Add-Path "~/scoop/apps/python27/current/Scripts/"
 Add-Path "$env:TOOLS\PSScripts"
 Add-Path "$env:TOOLS\Utils"
 Add-Path "~\.cargo\bin\"
@@ -260,12 +258,11 @@ set-alias code code-insiders.cmd
 Set-Alias cdb "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe"
 Set-Alias windbg "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\windbg.exe"
 Set-Alias gitex "$env:TOOLS\GitExtensions\gitex.cmd"
-Set-Alias wsl "C:\Dev\tools\wsl-terminal\open-wsl.exe"
 function icdiff { icdiff.py "--cols=$($Host.UI.RawUI.WindowSize.Width)" $args }
 
 function e { Invoke-Expression "$env:EDITOR $args" }
 function spe { sudo procexp $args }
-function grep() { $input | rg.exe --hidden $args }
+function grep { $input | rg.exe --hidden $args }
 
 Import-Module ZLocation
 Set-Alias j Invoke-ZLocation
@@ -277,13 +274,6 @@ Set-PSReadlineOption -EditMode Vi
 Set-PSReadLineOption -HistorySearchCursorMovesToEnd
 Set-PSReadLineOption -HistoryNoDuplicates
 Set-PSReadlineOption -ContinuationPrompt ">> "
-# Set-PSReadlineOption -ContinuationPromptForegroundColor DarkYellow
-# Set-PSReadlineOption Operator -ForegroundColor Cyan
-# Set-PSReadlineOption Parameter -ForegroundColor DarkCyan
-# Set-PSReadlineOption Type -ForegroundColor Blue
-# Set-PSReadlineOption String -ForegroundColor DarkGreen
-# Set-PSReadlineOption Keyword -ForegroundColor Yellow
-# Set-PSReadlineOption Variable -ForegroundColor Magenta
 Set-PSReadlineOption -ShowToolTips
 Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+p -Function HistorySearchBackward
 Set-PSReadlineKeyHandler -ViMode Insert -Key Ctrl+n -Function Complete
@@ -372,48 +362,6 @@ function Get-Path {
     $paths.Values | sort Target
 }
 
-function Invoke-Nvr([switch]$Tab, [switch]$Wait) {
-    if ($env:NVIM_LISTEN_ADDRESS) {
-        nvr.py -l $args
-        return
-    }
-    rm env:VIM -ErrorAction SilentlyContinue
-    rm env:VIMRUNTIME -ErrorAction SilentlyContinue
-    $remote = if ($args) { '--remote-silent' } else { '' }
-    $remote = if ($Tab) { $remote + '-tab' } else { $remote }
-    $remote = if ($Wait) { $remote + '-wait' } else { $remote }
-    python3 $env:DOTFILES\tools\nvr.py -f $remote $args
-}
-
-function Invoke-Vim([switch]$Tab, [switch]$Wait) {
-    $vim = 'vim.exe'
-    $gvim = 'gvim.exe'
-    if ($global:VimServerName) { $serverName = $global:VimServerName }
-    else { $serverName = "GVIM" }
-    $servers = (& $vim --noplugin -u NORC --serverlist) | ? { $_ -eq $serverName }
-    if ($args) {
-        $files = $args | ? { $_ -notlike "-*" }
-        $otherArgs = $args | ? { $_ -like "-*" }
-        $remote = '--remote'
-        $remote = if ($Tab) { $remote + '-tab' } else { $remote }
-        $remote = if ($Wait) { $remote + '-wait' } else { $remote }
-        $remote += '-silent'
-        if ($servers) {
-            & $vim $otherArgs --servername $serverName -c "call remote_foreground('$serverName')" $remote $files
-        } else {
-            & $gvim $otherArgs --servername $serverName $files
-        }
-    } else {
-        if ($servers) {
-            & $vim --noplugin -u NORC -c "call remote_foreground('$serverName')" -c "quit"
-        } else {
-            $env:VIM = "$vimInstall"
-            $env:VIMRUNTIME = "$vimInstall" 
-            & $gvim --servername $serverName
-        }
-    }
-}
-
 function Format-TimeSpan([TimeSpan]$ts) {
     $format = ""
     if ($ts.Hours -gt 0) { $format += "h\h\ " }
@@ -432,10 +380,3 @@ function Set-VisualStudioEnvironment([string]$Version = "*", [string]$Platform =
         }
     }
 }
-
-
-function Start-AwsWithVault([ValidateSet("playpen", "playpen-mgmt")]$profile = "playpen") {
-    aws-vault exec "$profile" -- $args
-}
-Set-Alias awsv Start-AwsWithVault
-function Start-AwsLocalMetaData { start powershell {cd C:\Dev\git\awslocalmetadata\source\metadata-server\; awsv playpen -- dotnet run} }
