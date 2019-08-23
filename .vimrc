@@ -908,8 +908,20 @@ xnoremap gx :Browse
 " Hack buffer names relative to cwd, see
 " https://groups.google.com/forum/#!topic/vim_use/Vq0z2DJH2So
 " Useful to get relative paths in quickfix after grep
-command! CWindow 0split | lcd . | quit | cwindow
-command! LWindow 0split | lcd . | quit | lwindow
+function! s:CWindow()
+  let size = getqflist({'size':1}).size
+  if size == 0 | return | endif
+  0split | lcd . | quit
+  execute 'cwindow' (min([10, max([3, size])]))
+endfunction
+function! s:LWindow()
+  let size = getloclist(0, {'size':1}).size
+  if size == 0 | return | endif
+  0split | lcd . | quit
+  execute 'lwindow' (min([10, max([3, size])]))
+endfunction
+command! CWindow call s:CWindow()
+command! LWindow call s:LWindow()
 
 " Opens quick fix window when there are items, close it when empty
 autocmd vimrc QuickFixCmdPost [^l]* nested CWindow
@@ -1097,11 +1109,7 @@ function! BClose(force) abort
       continue
     endif
 
-    if bufexists(0) && bufnr('#') != bnr
-      buffer #
-    else
-      bprevious
-    endif
+    bprevious
 
     if bnr == bufnr('%')
       Scratch
