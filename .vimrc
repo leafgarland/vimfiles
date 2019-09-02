@@ -55,6 +55,7 @@ function! PackInit()
   Pack 'leafgarland/gruvbox', {'type': 'opt'}
   Pack 'leafgarland/iceberg.vim', {'type': 'opt'}
   Pack 'leafgarland/flatwhite-vim', {'type': 'opt'}
+  Pack 'andreypopp/vim-colors-plain', {'type': 'opt'}
 
   " Motions and actions
   Pack 'kana/vim-textobj-indent'
@@ -82,7 +83,7 @@ function! PackInit()
   Pack 'sgur/vim-editorconfig'
   Pack 'neoclide/coc.nvim', {'do': '!yarn install'}
   Pack 'OmniSharp/omnisharp-vim'
-  Pack 'eraserhd/parinfer-rust'
+  Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -234,19 +235,24 @@ function! SearchNextLine(pattern)
   call search('\%>'.line('.').'l'.a:pattern)
 endfunction
 
-function! TermBufferMappings()
+function! TermBufferSettings()
+  setfiletype term
+  setlocal nonumber
+  setlocal nocursorline
+  setlocal signcolumn=no
+
   nnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('')<CR>
   xnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('')<CR>
   nnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
   xnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
+
+  autocmd vimrc WinEnter,BufWinEnter <buffer> startinsert
+  autocmd TermClose <buffer> if &buftype=='terminal' | bdelete! | endif
+  startinsert
 endfunction
 
 if has('nvim')
-  autocmd vimrc TermOpen * setfiletype term
-        \ |setlocal nonumber
-        \ |call TermBufferMappings()
-        \ |autocmd vimrc WinEnter,BufEnter <buffer> startinsert
-        \ |startinsert
+  autocmd vimrc TermOpen * call TermBufferSettings()
   set inccommand=split
   set fillchars+=msgsep:━
   highlight link MsgSeparator Title
@@ -789,41 +795,22 @@ endfunction
 
 " Terminal Toggle: {{{
 
+function! ResetToggleTerminal(...)
+  let s:term_win = 0
+  let s:term_buf = 0
+endfunction
+
 function! ToggleTerminal(height, width)
-  let found_winnr = 0
-  for winnr in range(1, winnr('$'))
-    if getbufvar(winbufnr(winnr), '&buftype') == 'terminal'
-      let found_winnr = winnr
-    endif
-  endfor
-
-  if found_winnr > 0
-    if &buftype == 'terminal'
-      " if current window is the terminal window, close it
-      execute found_winnr . ' wincmd q'
-    else
-      " if current window is not terminal, go to the terminal window
-      execute found_winnr . ' wincmd w'
-    endif
+  if win_getid() == s:term_win
+    call nvim_win_close(s:term_win, 1)
+    let s:term_win = 0
   else
-    let found_bufnr = 0
-    for bufnr in filter(range(1, bufnr('$')), 'bufexists(v:val)')
-      let buftype = getbufvar(bufnr, '&buftype')
-      if buftype == 'terminal'
-        let found_bufnr = bufnr
-      endif
-    endfor
-
-    let terminal_type = get(g:, 'terminal_type', 'floating')
-    if terminal_type == 'floating'
-      call s:openTermFloating(found_bufnr, a:height, a:width)
-    else
-      call s:openTermNormal(found_bufnr, a:height, a:width)
-    endif
+    call s:openTermFloating(a:height, a:width)
+    let s:term_win = win_getid()
   endif
 endfunction
 
-function! s:openTermFloating(found_bufnr, height, width) abort
+function! s:openTermFloating(height, width) abort
   let row=(&lines-a:height)/2
   let col=(&columns-a:width)/2
   let opts = {
@@ -836,52 +823,26 @@ function! s:openTermFloating(found_bufnr, height, width) abort
         \ 'style': 'minimal'
         \ }
 
-  if a:found_bufnr == 0
-    let bufnr = nvim_create_buf(v:false, v:true)
-    call nvim_open_win(bufnr, 1, opts)
-    terminal pwsh
-    autocmd TermClose <buffer> if &buftype=='terminal' | wincmd c | endif
+  if s:term_buf != 0
+    " switch to existing term buffer
+    call nvim_open_win(s:term_buf, 1, opts)
+    startinsert
   else
-    call nvim_open_win(a:found_bufnr, 1, opts)
+    " create new term buffer
+    let s:term_buf = nvim_create_buf(v:false, v:true)
+    call nvim_open_win(s:term_buf, 1, opts)
+    call termopen(executable('fish') ? 'fish' : 'pwsh', {'on_exit': function('ResetToggleTerminal')})
+    setlocal winblend=10
   endif
 
-  setlocal winblend=10
-  setlocal bufhidden=hide
-  setlocal signcolumn=no
-  setlocal nobuflisted
-  setlocal nocursorline
-  setlocal nonumber
 endfunction
 
-function! s:openTermNormal(found_bufnr, height, width)
-  if a:found_bufnr > 0
-    if &lines > 30
-      execute 'botright ' . a:height . 'split'
-      execute 'buffer ' . a:found_bufnr
-    else
-      botright split
-      execute 'buffer ' . a:found_bufnr
-    endif
-  else
-    if &lines > 30
-      if has('nvim')
-        execute 'botright ' . a:height . 'split term://' . &shell
-      else
-        botright terminal
-        resize a:height
-      endif
-    else
-      if has('nvim')
-        execute 'botright split term://' . &shell
-      else
-        botright terminal
-      endif
-    endif
-  endif
-endfunction
+if has('vim_starting')
+  call ResetToggleTerminal()
+endif
 
-nnoremap <A-t> :call ToggleTerminal(&lines-10,&columns-30)<CR>
-tnoremap <A-t> <C-\><C-n>:call ToggleTerminal(&lines-10,&columns-30)<CR>
+nnoremap <silent> <A-t> :call ToggleTerminal(&lines-10,&columns)<CR>
+tnoremap <silent> <A-t> <C-\><C-n>:call ToggleTerminal(&lines-10,&columns)<CR>
 
 " }}}
 
@@ -2034,7 +1995,8 @@ autocmd vimrc FileType markdown nested set filetype=markdown.pandoc
 
 " vim-sexp: {{{
 if s:has_plug('vim-sexp')
-  let g:sexp_filetypes='clojure,scheme,lisp,timl,janet'
+  let g:sexp_filetypes='clojure,scheme,lisp,timl,janet,fennel'
+  let g:sexp_enable_insert_mode_mappings=0
 endif
 " }}}
 
