@@ -82,6 +82,7 @@ function! PackInit()
   Pack 'romainl/vim-cool'
   Pack 'sgur/vim-editorconfig'
   Pack 'neoclide/coc.nvim', {'do': '!yarn install'}
+  Pack 'jackguo380/vim-lsp-cxx-highlight'
   Pack 'OmniSharp/omnisharp-vim'
   Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
 
@@ -587,6 +588,17 @@ function! s:ft_json()
 endfunction
 " }}}
 
+" c: {{{
+function! s:ft_c()
+  let g:c_no_curly_error = 1 
+  setlocal shiftwidth=4
+
+  if s:has_plug('coc.nvim')
+    call MyDefaultCocMappings()
+  endif
+endfunction
+" }}}
+
 " xml: {{{
 let g:xml_syntax_folding=1
 autocmd vimrc BufNewFile,BufRead *.config setfiletype xml
@@ -811,7 +823,7 @@ function! ToggleTerminal(height, width)
 endfunction
 
 function! s:openTermFloating(height, width) abort
-  let row=(&lines-a:height)/2
+  let row=0
   let col=(&columns-a:width)/2
   let opts = {
         \ 'relative': 'editor',
@@ -832,7 +844,6 @@ function! s:openTermFloating(height, width) abort
     let s:term_buf = nvim_create_buf(v:false, v:true)
     call nvim_open_win(s:term_buf, 1, opts)
     call termopen(executable('fish') ? 'fish' : 'pwsh', {'on_exit': function('ResetToggleTerminal')})
-    setlocal winblend=10
   endif
 
 endfunction
