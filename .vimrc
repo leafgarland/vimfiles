@@ -81,10 +81,8 @@ function! PackInit()
   Pack 'chrisbra/unicode.vim'
   Pack 'romainl/vim-cool'
   Pack 'sgur/vim-editorconfig'
-  Pack 'neoclide/coc.nvim', {'do': '!yarn install'}
-  Pack 'jackguo380/vim-lsp-cxx-highlight'
-  Pack 'OmniSharp/omnisharp-vim'
   Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
+  Pack 'neovim/nvim-lsp'
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -581,10 +579,6 @@ function! s:ft_json()
   endif
   setlocal shiftwidth=2
   setlocal concealcursor=n
-
-  if s:has_plug('coc.nvim')
-    call MyDefaultCocMappings()
-  endif
 endfunction
 " }}}
 
@@ -592,10 +586,6 @@ endfunction
 function! s:ft_c()
   let g:c_no_curly_error = 1 
   setlocal shiftwidth=4
-
-  if s:has_plug('coc.nvim')
-    call MyDefaultCocMappings()
-  endif
 endfunction
 " }}}
 
@@ -668,36 +658,6 @@ function! s:ft_qf()
 endfunction
 " }}}
 
-" rust: {{{
-function! s:ft_rust()
-  setlocal keywordprg=:DevDocs\ rust
-  if executable('rusty-tags')
-    command! RustyTags silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . '&' <bar> redraw!
-    setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
-    " autocmd BufWrite *.rs RustyTags
-  endif
-  if s:has_plug('LanguageClient-neovim')
-    nnoremap <silent> <buffer> K :call LanguageClient_textDocument_hover()<CR>
-    nnoremap <silent> <buffer> gd :call LanguageClient_textDocument_definition()<CR>
-    nnoremap <silent> <buffer> gr :call LanguageClient_textDocument_references()<CR>
-    nnoremap <silent> <buffer> <F2> :call LanguageClient_textDocument_rename()<CR>
-  endif
-
-  if s:has_plug('coc.nvim')
-    call MyDefaultCocMappings()
-  endif
-endfunction
-" }}}
-
-" typescript: {{{
-function! s:ft_typescript()
-    call MyDefaultCocMappings()
-  if s:has_plug('coc.nvim')
-    call MyDefaultCocMappings()
-  endif
-endfunction
-" }}}
-
 " pandoc/markdown: {{{
 function! s:ft_pandoc()
   setlocal foldcolumn=0 
@@ -716,6 +676,7 @@ endfunction
 
 " lua: {{{
 autocmd vimrc BufNewFile,BufRead *.love setfiletype lua
+autocmd vimrc BufNewFile,BufRead *.script setfiletype lua
 function! s:ft_lua()
   command! -buffer -range LuaExecRange execute 'lua' 'assert(loadstring("'.escape(join(getline(<line1>,<line2>), "\\n"), '"').'"))()'
   nnoremap <buffer> <leader>xe :LuaExecRange<CR>
@@ -1609,18 +1570,6 @@ function! StatusLinePath()
   return path.(exists('+shellslash') && !&shellslash ? '\' : '/')
 endfunction
 
-function! StatusLineLSP()
-  if !exists('*coc#status')
-    return ''
-  endif
-  let lspStatus = trim(coc#status())
-  if empty(lspStatus)
-    return ''
-  endif
-
-  return lspStatus
-endfunction
-
 function! s:bufferIndex(bufName)
   let i = 0
   while i < argc()
@@ -1732,8 +1681,6 @@ function! Status(active)
     let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
-    let sl.= '%3*'
-    let sl.= '%( %{StatusLineLSP()} %)'
     let sl.= '%0* '
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
@@ -1817,35 +1764,23 @@ call PrettyLittleStatus()
 
 " Plugins config: {{{
 
-" COC: {{{
-if s:has_plug('coc.nvim')
-  function! MyDefaultCocMappings()
-    nmap <buffer> [c <Plug>(coc-diagnostic-prev)
-    nmap <buffer> ]c <Plug>(coc-diagnostic-next))
-    nmap <buffer> <C-k> <Plug>(coc-diagnostic-info))
+" LSP: {{{
+lua << EOF
+  local lsp = require'nvim_lsp'
+  lsp.rls.setup{} 
+  lsp.ccls.setup{} 
+EOF
 
-    nmap <buffer> gd <Plug>(coc-definition)
-    nmap <buffer> gy <Plug>(coc-type-definition)
-    nmap <buffer> gi <Plug>(coc-implementation)
-    nmap <buffer> gr <Plug>(coc-references)
-    nmap <buffer> <C-.> <Plug>(coc-codeaction)
-    nmap <buffer> <leader>w <Plug>(coc-range-select)
-    xmap <buffer> <leader>w <Plug>(coc-range-select)
-    xmap <buffer> <leader>W <Plug>(coc-range-select-backward)
-    nmap <buffer> <leader>cl :CocList<CR>
-
-    " Use K for show documentation in preview window
-    nmap <buffer> K :call <SID>show_documentation()<CR>
-  endfunction
-
-  function! s:show_documentation()
-    if &filetype == 'vim'
-      execute 'h '.expand('<cword>')
-    else
-      call CocAction('doHover')
-    endif
-  endfunction
-endif
+autocmd vimrc Filetype rust,c call SetLspDefaults()
+function! SetLspDefaults()
+  setlocal omnifunc=v:lua.vim.lsp.omnifunc
+  nnoremap <silent> <leader>gD <cmd>lua vim.lsp.buf.declaration()<CR>
+  nnoremap <silent> <leader>gd <cmd>lua vim.lsp.buf.definition()<CR>
+  nnoremap <silent> <leader>k  <cmd>lua vim.lsp.buf.hover()<CR>
+  nnoremap <silent> <leader>gi  <cmd>lua vim.lsp.buf.implementation()<CR>
+  nnoremap <silent> <leader>gs  <cmd>lua vim.lsp.buf.signature_help()<CR>
+  nnoremap <silent> <leader>gt <cmd>lua vim.lsp.buf.type_definition()<CR>
+endfunction
 " }}}
 
 " Fugitive: {{{
