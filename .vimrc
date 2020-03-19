@@ -83,6 +83,7 @@ function! PackInit()
   Pack 'sgur/vim-editorconfig'
   Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
   Pack 'neovim/nvim-lsp'
+  Pack 'pechorin/any-jump.vim' 
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -126,6 +127,9 @@ function! PackInit()
     Pack 'cloudhead/neovim-fuzzy'
   endif
 endfunction
+
+" pandoc plugin assumes this exists, remove it if pandoc updates
+let g:pandoc#filetypes#pandoc_markdown = 1
 
 packloadall
 
@@ -246,7 +250,6 @@ function! TermBufferSettings()
   xnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
 
   autocmd vimrc WinEnter,BufWinEnter <buffer> startinsert
-  autocmd TermClose <buffer> if &buftype=='terminal' | bdelete! | endif
   startinsert
 endfunction
 
@@ -422,8 +425,6 @@ nnoremap <c-w>D :call <SID>ToggleDiff()<CR>
 
 nnoremap j gj
 nnoremap k gk
-
-nnoremap <leader>j i<CR><Esc>
 
 nnoremap <leader>eF :<C-U>let &foldlevel=v:count > 0 ? v:count : foldlevel('.') - 1<CR>
 
@@ -695,7 +696,7 @@ endfunction
 
 " janet: {{{
 function! s:ft_janet()
-  command! -buffer -range LispExecRange call SendTerm('janet', substitute(join(getline(<line1>, <line2>), "\r") . "\r", "\r\s*\\", ' ', 'g'))
+  command! -buffer -range LispExecRange call SendTerm('janet', substitute(join(getline(<line1>, <line2>), " ") . "\r", "\r\s*\\", ' ', 'g'))
   nnoremap <buffer> <leader>xe :LispExecRange<CR>
   xnoremap <buffer> <leader>xe :LispExecRange<CR>
 endfunction
@@ -1457,11 +1458,17 @@ endif
 " SendTerm: {{{
 function! SendTerm(c, t)
   let tid = get(b:, 'sendtermid', 0)
+  let bid = get(b:, 'sendtermbufferid', 0)
   if !tid
     botright split new
     let tid = termopen(a:c)
+    let bid = bufnr('')
     wincmd p
     let b:sendtermid = tid
+    let b:sendtermbufferid = bid
+  elseif empty(win_findbuf(bid))
+    execute 'botright sbuffer' bid
+    wincmd p
   endif
   call chansend(b:sendtermid, a:t)
 endfunction
@@ -1666,6 +1673,14 @@ function! StatusLineMode(...)
   return !empty(m) ? m : 'none'
 endfunction
 
+function! LspStatus() abort
+    let sl = ''
+    if luaeval('vim.lsp.buf.server_ready()')
+        let sl.='LSP'
+    endif
+    return sl
+endfunction
+
 function! Status(active)
   if a:active
     let sl = '%0*'
@@ -1681,7 +1696,9 @@ function! Status(active)
     let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
-    let sl.= '%0* '
+    let sl.= '%2*'
+    let sl.= '%( %{LspStatus()} %)'
+    let sl.= '%0*'
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
     let sl.= '%( %{&spell ? &spelllang : ""} %)'
@@ -1703,7 +1720,7 @@ function! Status(active)
     let sl.= '%='
     let sl.= '%( %{StatusLineDiffMerge()} %)'
     let sl.= '%2*'
-    let sl.= '%( %{StatusLineWinNum()} %)'
+    let sl.= '%(%{StatusLineWinNum()} %)'
     return sl
   endif
 endfunction
@@ -1768,24 +1785,26 @@ call PrettyLittleStatus()
 lua << EOF
   local lsp = require'nvim_lsp'
   lsp.rls.setup{} 
-  lsp.ccls.setup{} 
+  lsp.clangd.setup{cmd = {'/usr/local/opt/llvm/bin/clangd', '--background-index', '--clang-tidy', '--log=error', '--pretty'}}
 EOF
 
 autocmd vimrc Filetype rust,c call SetLspDefaults()
 function! SetLspDefaults()
   setlocal omnifunc=v:lua.vim.lsp.omnifunc
-  nnoremap <silent> <leader>gD <cmd>lua vim.lsp.buf.declaration()<CR>
-  nnoremap <silent> <leader>gd <cmd>lua vim.lsp.buf.definition()<CR>
-  nnoremap <silent> <leader>k  <cmd>lua vim.lsp.buf.hover()<CR>
-  nnoremap <silent> <leader>gi  <cmd>lua vim.lsp.buf.implementation()<CR>
-  nnoremap <silent> <leader>gs  <cmd>lua vim.lsp.buf.signature_help()<CR>
-  nnoremap <silent> <leader>gt <cmd>lua vim.lsp.buf.type_definition()<CR>
+  nnoremap <buffer> <silent> gd    <cmd>lua vim.lsp.buf.declaration()<CR>
+  nnoremap <buffer> <silent> gD    <cmd>lua vim.lsp.buf.definition()<CR>
+  nnoremap <buffer> <silent> K     <cmd>lua vim.lsp.buf.hover()<CR>
+  nnoremap <buffer> <silent> gi    <cmd>lua vim.lsp.buf.implementation()<CR>
+  nnoremap <buffer> <silent> <c-k> <cmd>lua vim.lsp.buf.signature_help()<CR>
+  nnoremap <buffer> <silent> 1gD   <cmd>lua vim.lsp.buf.type_definition()<CR>
+  nnoremap <buffer> <silent> gr    <cmd>lua vim.lsp.buf.references()<CR>
+  nnoremap <buffer> <silent> g0    <cmd>lua vim.lsp.buf.document_symbol()<CR>
 endfunction
 " }}}
 
 " Fugitive: {{{
 if s:has_plug('vim-fugitive')
-  nnoremap <leader>vc :Gstatus<CR>
+  nnoremap <leader>vc :0G<CR>
   nnoremap <leader>vl :Glog -- %<CR>
   xnoremap <leader>vl :Glog -- %<CR>
   nnoremap <leader>vm :Glog master.. -- %<CR>
@@ -1891,52 +1910,12 @@ if s:has_plug('unicode.vim')
 endif
 " }}}
 
-" LSP {{{
-if s:has_plug('LanguageClient-neovim')
-  let g:LanguageClient_serverCommands = {
-      \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
-      \ 'javascript': ['tcp://127.0.0.1:2089'],
-      \ 'javascript.jsx': ['tcp://127.0.0.1:2089'],
-      \ 'typescript': ['tcp://127.0.0.1:2089'],
-      \ 'typescript.tsx': ['tcp://127.0.0.1:2089'],
-      \ }
-
-  let g:LanguageClient_diagnosticsDisplay = {
-        \ 1: {
-        \     "name": "Error",
-        \     "texthl": "ALEError",
-        \     "signText": "‼",
-        \     "signTexthl": "ALEErrorSign",
-        \ },
-        \ 2: {
-        \     "name": "Warning",
-        \     "texthl": "ALEWarning",
-        \     "signText": "!",
-        \     "signTexthl": "ALEWarningSign",
-        \ },
-        \ 3: {
-        \     "name": "Information",
-        \     "texthl": "ALEInfo",
-        \     "signText": "i",
-        \     "signTexthl": "ALEInfoSign",
-        \ },
-        \ 4: {
-        \     "name": "Hint",
-        \     "texthl": "ALEInfo",
-        \     "signText": "~",
-        \     "signTexthl": "ALEInfoSign",
-        \ },
-        \ }
-endif
-
-" }}}
-
-" pandoc {{{
+" Pandoc: {{{
 let g:pandoc#syntax#codeblocks#embeds#langs = [
       \ "rust",
       \ "bash=sh"]
 let g:pandoc#modules#disabled = ['bibliographies']
-autocmd vimrc FileType markdown nested set filetype=markdown.pandoc
+let g:pandoc#filetypes#pandoc_markdown = 1
 " }}}
 
 " vim-sexp: {{{
@@ -1948,6 +1927,38 @@ endif
 
 "}}}
 
+function! ColorschemePlain()
+  colorscheme plain
+
+  highlight! Comment guifg=#888888 gui=italic
+  highlight! Folded guibg=#222222 guifg=#888888 gui=italic
+  highlight! LineNr guifg=#555555
+  highlight! NonText guifg=#888888 guibg=#222222
+  highlight! PmenuSel guibg=#404040
+  highlight! StatusLine guibg=#333333 gui=NONE guifg=fg
+  highlight! StatusLineNC guibg=#333333 gui=NONE guifg=#888888
+  highlight! String gui=italic guifg=#b6d6fd
+  highlight! User1 guifg=#5fd7a7 guibg=#333333 gui=bold
+  highlight! User2 guifg=fg guibg=#333333 gui=bold
+  highlight! VertSplit guifg=#333333 gui=NONE
+  highlight! clear CursorLine
+  highlight! helpExample gui=bold guifg=fg
+  highlight! helpSpecial gui=italic guifg=fg
+  highlight! link CursorLineNr DiffChange
+  highlight! link helpOption String 
+  highlight! link minpacName DiffAdd
+  highlight! link minpacSha Statement
+  highlight! link rustAttribute Constant
+  highlight! link vimCommentTitle Comment
+  highlight! link vimFunction Statement
+  highlight! link yamlEscape SpecialKey
+  highlight! link fugitiveStagedModifier DiffAdd
+  highlight! link fugitiveUnstagedHeading Statement
+  highlight! link fugitiveUnstagedModifier diffRemoved
+  highlight! link fugitiveUntrackedHeading Statement
+endfunction
+
 if has('vim_starting')
   colorscheme iceberg
 endif
+
