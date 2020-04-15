@@ -233,23 +233,6 @@ function! SearchNextLine(pattern)
   call search('\%>'.line('.').'l'.a:pattern)
 endfunction
 
-function! OpenRipgrepFile()
-  let line = getline('.')
-  if line !~ '^\d\+:'
-    normal gf
-    return
-  endif
-  let linenum = matchlist(line, '^\d\+')[0]
-  let file_line = search('^\f\+$', 'bnW')
-  if file_line == 0
-    return
-  endif
-
-  let file_name = getline(file_line)
-  wincmd w
-  execute 'edit' '+'.linenum file_name
-endfunction
-
 command! -nargs=* Term call s:Term("<mods>", "<args>")
 function! s:Term(mods, args)
   if !empty(a:mods)
@@ -269,8 +252,6 @@ function! TermBufferSettings()
   xnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('')<CR>
   nnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
   xnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
-
-  nnoremap <buffer> gf :call OpenRipgrepFile()<CR>
 
   autocmd vimrc WinEnter,BufWinEnter <buffer> startinsert
 
@@ -532,8 +513,8 @@ nnoremap <leader>sl :keeppatterns lvimgrep /<C-R><C-R>//j %<CR>
 nnoremap <leader>sr :%snomagic/
 xnoremap <leader>sr :snomagic/
 
-nnoremap <leader>sw :grep <c-r><c-w><CR>
-xnoremap <leader>sw y:<C-U>grep '<c-r><c-r>"'<CR>
+nnoremap <silent> <leader>sw :<C-U>execute v:count.'FGrep' '<c-r><c-w>'<CR>
+xnoremap <silent> <leader>sw :<C-U>execute v:count.'FGrep' '<c-r><c-r>"'<CR>
 
 nnoremap <leader>8 :keeppatterns lvimgrep /<C-R><C-R><C-W>/j %<CR>
 xnoremap <leader>8 y:<C-U>keeppatterns lvimgrep /<C-R><C-R>"/j %<CR>
@@ -880,6 +861,89 @@ endif
 
 nnoremap <silent> <C-a>t :call ToggleTerminal(&lines-8,&columns-12)<CR>
 tnoremap <silent> <C-a>t <C-\><C-n>:call ToggleTerminal(&lines-8,&columns-12)<CR>
+
+" }}}
+
+" Floating grep {{{
+command! -count=0 -nargs=+ FGrep call FloatGrep(<count>, <q-args>)
+function! FloatGrep(context, pattern)
+  let width = &columns-20
+  let height = &lines-20
+  let col=(&columns-width)/2
+  let row=(&lines-height)/2
+  let opts = {
+        \ 'relative': 'editor',
+        \ 'width': width,
+        \ 'height': height,
+        \ 'col': col,
+        \ 'row': row,
+        \ 'anchor': 'NW',
+        \ 'style': 'minimal',
+        \ }
+
+  let term_buf = nvim_create_buf(v:false, v:true)
+  call nvim_open_win(term_buf, 1, opts)
+  call termopen(['rg', '-C'.a:context, a:pattern])
+  echom ':'.a:context.'FGrep' a:pattern
+
+  setlocal cursorline
+  setlocal foldcolumn=2
+  setlocal winhighlight=EndOfBuffer:,NormalFloat:Pmenu,FoldColumn:DiffAdd
+
+  nnoremap <silent> <buffer> <C-p> :call <SID>SearchNextFile(v:true)<CR>
+  nnoremap <silent> <buffer> <C-n> :call <SID>SearchNextFile(v:false)<CR>
+  nnoremap <silent> <buffer> <C-k> :call <SID>SearchNextMatch(v:true)<CR>
+  nnoremap <silent> <buffer> <C-j> :call <SID>SearchNextMatch(v:false)<CR>
+
+  nnoremap <buffer> o :call <SID>OpenRipgrepFileAtCursor()<CR>
+  nnoremap <buffer> <CR> :call <SID>OpenRipgrepFileAtCursor()<CR>
+  nnoremap <buffer> q :bwipeout!<CR>
+
+  normal gg
+endfunction
+
+function! s:SearchNextFile(backwards)
+  let flags = a:backwards ? 'bW' : 'W'
+  call search('\%1l\f\+$\|\n\n\zs\f\+$', flags)
+  normal zz
+endfunction
+
+function! s:SearchNextMatch(backwards)
+  let flags = a:backwards ? 'bW' : 'W'
+  call search('^\d\+:', flags)
+  normal zz
+endfunction
+
+function! s:OpenRipgrepFileAtCursor()
+  let loc = s:GetRipgrepFileAtCursor()
+  if empty(loc)
+    return
+  endif
+  let [fname, lnum] = loc
+  if !filereadable(fname)
+    return
+  endif
+  bwipeout!
+  execute 'edit' '+'.lnum fname
+endfunction
+
+function! s:GetRipgrepFileAtCursor()
+  let line = getline('.')
+  if line !~ '^\d\+[:-]'
+    if filereadable(line)
+      return [line, 1]
+    endif
+    return
+  endif
+  let linenum = matchlist(line, '^\d\+')[0]
+  let fline = search('^\f\+$', 'bnW')
+  if fline == 0
+    return
+  endif
+
+  let fname = getline(fline)
+  return [fname, linenum]
+endfunction
 
 " }}}
 
@@ -2077,43 +2141,45 @@ let g:sexp_enable_insert_mode_mappings=0
 function! ColorschemeIceberg()
   colorscheme iceberg
 
-  highlight! NormalFloat guifg=#c6c8d1 guibg=#0a2132
+  highlight NormalFloat guifg=#c6c8d1 guibg=#0a2132
+  highlight String guibg=bg gui=italic
 endfunction
 
 function! ColorschemePlain()
   colorscheme plain
 
-  highlight! Comment guifg=#888888 gui=italic
-  highlight! Folded guibg=#222222 guifg=#888888 gui=italic
-  highlight! LineNr guifg=#555555
-  highlight! NonText guifg=#888888 guibg=#222222
-  highlight! PmenuSel guibg=#404040
-  highlight! StatusLine guibg=#333333 gui=NONE guifg=fg
-  highlight! StatusLineNC guibg=#333333 gui=NONE guifg=#888888
-  highlight! String gui=italic guifg=#b6d6fd
-  highlight! User1 guifg=#5fd7a7 guibg=#333333 gui=bold
-  highlight! User2 guifg=fg guibg=#333333 gui=bold
-  highlight! VertSplit guifg=#333333 gui=NONE
-  highlight! clear CursorLine
-  highlight! helpExample gui=bold guifg=fg
-  highlight! helpSpecial gui=italic guifg=fg
-  highlight! link CursorLineNr DiffChange
-  highlight! link helpOption String 
-  highlight! link minpacName DiffAdd
-  highlight! link minpacSha Statement
-  highlight! link rustAttribute Constant
-  highlight! link vimCommentTitle Comment
-  highlight! link vimFunction Statement
-  highlight! link yamlEscape SpecialKey
-  highlight! link fugitiveStagedModifier DiffAdd
-  highlight! link fugitiveUnstagedHeading Statement
-  highlight! link fugitiveUnstagedModifier diffRemoved
-  highlight! link fugitiveUntrackedHeading Statement
+  highlight Comment guifg=#888888 gui=italic
+  highlight Folded guibg=#222222 guifg=#888888 gui=italic
+  highlight LineNr guifg=#555555
+  highlight NonText guifg=#888888 guibg=#222222
+  highlight PmenuSel guibg=#404040
+  highlight StatusLine guibg=#333333 gui=NONE guifg=fg
+  highlight StatusLineNC guibg=#333333 gui=NONE guifg=#888888
+  highlight String gui=italic guifg=#b6d6fd
+  highlight User1 guifg=#5fd7a7 guibg=#333333 gui=bold
+  highlight User2 guifg=fg guibg=#333333 gui=bold
+  highlight VertSplit guifg=#333333 gui=NONE
+  highlight clear CursorLine
+  highlight helpExample gui=bold guifg=fg
+  highlight helpSpecial gui=italic guifg=fg
+  highlight link CursorLineNr DiffChange
+  highlight link helpOption String 
+  highlight link minpacName DiffAdd
+  highlight link minpacSha Statement
+  highlight link rustAttribute Constant
+  highlight link vimCommentTitle Comment
+  highlight link vimFunction Statement
+  highlight link yamlEscape SpecialKey
+  highlight link fugitiveStagedModifier DiffAdd
+  highlight link fugitiveUnstagedHeading Statement
+  highlight link fugitiveUnstagedModifier diffRemoved
+  highlight link fugitiveUntrackedHeading Statement
 endfunction
 
 if has('vim_starting')
-  call ColorschemeIceberg()
+  " the colorscheme is applied after vim starts up, so my customizations are
+  " lost unless we delay setting the colorscheme
+  autocmd vimrc VimEnter * ++once call ColorschemeIceberg()
 endif
 
 "}}}
-
