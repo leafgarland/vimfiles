@@ -83,7 +83,8 @@ function! PackInit()
   Pack 'sgur/vim-editorconfig'
   Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
   Pack 'neovim/nvim-lsp'
-  Pack 'pechorin/any-jump.vim' 
+  Pack 'sakhnik/nvim-gdb'
+  Pack 'Olical/conjure', {'branch': 'develop'}
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -93,7 +94,6 @@ function! PackInit()
   Pack 'vim-pandoc/vim-pandoc-syntax'
   Pack 'vim-pandoc/vim-pandoc'
   Pack 'PProvost/vim-ps1'
-  Pack 'leafgarland/vim-fsharp'
   Pack 'guns/vim-clojure-static'
   Pack 'guns/vim-sexp'
   Pack 'tpope/vim-sexp-mappings-for-regular-people'
@@ -122,20 +122,13 @@ function! PackInit()
   Pack 'ziglang/zig.vim'
   Pack 'janet-lang/janet.vim'
   Pack 'dag/vim-fish'
+  Pack 'bakpakin/fennel.vim'
 
   if has('nvim') && executable('fzy')
     Pack 'cloudhead/neovim-fuzzy'
   endif
 endfunction
 
-" pandoc plugin assumes this exists, remove it if pandoc updates
-let g:pandoc#filetypes#pandoc_markdown = 1
-
-packloadall
-
-function! s:has_plug(name)
-  return &runtimepath =~ a:name
-endfunction
 "}}}
 
 " General: {{{
@@ -212,6 +205,8 @@ set fillchars=vert:┃,fold:-
 set splitright
 set switchbuf=useopen
 
+set completeopt=menu,noselect
+
 " fit the current window height to the selected text
 func! s:win_motion_resize(type) abort
   let sel_save = &selection
@@ -238,6 +233,32 @@ function! SearchNextLine(pattern)
   call search('\%>'.line('.').'l'.a:pattern)
 endfunction
 
+function! OpenRipgrepFile()
+  let line = getline('.')
+  if line !~ '^\d\+:'
+    normal gf
+    return
+  endif
+  let linenum = matchlist(line, '^\d\+')[0]
+  let file_line = search('^\f\+$', 'bnW')
+  if file_line == 0
+    return
+  endif
+
+  let file_name = getline(file_line)
+  wincmd w
+  execute 'edit' '+'.linenum file_name
+endfunction
+
+command! -nargs=* Term call s:Term("<mods>", "<args>")
+function! s:Term(mods, args)
+  if !empty(a:mods)
+    execute a:mods 'split'
+  endif
+  execute 'term' a:args
+  call TermBufferSettings()
+endfunction
+
 function! TermBufferSettings()
   setfiletype term
   setlocal nonumber
@@ -249,12 +270,17 @@ function! TermBufferSettings()
   nnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
   xnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
 
+  nnoremap <buffer> gf :call OpenRipgrepFile()<CR>
+
   autocmd vimrc WinEnter,BufWinEnter <buffer> startinsert
+
+  setlocal winhighlight=Normal:NormalFloat
+
   startinsert
 endfunction
 
 if has('nvim')
-  autocmd vimrc TermOpen * call TermBufferSettings()
+  " autocmd vimrc TermOpen * call TermBufferSettings()
   set inccommand=split
   set fillchars+=msgsep:━
   highlight link MsgSeparator Title
@@ -314,7 +340,6 @@ xnoremap <M-;> :
 
 xnoremap . :normal .<CR>
 
-nnoremap <leader>t :tjump<space>
 nnoremap g<C-P> :pwd<CR>
 
 " buffer text object
@@ -344,12 +369,12 @@ if has('nvim')
     nnoremap <C-a>n :bnext<CR>
     tnoremap <C-a>p <C-\><C-n>:bprevious<CR>
     nnoremap <C-a>p :bprevious<CR>
-    tnoremap <C-a>c <C-\><C-n>:execute 'edit ' . g:tshell<CR>
-    nnoremap <C-a>c :execute 'edit ' . g:tshell<CR>
-    tnoremap <C-a>s <C-\><C-n>:execute 'split ' . g:tshell<CR>
-    nnoremap <C-a>s :execute 'split ' . g:tshell<CR>
-    tnoremap <C-a>v <C-\><C-n>:execute 'vsplit ' . g:tshell<CR>
-    nnoremap <C-a>v :execute 'vsplit ' . g:tshell<CR>
+    tnoremap <C-a>c <C-\><C-n>:Term<CR>
+    nnoremap <C-a>c :Term<CR>
+    tnoremap <C-a>s <C-\><C-n>:aboveleft Term<CR>
+    nnoremap <C-a>s :aboveleft Term<CR>
+    tnoremap <C-a>v <C-\><C-n>:vertical Term<CR>
+    nnoremap <C-a>v :vertical Term<CR>
     tnoremap <C-a><C-l> <C-l>
     tnoremap <C-a><C-a> <C-a>
     tnoremap <A-h> <C-\><C-n><C-w>h
@@ -396,15 +421,9 @@ nnoremap <A-l> <C-W>l
 nnoremap <A-h> <C-W>h
 
 nnoremap <leader>ww <C-w>p
-nnoremap <leader>w1 1<C-w><C-w>
-nnoremap <leader>w2 2<C-w><C-w>
-nnoremap <leader>w3 3<C-w><C-w>
-nnoremap <leader>w4 4<C-w><C-w>
-nnoremap <leader>w5 5<C-w><C-w>
-nnoremap <leader>w6 6<C-w><C-w>
-nnoremap <leader>w7 7<C-w><C-w>
-nnoremap <leader>w8 8<C-w><C-w>
-nnoremap <leader>w9 9<C-w><C-w>
+for key in range(0, 9)
+  execute 'nnoremap <leader>'.key key.'<C-w>w'
+endfor
 
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
 nnoremap yoC :let &conceallevel=&conceallevel == 0 ? 1 : 0<CR>
@@ -425,8 +444,6 @@ nnoremap <c-w>D :call <SID>ToggleDiff()<CR>
 
 nnoremap j gj
 nnoremap k gk
-
-nnoremap <leader>eF :<C-U>let &foldlevel=v:count > 0 ? v:count : foldlevel('.') - 1<CR>
 
 nnoremap <silent> <leader>/ :nohlsearch<bar>redraw<CR>
 
@@ -515,6 +532,9 @@ nnoremap <leader>sl :keeppatterns lvimgrep /<C-R><C-R>//j %<CR>
 nnoremap <leader>sr :%snomagic/
 xnoremap <leader>sr :snomagic/
 
+nnoremap <leader>sw :grep <c-r><c-w><CR>
+xnoremap <leader>sw y:<C-U>grep '<c-r><c-r>"'<CR>
+
 nnoremap <leader>8 :keeppatterns lvimgrep /<C-R><C-R><C-W>/j %<CR>
 xnoremap <leader>8 y:<C-U>keeppatterns lvimgrep /<C-R><C-R>"/j %<CR>
 
@@ -559,12 +579,24 @@ cnoremap        <M-f> <S-Right>
 
 " Filetypes: {{{
 
+" I want my filetype events to fire after filetype plugins but this vimrc is
+" run before the filetype events are attached, so we need to delay attaching
+" the event until vim has started
+if has('vim_starting')
+  autocmd vimrc VimEnter * ++once call <SID>ft_start()
+else
+  call s:ft_start()
+endif
+
+function! s:ft_start()
+  autocmd vimrc FileType,BufEnter * call <SID>ft_load(expand('<amatch>'))
+endfunction
+
 function! s:ft_load(ftype)
   if exists('*s:ft_'.a:ftype)
     call s:ft_{a:ftype}()
   endif
 endfunction
-autocmd vimrc FileType * call <SID>ft_load(expand('<amatch>'))
 
 function! SpellIgnoreSomeWords()
   syntax match spellIgnoreAcronyms '\<\u\(\u\|\d\)\+s\?\>' contains=@NoSpell contained containedin=@Spell
@@ -586,7 +618,14 @@ endfunction
 " c: {{{
 function! s:ft_c()
   let g:c_no_curly_error = 1 
-  setlocal shiftwidth=4
+  setlocal shiftwidth=2
+  call SetLspDefaults()
+endfunction
+" }}}
+
+" rust: {{{
+function! s:ft_rust()
+  call SetLspDefaults()
 endfunction
 " }}}
 
@@ -608,9 +647,7 @@ endfunction
 
 " fsharp: {{{
 function! s:ft_fsharp()
-  command! -buffer -range FSIExecRange call SendTerm('dotnet fsi', substitute(join(getline(<line1>, <line2>), "\r") . ";;\r", "\r\s*\\", ' ', 'g'))
-  nnoremap <buffer> <leader>xe :FSIExecRange<CR>
-  xnoremap <buffer> <leader>xe :FSIExecRange<CR>
+  call EnableSendTerm('dotnet fsi', '', ';;')
 
   if executable('fantomas')
     setlocal equalprg=fantomas\ --stdin\ --stdout
@@ -621,15 +658,22 @@ endfunction
 
 " vim {{{
 function! s:ft_vim()
+  command! -buffer -range SendVim call SendVim('line', <line1>, <line2>)
+  nnoremap <silent> <buffer> <leader>ee :SendVim<CR>
+  xnoremap <silent> <buffer> <leader>e :<C-U>call SendVim(visualmode(), "'<", "'>")<CR>
+  nnoremap <silent> <buffer> <leader>e :set opfunc=g:Sendvim_op<CR>g@
+  function! Sendvim_op(type, ...)
+   let sel_save = &selection
+    let &selection = "inclusive"
+    call SendVim(a:type, "'[", "']")
+    let &selection = sel_save
+  endfunction
+
   setlocal keywordprg=:help 
   setlocal omnifunc=syntaxcomplete#Complete 
   setlocal shiftwidth=2
   setlocal foldmethod=marker
   setlocal foldlevel=0
-
-  command! -range ExecRange execute substitute(join(getline(<line1>, <line2>), "\n"), '\n\s*\\', ' ', 'g')
-  nnoremap <buffer> <leader>xe :ExecRange<CR>
-  xnoremap <buffer> <leader>xe :ExecRange<CR>
 endfunction
 " }}}
 
@@ -679,26 +723,43 @@ endfunction
 autocmd vimrc BufNewFile,BufRead *.love setfiletype lua
 autocmd vimrc BufNewFile,BufRead *.script setfiletype lua
 function! s:ft_lua()
-  command! -buffer -range LuaExecRange execute 'lua' 'assert(loadstring("'.escape(join(getline(<line1>,<line2>), "\\n"), '"').'"))()'
-  nnoremap <buffer> <leader>xe :LuaExecRange<CR>
-  xnoremap <buffer> <leader>xe :LuaExecRange<CR>
+  command! -buffer -range SendLua call SendLua('line', <line1>, <line2>)
+  nnoremap <silent> <buffer> <leader>ee :SendLua<CR>
+  xnoremap <silent> <buffer> <leader>e :<C-U>call SendLua(visualmode(), "'<", "'>")<CR>
+  nnoremap <silent> <buffer> <leader>e :set opfunc=Sendlua_op<CR>g@
+  function! Sendlua_op(type, ...)
+    let sel_save = &selection
+    let &selection = "inclusive"
+    call SendLua(a:type, "'[", "']")
+    let &selection = sel_save
+  endfunction
+
   setlocal keywordprg=:help
 endfunction
 "}}}
 
-" lisp: {{{
-function! s:ft_lisp()
-  command! -buffer -range LispExecRange call SendTerm('lua fennel', substitute(join(getline(<line1>, <line2>), "\r") . "\r", "\r\s*\\", ' ', 'g'))
-  nnoremap <buffer> <leader>xe :LispExecRange<CR>
-  xnoremap <buffer> <leader>xe :LispExecRange<CR>
+" fennel: {{{
+function! s:ft_fennel()
+  if exists(':ConjureEval') == 0
+    call EnableSendTerm('lua fennel', '', '')
+    nmap <buffer> <leader>ee <leader>eaF
+  endif
 endfunction
 "}}}
 
 " janet: {{{
 function! s:ft_janet()
-  command! -buffer -range LispExecRange call SendTerm('janet', substitute(join(getline(<line1>, <line2>), " ") . "\r", "\r\s*\\", ' ', 'g'))
-  nnoremap <buffer> <leader>xe :LispExecRange<CR>
-  xnoremap <buffer> <leader>xe :LispExecRange<CR>
+  call EnableSendTerm(get(b:, 'janet_cmd', 'janet'), " ", "\<CR>")
+  nmap <buffer> <leader>ee <leader>eaF
+endfunction
+"}}}
+
+" clojure: {{{
+function! s:ft_clojure()
+  if exists(':ConjureEval') == 0
+    call EnableSendTerm('clj', " ", "\<CR>")
+    nmap <buffer> <leader>ee <leader>eaF
+  endif
 endfunction
 "}}}
 
@@ -785,12 +846,14 @@ function! ToggleTerminal(height, width)
 endfunction
 
 function! s:openTermFloating(height, width) abort
-  let row=0
-  let col=(&columns-a:width)/2
+  let width = min([&columns, a:width])
+  let height = min([&lines, a:height])
+  let col=(&columns-width)/2
+  let row=(&lines-height)/2
   let opts = {
         \ 'relative': 'editor',
-        \ 'width': a:width,
-        \ 'height': a:height,
+        \ 'width': width,
+        \ 'height': height,
         \ 'col': col,
         \ 'row': row,
         \ 'anchor': 'NW',
@@ -806,6 +869,7 @@ function! s:openTermFloating(height, width) abort
     let s:term_buf = nvim_create_buf(v:false, v:true)
     call nvim_open_win(s:term_buf, 1, opts)
     call termopen(executable('fish') ? 'fish' : 'pwsh', {'on_exit': function('ResetToggleTerminal')})
+    call TermBufferSettings()
   endif
 
 endfunction
@@ -814,8 +878,8 @@ if has('vim_starting')
   call ResetToggleTerminal()
 endif
 
-nnoremap <silent> <A-t> :call ToggleTerminal(&lines-10,&columns)<CR>
-tnoremap <silent> <A-t> <C-\><C-n>:call ToggleTerminal(&lines-10,&columns)<CR>
+nnoremap <silent> <C-a>t :call ToggleTerminal(&lines-8,&columns-12)<CR>
+tnoremap <silent> <C-a>t <C-\><C-n>:call ToggleTerminal(&lines-8,&columns-12)<CR>
 
 " }}}
 
@@ -846,7 +910,7 @@ function! s:CWindow()
   let size = getqflist({'size':1}).size
   if size == 0 | return | endif
   0split | lcd . | quit
-  execute 'cwindow' (min([10, max([3, size])]))
+  execute 'botright cwindow' (min([10, max([3, size])]))
 endfunction
 function! s:LWindow()
   let size = getloclist(0, {'size':1}).size
@@ -1343,21 +1407,24 @@ command! ReloadDos :e ++ff=dos<CR>
 "}}}
 
 " Visual Markers {{{
+
+let g:my_colour_sequence = [
+  \ ['Orange', '#e2a478'],
+  \ ['Blue',   '#84a0c6'],
+  \ ['Green',  '#b3be82'],
+  \ ['Red',    '#e27878'],
+  \ ['Purple', '#a093c7'],
+  \ ['Yellow', '#f9c199'],
+  \ ['Aqua',   '#89b8c2']]
+
+let g:myvimrc_visual_marks_groups = map(copy(g:my_colour_sequence), {_,x -> ('Marker'.x[0].'Sign')})
+
+for [n,c] in g:my_colour_sequence
+  execute 'highlight Marker'.n.'Sign guifg='.c 'guibg=#2a3158'
+endfor
+
 nnoremap <expr> <leader>m ToggleVisualMarker()
 nnoremap <expr> m UpdateVisualMarker()
-
-highlight MarkerOrangeSign guifg=#e2a478 guibg=#2a3158
-highlight MarkerBlueSign guifg=#84a0c6 guibg=#2a3158
-highlight MarkerGreenSign guifg=#b3be82 guibg=#2a3158
-highlight MarkerRedSign guifg=#e27878 guibg=#2a3158
-highlight MarkerPurpleSign guifg=#a093c7 guibg=#2a3158
-highlight MarkerYellowSign guifg=#f9c199 guibg=#2a3158
-highlight MarkerAquaSign guifg=#89b8c2 guibg=#2a3158
-let g:myvimrc_visual_marks_groups = [
-      \ 'MarkerBlueSign',  'MarkerGreenSign',
-      \ 'MarkerRedSign', 'MarkerPurpleSign',
-      \ 'MarkerYellowSign', 'MarkerAquaSign',
-      \ 'MarkerOrangeSign']
 
 function! s:remove_visual_mark(match, reg)
   call matchdelete(a:match)
@@ -1456,21 +1523,99 @@ endif
 " }}}
 
 " SendTerm: {{{
-function! SendTerm(c, t)
+
+function! EnableSendTerm(cmd, linesep, endsep)
+  let b:sendtermcmd = a:cmd
+  if !empty(a:linesep)
+    let b:sendtermlinesep = a:linesep
+  endif
+  if !empty(a:endsep)
+    let b:sendtermendsep = a:endsep
+  endif
+
+  command! -buffer -range SendTerm call SendTerm('line', <line1>, <line2>)
+  nnoremap <silent> <buffer> <leader>ee :SendTerm<CR>
+  xnoremap <silent> <buffer> <leader>e :<C-U>call SendTerm(visualmode(), "'<", "'>")<CR>
+  nnoremap <silent> <buffer> <leader>e :set opfunc=Sendterm_op<CR>g@
+
+  function! Sendterm_op(type, ...)
+    let sel_save = &selection
+    let &selection = "inclusive"
+
+    call SendTerm(a:type, "'[", "']")
+
+    let &selection = sel_save
+  endfunction
+endfunction
+
+function! s:get_text(mode, linesep, endsep, start, end)
+  if a:mode == 'line'
+    let sl = a:start
+    let el = a:end
+  else  
+    let [_, sl, sc, _] = getpos(a:start)
+    let [_, el, ec, _] = getpos(a:end)
+  endif
+
+  let lines = getline(sl, el)
+
+  if empty(lines)
+    return lines
+  endif
+
+  if a:mode ==# 'char' || a:mode ==# 'v'
+    let sc = sc - 1
+    let ec = ec - 1
+    let lines[-1] = lines[-1][:ec]
+    let lines[0] = lines[0][sc:]
+  endif
+
+  return map(lines, {_, line -> trim(line).a:linesep}) + [a:endsep]
+endfunction 
+
+function! SendTerm(mode, start, end)
+  let cmd = get(b:, 'sendtermcmd', '')
+  if empty(cmd)
+    return
+  endif
+
   let tid = get(b:, 'sendtermid', 0)
   let bid = get(b:, 'sendtermbufferid', 0)
+  let lsp = get(b:, 'sendtermlinesep', '')
+  let esp = get(b:, 'sendtermendsep', '')
   if !tid
     botright split new
-    let tid = termopen(a:c)
+    let tid = termopen(cmd)
+    call TermBufferSettings()
     let bid = bufnr('')
     wincmd p
     let b:sendtermid = tid
     let b:sendtermbufferid = bid
-  elseif empty(win_findbuf(bid))
+  elseif bufexists(bid) && empty(win_findbuf(bid))
     execute 'botright sbuffer' bid
     wincmd p
   endif
-  call chansend(b:sendtermid, a:t)
+
+  let text = s:get_text(a:mode, lsp, esp, a:start, a:end)
+  let text += [""]
+
+  try
+    call chansend(b:sendtermid, text)
+  catch
+    unlet b:sendtermid
+    unlet b:sendtermbufferid
+    call SendTerm(a:mode, a:start, a:end)
+  endtry
+endfunction
+
+function! SendVim(mode, start, end)
+  let text = s:get_text(a:mode, '', '', a:start, a:end)
+  execute substitute(join(text, "\n"), '\n\s*\\', ' ', 'g')
+endfunction
+
+function! SendLua(mode, start, end)
+  let text = s:get_text(a:mode, '', '', a:start, a:end)
+  execute 'lua' 'assert(loadstring("'.escape(join(text, "\\n"), '"').'"))()'
 endfunction
 " }}}
 
@@ -1725,6 +1870,12 @@ function! Status(active)
   endif
 endfunction
 
+for [n,c] in g:my_colour_sequence
+  execute 'highlight CustomTab'.n 'guibg='.c 'guifg=#000000'
+  execute 'highlight CustomTab2'.n 'guibg='.c 'guifg=#000000 gui=bold'
+  execute 'highlight CustomTab3'.n 'guibg='.c 'gui=reverse guifg='.printf("#%02x%02x%02x", float2nr(("0x".c[1:2])*0.5),float2nr(("0x".c[3:4])*0.5),float2nr(("0x".c[5:6])*0.5))
+endfor
+
 function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
@@ -1732,27 +1883,31 @@ function! TabLine()
   let cwd = PathShorten(getcwd(exists(':tcd') ? -1 : winnr, tabnr), &columns - 6)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
   let gitDir = cwd.'/.git'
-  let gitHead = fugitive#Head(0, gitDir)
+  let gitHead =  fugitive#Head(0, gitDir)
+  let colour = g:my_colour_sequence[tabnr % len(g:my_colour_sequence)][0]
+  let grp1 = 'CustomTab'.colour
+  let grp2 = 'CustomTab2'.colour
+  let grp3 = 'CustomTab3'.colour
 
-  let s = '%#TabLine#'
+  let s = '%#'.grp1.'#'
   let s.= ' ['.tabnr.'] '
   let s.= '%='
-  let s.= '%2*'
   let s.= '%( '.gitHead.' %)'
   if isLocalCwd
-    let s.= '%#TabLineSel#'
+    let s.= '%#'.grp1.'#'
   else
-    let s.= '%#TabLine#'
+    let s.= '%#'.grp2.'#'
   endif
   let s.= ' '.cwd.' '
+  let s.= '%#'.grp3.'#'
+  let s.= ' '.strftime("%H:%M").' '
   return s
 endfunction
 
 function! s:RefreshStatus()
-  for nr in filter(range(1, winnr('$')), 'v:val != winnr()')
-    call setwinvar(nr, '&statusline', '%!Status(0)')
+  for nr in range(1, winnr('$'))
+    call setwinvar(nr, '&statusline', '%!Status('.(nr==winnr()).')')
   endfor
-  call setwinvar(winnr(), '&statusline', '%!Status(1)')
 endfunction
 
 let g:prettylittlestatus_disable=0
@@ -1762,6 +1917,10 @@ function! PrettyLittleStatus()
     autocmd!
   augroup END
 
+  if get(g:,'prettylittlestatus_timer', 0)
+    call timer_stop(g:prettylittlestatus_timer)
+  endif
+
   if get(g:,'prettylittlestatus_disable', 0)
     set statusline&
     return
@@ -1770,6 +1929,7 @@ function! PrettyLittleStatus()
   set tabline=%!TabLine()
 
   autocmd PrettyLittleStatus SessionLoadPost,VimEnter,WinEnter,BufWinEnter,FileType,BufUnload * call <SID>RefreshStatus()
+  let g:prettylittlestatus_timer = timer_start(30000, {_->execute('redrawtabline')}, {'repeat': -1})
 
   if !has('vim_starting')
     call s:RefreshStatus()
@@ -1782,13 +1942,21 @@ call PrettyLittleStatus()
 " Plugins config: {{{
 
 " LSP: {{{
+
+" we can't require nvim_lsp until the packs have been added, which happens
+" after vimrc is executed so we delay the code until then.
+if has('vim_starting')
+  autocmd vimrc VimEnter * ++once call LspStart()
+endif
+
+function! LspStart()
 lua << EOF
   local lsp = require'nvim_lsp'
   lsp.rls.setup{} 
-  lsp.clangd.setup{cmd = {'/usr/local/opt/llvm/bin/clangd', '--background-index', '--clang-tidy', '--log=error', '--pretty'}}
+  lsp.clangd.setup{ cmd = {'/usr/local/opt/llvm/bin/clangd', '--background-index', '--clang-tidy'} }
 EOF
+endfunction
 
-autocmd vimrc Filetype rust,c call SetLspDefaults()
 function! SetLspDefaults()
   setlocal omnifunc=v:lua.vim.lsp.omnifunc
   nnoremap <buffer> <silent> gd    <cmd>lua vim.lsp.buf.declaration()<CR>
@@ -1803,19 +1971,17 @@ endfunction
 " }}}
 
 " Fugitive: {{{
-if s:has_plug('vim-fugitive')
-  nnoremap <leader>vc :0G<CR>
-  nnoremap <leader>vl :Glog -- %<CR>
-  xnoremap <leader>vl :Glog -- %<CR>
-  nnoremap <leader>vm :Glog master.. -- %<CR>
-  nnoremap <leader>va :Gblame<CR>
-  xnoremap <leader>va :Gblame<CR>
-  nnoremap <leader>vb :Gbrowse -<CR>
-  xnoremap <leader>vb :Gbrowse -<CR>
+nnoremap <leader>vc :0G<CR>
+nnoremap <leader>vl :Glog -- %<CR>
+xnoremap <leader>vl :Glog -- %<CR>
+nnoremap <leader>vm :Glog master.. -- %<CR>
+nnoremap <leader>va :Gblame<CR>
+xnoremap <leader>va :Gblame<CR>
+nnoremap <leader>vb :Gbrowse -<CR>
+xnoremap <leader>vb :Gbrowse -<CR>
 
-  command! -nargs=* Glm :Glog master.. <args> --
-  command! -nargs=* Glp :Glog @{push}.. <args> --
-endif
+command! -nargs=* Glm :Glog master.. <args> --
+command! -nargs=* Glp :Glog @{push}.. <args> --
 " }}}
 
 " Minpac: {{{
@@ -1840,74 +2006,55 @@ command! -nargs=1 -complete=custom,PackList PackBrowse call PackInit() | execute
 " let g:targets_quotes = '"d '' `'
 " }}}
 
-" FSharp: {{{
-if s:has_plug('vim-fsharp')
-  let g:fsharpbinding_debug=1
-  autocmd vimrc FileType fsharp call s:fsharpbinding_settings()
-  function! s:fsharpbinding_settings()
-    setlocal include=^#load\ 
-    setlocal complete+=i
-
-    nmap <buffer> <leader>i :call fsharpbinding#python#FsiSendLine()<CR>
-    vmap <buffer> <leader>i :<C-U>call fsharpbinding#python#FsiSendSel()<CR>
-    vmap <buffer> <leader>l ggVG:<C-U>call fsharpbinding#python#FsiSendSel()<CR>
-  endfunction
-endif
-" }}}
-
 " Dirvish: {{{
-if s:has_plug('vim-dirvish')
-  let g:dirvish_mode="sort ir /^.*[^\\\/]$/"
+let g:dirvish_mode="sort ir /^.*[^\\\/]$/"
 
-  nnoremap <silent> <leader>fj :call <SID>dirvish_open()<CR>
-  nnoremap <leader>pe :Dirvish<CR>
-  command! -nargs=? -complete=dir Explore Dirvish <args>
-  command! -nargs=? -complete=dir Sexplore belowright split | silent Dirvish <args>
-  command! -nargs=? -complete=dir Vexplore leftabove vsplit | silent Dirvish <args>
+nnoremap <silent> <leader>fj :call <SID>dirvish_open()<CR>
+nnoremap <leader>pe :Dirvish<CR>
+command! -nargs=? -complete=dir Explore Dirvish <args>
+command! -nargs=? -complete=dir Sexplore belowright split | silent Dirvish <args>
+command! -nargs=? -complete=dir Vexplore leftabove vsplit | silent Dirvish <args>
 
-  let s:dirvish_dir_search = '[\\\/]$'
+let s:dirvish_dir_search = '[\\\/]$'
 
-  function! s:dirvish_open()
-    let name = expand('%')
-    if empty(name)
-      Dirvish
-    else
-      Dirvish %
-    endif
-  endfunction
+function! s:dirvish_open()
+  let name = expand('%')
+  if empty(name)
+    Dirvish
+  else
+    Dirvish %
+  endif
+endfunction
 
-  function! s:dirvish_keepcursor(cmd)
-    let l = getline('.')
-    execute a:cmd
-    keepjumps call search('\V\^'.escape(l,'\').'\$', 'cw')
-    unlet l
-  endfunction
-  command! -nargs=+ KeepCursor call s:dirvish_keepcursor(<q-args>)
+function! s:dirvish_keepcursor(cmd)
+  let l = getline('.')
+  execute a:cmd
+  keepjumps call search('\V\^'.escape(l,'\').'\$', 'cw')
+  unlet l
+endfunction
+command! -nargs=+ KeepCursor call s:dirvish_keepcursor(<q-args>)
 
-  function! s:ft_dirvish()
-    syntax match DirvishPathExe /\v[^\\\/]+\.(ps1|cmd|exe|bat)$/
-    syntax match DirvishPathHidden /\v\\@<=\.[^\\]+$/
-    highlight link DirvishPathExe Function
-    highlight link DirvishPathHidden Comment
+function! s:ft_dirvish()
+  syntax match DirvishPathExe /\v[^\\\/]+\.(ps1|cmd|exe|bat)$/
+  syntax match DirvishPathHidden /\v\\@<=\.[^\\]+$/
+  highlight link DirvishPathExe Function
+  highlight link DirvishPathHidden Comment
 
-    nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
-    nmap <silent> <buffer> h <Plug>(dirvish_up)
-    nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
-    nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d _<CR>
-    nnoremap <buffer> gR :grep!  %<left><left>
-    nnoremap <buffer> gr :<cfile><C-b>grep!  <left>
-    nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
-    nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
-    cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
-    nnoremap <buffer> vl :Glog -20 -- <cfile><CR>
-  endfunction
-endif
+  nmap <silent> <buffer> R :KeepCursor Dirvish %<CR>
+  nmap <silent> <buffer> h <Plug>(dirvish_up)
+  nmap <silent> <buffer> l :call dirvish#open('edit', 0)<CR>
+  nmap <silent> <buffer> gh :KeepCursor keeppatterns g@\v[\\\/]\.[^\\\/]+[\\\/]?$@d _<CR>
+  nnoremap <buffer> gR :grep!  %<left><left>
+  nnoremap <buffer> gr :<cfile><C-b>grep!  <left>
+  nmap <silent> <buffer> gP :cd % <bar>pwd<CR>
+  nmap <silent> <buffer> gp :tcd % <bar>pwd<CR>
+  cnoremap <buffer> <C-r><C-n> <C-r>=substitute(getline('.'), '.\+[\/\\]\ze[^\/\\]\+', '', '')<CR>
+  nnoremap <buffer> vl :Glog -20 -- <cfile><CR>
+endfunction
 " }}}
 
 " Unicode: {{{
-if s:has_plug('unicode.vim')
-  nnoremap ga :UnicodeName<CR>
-endif
+nnoremap ga :UnicodeName<CR>
 " }}}
 
 " Pandoc: {{{
@@ -1919,13 +2066,19 @@ let g:pandoc#filetypes#pandoc_markdown = 1
 " }}}
 
 " vim-sexp: {{{
-if s:has_plug('vim-sexp')
-  let g:sexp_filetypes='clojure,scheme,lisp,timl,janet,fennel'
-  let g:sexp_enable_insert_mode_mappings=0
-endif
+let g:sexp_filetypes='clojure,scheme,lisp,timl,janet,fennel'
+let g:sexp_enable_insert_mode_mappings=0
 " }}}
 
 "}}}
+
+" Colorschemes: {{{
+
+function! ColorschemeIceberg()
+  colorscheme iceberg
+
+  highlight! NormalFloat guifg=#c6c8d1 guibg=#0a2132
+endfunction
 
 function! ColorschemePlain()
   colorscheme plain
@@ -1959,6 +2112,8 @@ function! ColorschemePlain()
 endfunction
 
 if has('vim_starting')
-  colorscheme iceberg
+  call ColorschemeIceberg()
 endif
+
+"}}}
 
