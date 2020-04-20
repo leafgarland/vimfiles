@@ -844,6 +844,7 @@ function! s:openTermFloating(height, width) abort
   if s:term_buf != 0
     " switch to existing term buffer
     call nvim_open_win(s:term_buf, 1, opts)
+    setlocal signcolumn=yes:1
     startinsert
   else
     " create new term buffer
@@ -851,6 +852,8 @@ function! s:openTermFloating(height, width) abort
     call nvim_open_win(s:term_buf, 1, opts)
     call termopen(executable('fish') ? 'fish' : 'pwsh', {'on_exit': function('ResetToggleTerminal')})
     call TermBufferSettings()
+    setlocal signcolumn=yes:1
+    setlocal winhighlight=NormalFloat:NormalFloatTerm
   endif
 
 endfunction
@@ -888,7 +891,7 @@ function! FloatGrep(context, pattern)
 
   setlocal cursorline
   setlocal foldcolumn=2
-  setlocal winhighlight=EndOfBuffer:,NormalFloat:Pmenu,FoldColumn:DiffAdd
+  setlocal winhighlight=EndOfBuffer:,NormalFloat:NormalFloatGrep,FoldColumn:LineNr
 
   nnoremap <silent> <buffer> <C-p> :call <SID>SearchNextFile(v:true)<CR>
   nnoremap <silent> <buffer> <C-n> :call <SID>SearchNextFile(v:false)<CR>
@@ -2142,12 +2145,17 @@ function! ColorschemeIceberg()
   colorscheme iceberg
 
   highlight NormalFloat guifg=#c6c8d1 guibg=#0a2132
-  highlight String guibg=bg gui=italic
+  highlight NormalFloatTerm guifg=#c6c8d1 guibg=#0a2122
+  highlight link NormalFloatGrep Pmenu
+  highlight String gui=italic
 endfunction
 
 function! ColorschemePlain()
   colorscheme plain
 
+  highlight NormalFloat guifg=fg guibg=#0a2132
+  highlight NormalFloatTerm guifg=fg guibg=#0a2122
+  highlight link NormalFloatGrep Pmenu
   highlight Comment guifg=#888888 gui=italic
   highlight Folded guibg=#222222 guifg=#888888 gui=italic
   highlight LineNr guifg=#555555
@@ -2158,6 +2166,7 @@ function! ColorschemePlain()
   highlight String gui=italic guifg=#b6d6fd
   highlight User1 guifg=#5fd7a7 guibg=#333333 gui=bold
   highlight User2 guifg=fg guibg=#333333 gui=bold
+  highlight User3 guibg=#5fd7a7 guifg=#333333 gui=bold
   highlight VertSplit guifg=#333333 gui=NONE
   highlight clear CursorLine
   highlight helpExample gui=bold guifg=fg
