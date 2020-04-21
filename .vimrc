@@ -255,7 +255,7 @@ function! TermBufferSettings()
 
   autocmd vimrc WinEnter,BufWinEnter <buffer> startinsert
 
-  setlocal winhighlight=Normal:NormalFloat
+  setlocal winhighlight=Normal:NormalTerm
 
   startinsert
 endfunction
@@ -1484,11 +1484,16 @@ let g:my_colour_sequence = [
   \ ['Yellow', '#f9c199'],
   \ ['Aqua',   '#89b8c2']]
 
-let g:myvimrc_visual_marks_groups = map(copy(g:my_colour_sequence), {_,x -> ('Marker'.x[0].'Sign')})
+function! MyCustomColours()
+  for [n,c] in g:my_colour_sequence
+    execute 'highlight Marker'.n.'Sign guifg='.c 'guibg=#2a3158'
+    execute 'highlight CustomTab'.n 'guibg='.c 'guifg=#000000'
+    execute 'highlight CustomTab2'.n 'guibg='.c 'guifg=#000000 gui=bold'
+    execute 'highlight CustomTab3'.n 'guibg='.c 'gui=reverse guifg='.printf("#%02x%02x%02x", float2nr(("0x".c[1:2])*0.5),float2nr(("0x".c[3:4])*0.5),float2nr(("0x".c[5:6])*0.5))
+  endfor
+endfunction
 
-for [n,c] in g:my_colour_sequence
-  execute 'highlight Marker'.n.'Sign guifg='.c 'guibg=#2a3158'
-endfor
+let g:myvimrc_visual_marks_groups = map(copy(g:my_colour_sequence), {_,x -> ('Marker'.x[0].'Sign')})
 
 nnoremap <expr> <leader>m ToggleVisualMarker()
 nnoremap <expr> m UpdateVisualMarker()
@@ -1937,12 +1942,6 @@ function! Status(active)
   endif
 endfunction
 
-for [n,c] in g:my_colour_sequence
-  execute 'highlight CustomTab'.n 'guibg='.c 'guifg=#000000'
-  execute 'highlight CustomTab2'.n 'guibg='.c 'guifg=#000000 gui=bold'
-  execute 'highlight CustomTab3'.n 'guibg='.c 'gui=reverse guifg='.printf("#%02x%02x%02x", float2nr(("0x".c[1:2])*0.5),float2nr(("0x".c[3:4])*0.5),float2nr(("0x".c[5:6])*0.5))
-endfor
-
 function! TabLine()
   let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
@@ -2144,16 +2143,19 @@ let g:sexp_enable_insert_mode_mappings=0
 function! ColorschemeIceberg()
   colorscheme iceberg
 
-  highlight NormalFloat guifg=#c6c8d1 guibg=#0a2132
+  highlight link NormalFloat Pmenu
+  highlight NormalTerm guifg=#c6c8d1 guibg=#0a2132
   highlight NormalFloatTerm guifg=#c6c8d1 guibg=#0a2122
   highlight link NormalFloatGrep Pmenu
   highlight String gui=italic
+  call MyCustomColours()
 endfunction
 
 function! ColorschemePlain()
   colorscheme plain
 
-  highlight NormalFloat guifg=fg guibg=#0a2132
+  highlight link NormalFloat Pmenu
+  highlight NormalTerm guifg=#c6c8d1 guibg=#0a2132
   highlight NormalFloatTerm guifg=fg guibg=#0a2122
   highlight link NormalFloatGrep Pmenu
   highlight Comment guifg=#888888 gui=italic
@@ -2183,6 +2185,7 @@ function! ColorschemePlain()
   highlight link fugitiveUnstagedHeading Statement
   highlight link fugitiveUnstagedModifier diffRemoved
   highlight link fugitiveUntrackedHeading Statement
+  call MyCustomColours()
 endfunction
 
 if has('vim_starting')
