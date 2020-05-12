@@ -30,6 +30,7 @@ if has('vim_starting')
   endif
 endif
 
+let g:vimsyn_embed = 'lP'
 "}}}
 
 " Plugins: {{{
@@ -81,10 +82,13 @@ function! PackInit()
   Pack 'chrisbra/unicode.vim'
   Pack 'romainl/vim-cool'
   Pack 'sgur/vim-editorconfig'
-  Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
+  " Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
+  Pack 'pyrmont/parinfer-rust', {'branch': 'janet-support', 'do': '!cargo build --release'}
   Pack 'neovim/nvim-lsp'
   Pack 'sakhnik/nvim-gdb'
   Pack 'Olical/conjure', {'branch': 'develop'}
+  Pack 'Olical/aniseed'
+  Pack 'norcalli/nvim-colorizer.lua'
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -324,15 +328,16 @@ xnoremap . :normal .<CR>
 nnoremap g<C-P> :pwd<CR>
 
 " buffer text object
-onoremap <silent> ae :<C-u>keepjumps normal! ggVG<CR>
-xnoremap <silent> ae :<C-u>keepjumps normal! ggVG<CR>
+onoremap <silent> A :<C-u>keepjumps normal! ggVG<CR>
+xnoremap <silent> A :<C-u>keepjumps normal! ggVG<CR>
 
 " inner line text object
 onoremap <silent> il :<c-u>keepjumps lockmarks normal! g_v^<cr>
 xnoremap <silent> il :<C-u>keepjumps lockmarks normal! g_v^<CR>
 
 " disable exmode maps
-nnoremap Q :bdelete!<CR>
+nnoremap Q <nop>
+nnoremap QQ :bdelete!<CR>
 nmap gQ <Nop>
 
 if has('nvim')
@@ -560,24 +565,24 @@ cnoremap        <M-f> <S-Right>
 
 " Filetypes: {{{
 
-" I want my filetype events to fire after filetype plugins but this vimrc is
-" run before the filetype events are attached, so we need to delay attaching
-" the event until vim has started
-if has('vim_starting')
-  autocmd vimrc VimEnter * ++once call <SID>ft_start()
-else
-  call s:ft_start()
-endif
-
-function! s:ft_start()
-  autocmd vimrc FileType,BufEnter * call <SID>ft_load(expand('<amatch>'))
-endfunction
-
 function! s:ft_load(ftype)
   if exists('*s:ft_'.a:ftype)
     call s:ft_{a:ftype}()
   endif
 endfunction
+
+function! s:ft_start()
+  autocmd vimrc FileType,BufAdd * call <SID>ft_load(&filetype)
+endfunction
+
+" I want my filetype handlers to fire after filetype plugins but this vimrc is
+" run before the filetype handlers are attached, so we need to delay attaching
+" the handler until vim has started. Unfortunately this means that files
+" from command line arguments are loaded before this code is ready
+if has('vim_starting')
+  autocmd vimrc VimEnter * ++once call <SID>ft_start()
+endif
+call s:ft_start()
 
 function! SpellIgnoreSomeWords()
   syntax match spellIgnoreAcronyms '\<\u\(\u\|\d\)\+s\?\>' contains=@NoSpell contained containedin=@Spell
@@ -732,6 +737,9 @@ endfunction
 function! s:ft_janet()
   call EnableSendTerm(get(b:, 'janet_cmd', 'janet'), " ", "\<CR>")
   nmap <buffer> <leader>ee <leader>eaF
+  setlocal suffixesadd=.janet
+  setlocal includeexpr=trim(system(\"janet\ -e\ '(print\ (first\ (module/find\ \\\"\".v:fname.\"\\\")))'\"))
+  setlocal equalprg=janet\ -e\ '(import\ spork/fmt)(fmt/format-print\ (:read\ stdin\ :all))'
 endfunction
 "}}}
 
@@ -747,6 +755,33 @@ endfunction
 "}}}
 
 " Commands & Functions: {{{
+
+" Highlight yank: {{{
+function! s:hlyank(operator, regtype, inclusive) abort
+  if a:operator !=# 'y' || a:regtype ==# ''
+    return
+  endif
+
+  let bnr = bufnr('%')
+  let ns = nvim_create_namespace('')
+  call nvim_buf_clear_namespace(bnr, ns, 0, -1)
+
+  let [_, lin1, col1, off1] = getpos("'[")
+  let [lin1, col1] = [lin1 - 1, col1 - 1]
+  let [_, lin2, col2, off2] = getpos("']")
+  let [lin2, col2] = [lin2 - 1, col2 - (a:inclusive ? 0 : 1)]
+  for l in range(lin1, lin1 + (lin2 - lin1))
+    let is_first = (l == lin1)
+    let is_last = (l == lin2)
+    let c1 = is_first || a:regtype[0] ==# "\<C-v>" ? (col1 + off1) : 0
+    let c2 = is_last || a:regtype[0] ==# "\<C-v>" ? (col2 + off2) : -1
+    call nvim_buf_add_highlight(bnr, ns, 'TextYank', l, c1, c2)
+  endfor
+  call timer_start(500, {-> nvim_buf_is_valid(bnr) && nvim_buf_clear_namespace(bnr, ns, 0, -1)})
+endfunc
+highlight default link TextYank IncSearch
+autocmd vimrc TextYankPost * call s:hlyank(v:event.operator, v:event.regtype, v:event.inclusive)
+" }}}
 
 " Window Swap: {{{
 nnoremap <C-w>x :<C-U>call <sid>SwapWindowBuffer(v:count)<CR>
@@ -809,6 +844,36 @@ function! HexBin()
 endfunction
 "}}}
 
+" Float with border: {{{
+
+if has('vim_starting')
+  let s:border_buf = 0
+  let s:border_win = 0
+endif
+
+function! OpenWindowWithBorder(buf, options, borderHilight)
+  let row = a:options.row - 1
+  let height = a:options.height + 2
+  let col = a:options.col - 1
+  let width = a:options.width + 2
+  let opts = {'relative': a:options.relative, 'row': row, 'col': col, 'width': width, 'height': height, 'style': 'minimal'}
+
+  if s:border_buf == 0
+    let s:border_buf = nvim_create_buf(v:false, v:true)
+    call nvim_buf_set_name(s:border_buf, 'float_win_border_buf')
+  endif
+  let top = "╭" . repeat("─", width - 2) . "╮"
+  let mid = "│" . repeat(" ", width - 2) . "│"
+  let bot = "╰" . repeat("─", width - 2) . "╯"
+  let lines = [top] + repeat([mid], height - 2) + [bot]
+  call nvim_buf_set_lines(s:border_buf, 0, -1, v:true, lines)
+  let bwin = nvim_open_win(s:border_buf, v:true, opts)
+  execute 'setlocal winhighlight=Normal:'.a:borderHilight
+  let win = nvim_open_win(a:buf, v:true, a:options)
+  execute 'autocmd vimrc WinClosed' win 'call nvim_win_close('.bwin.', 1)'
+endfunction
+" }}}
+
 " Terminal Toggle: {{{
 
 function! ResetToggleTerminal(...)
@@ -843,27 +908,24 @@ function! s:openTermFloating(height, width) abort
 
   if s:term_buf != 0
     " switch to existing term buffer
-    call nvim_open_win(s:term_buf, 1, opts)
-    setlocal signcolumn=yes:1
+    call OpenWindowWithBorder(s:term_buf, opts, 'NormalFloatTermBorder')
     startinsert
   else
     " create new term buffer
     let s:term_buf = nvim_create_buf(v:false, v:true)
-    call nvim_open_win(s:term_buf, 1, opts)
+    call OpenWindowWithBorder(s:term_buf, opts, 'NormalFloatTermBorder')
     call termopen(executable('fish') ? 'fish' : 'pwsh', {'on_exit': function('ResetToggleTerminal')})
     call TermBufferSettings()
-    setlocal signcolumn=yes:1
-    setlocal winhighlight=NormalFloat:NormalFloatTerm
+    setlocal winhighlight=Normal:NormalFloatTerm
   endif
-
 endfunction
 
 if has('vim_starting')
   call ResetToggleTerminal()
 endif
 
-nnoremap <silent> <C-a>t :call ToggleTerminal(&lines-8,&columns-12)<CR>
-tnoremap <silent> <C-a>t <C-\><C-n>:call ToggleTerminal(&lines-8,&columns-12)<CR>
+nnoremap <silent> <C-a>t :call ToggleTerminal(&lines-8,&columns-20)<CR>
+tnoremap <silent> <C-a>t <C-\><C-n>:call ToggleTerminal(&lines-8,&columns-20)<CR>
 
 " }}}
 
@@ -885,13 +947,12 @@ function! FloatGrep(context, pattern)
         \ }
 
   let term_buf = nvim_create_buf(v:false, v:true)
-  call nvim_open_win(term_buf, 1, opts)
+  call OpenWindowWithBorder(term_buf, opts, 'NormalFloatBorder')
   call termopen(['rg', '-C'.a:context, a:pattern])
-  echom ':'.a:context.'FGrep' a:pattern
 
   setlocal cursorline
-  setlocal foldcolumn=2
-  setlocal winhighlight=EndOfBuffer:,NormalFloat:NormalFloatGrep,FoldColumn:LineNr
+  setlocal winhighlight=EndOfBuffer:,Normal:NormalFloat
+  setlocal winblend=5
 
   nnoremap <silent> <buffer> <C-p> :call <SID>SearchNextFile(v:true)<CR>
   nnoremap <silent> <buffer> <C-n> :call <SID>SearchNextFile(v:false)<CR>
@@ -1174,7 +1235,7 @@ function! BClose(force) abort
       continue
     endif
 
-    bprevious
+    b#
 
     if bnr == bufnr('%')
       Scratch
@@ -1345,47 +1406,24 @@ command! -complete=highlight -nargs=? Highlight :call Highlight(<f-args>)
 " }}}
 
 " Recent files etc: {{{
-function! s:UniqPath(list)
-  let i = 0
-  let seen = []
-  while i < len(a:list)
-    let key = a:list[i]
-    if index(seen, key) == -1
-      call add(seen, key)
-    endif
-    let i += 1
-  endwhile
-  return seen
-endfunction
-
 function! s:MRUDComplete(ArgLead, CmdLine, CursorPos)
-  let argLead = glob2regpat(a:ArgLead . '*')
-  return s:UniqPath(filter(map(copy(v:oldfiles), "fnamemodify(v:val, ':h')"), 'v:val =~ argLead && isdirectory(expand(v:val))'))
+  let dirs = uniq(sort(filter(map(copy(v:oldfiles), {_,x->fnamemodify(x, ':h')}), {_,x->isdirectory(x)})))
+  if empty(a:ArgLead)
+    return dirs
+  else
+    return systemlist('fzy -e '.a:ArgLead, dirs)
+  endif
 endfunction
 
 function! s:MRUFComplete(ArgLead, CmdLine, CursorPos)
-  let argLead = glob2regpat(a:ArgLead . '*')
-  return filter(copy(v:oldfiles), 'v:val =~ argLead && !empty(glob(v:val))')
-endfunction
-
-function! s:RgFilesComplete(ArgLead, CmdLine, CursorPos)
-  let pattern = a:ArgLead
-  if empty(pattern)
-    return []
-  elseif pattern[-1:] == '$'
-    let pattern = pattern[:-2]
-  elseif pattern[-1:] != '*'
-    let pattern .= '*'
-  endif
-  return systemlist('rg -S --files --iglob ' . pattern)
+  return systemlist('fzy -e '.a:ArgLead, v:oldfiles)
 endfunction
 
 function! s:FdFilesComplete(ArgLead, CmdLine, CursorPos)
-  let pattern = a:ArgLead
-  if empty(pattern)
-    return []
+  if empty(a:ArgLead)
+    return systemlist(['fd', '--max-results', '100'])
   endif
-  return systemlist('fd ' . pattern)
+  return systemlist('fd | fzy -e ' . a:ArgLead)
 endfunction
 
 function! s:Run(command, arg, mods)
@@ -1394,12 +1432,11 @@ endfunction
 
 command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>Run('tcd', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>MRUFComplete OldFiles call <sid>Run('edit', <q-args>, <q-mods>)
-command! -nargs=1 -complete=customlist,<sid>RgFilesComplete RgFiles call <sid>Run('edit', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>FdFilesComplete FdFiles call <sid>Run('edit', <q-args>, <q-mods>)
-nnoremap <leader>pr :OldDirs *
-nnoremap <leader>fr :OldFiles *
-nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>/*<C-z>
-" nnoremap <leader>ff :RgFiles **/
+command! -nargs=1 -complete=customlist,<sid>BuffersComplete Buf call <sid>Run('buffer', <q-args>, <q-mods>)
+nnoremap <leader>pr :OldDirs 
+nnoremap <leader>fr :OldFiles 
+nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>
 nnoremap <leader>ff :FdFiles 
 
 " }}}
@@ -1642,7 +1679,7 @@ function! s:get_text(mode, linesep, endsep, start, end)
     let lines[0] = lines[0][sc:]
   endif
 
-  return map(lines, {_, line -> trim(line).a:linesep}) + [a:endsep]
+  return map(lines, {_, line -> trim(line, "\r\n").a:linesep}) + [a:endsep]
 endfunction 
 
 function! SendTerm(mode, start, end)
@@ -1687,7 +1724,8 @@ endfunction
 
 function! SendLua(mode, start, end)
   let text = s:get_text(a:mode, '', '', a:start, a:end)
-  execute 'lua' 'assert(loadstring("'.escape(join(text, "\\n"), '"').'"))()'
+  " execute 'lua' 'assert(loadstring("'.escape(join(text, "\\n"), '"').'"))()'
+  execute 'lua' join(text, "\n")
 endfunction
 " }}}
 
@@ -1936,7 +1974,7 @@ function! Status(active)
     let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%='
     let sl.= '%( %{StatusLineDiffMerge()} %)'
-    let sl.= '%2*'
+    let sl.= '%0*'
     let sl.= '%(%{StatusLineWinNum()} %)'
     return sl
   endif
@@ -2006,6 +2044,19 @@ call PrettyLittleStatus()
 " }}}
 
 " Plugins config: {{{
+
+" Conjure: {{{
+let g:conjure_config = {
+      \ "mappings.eval-root-form": ["<leader>ee"],
+      \ "mappings.eval-buf": ["<leader>eb"],
+      \ "mappings.eval-current-form": ["<leader>ec"],
+      \ "mappings.eval-file": ["<leader>ef"],
+      \ "mappings.eval-marked-form": ["<leader>em"],
+      \ "mappings.eval-motion": ["<leader>e"],
+      \ "mappings.eval-visual": ["<leader>e"],
+      \ "mappings.eval-word": ["<leader>ew"],
+      \ }
+" }}}
 
 " LSP: {{{
 
@@ -2143,10 +2194,11 @@ let g:sexp_enable_insert_mode_mappings=0
 function! ColorschemeIceberg()
   colorscheme iceberg
 
-  highlight link NormalFloat Pmenu
+  highlight link NormalFloat Normal
+  highlight NormalFloatBorder guibg=#161821 guifg=#e27878
   highlight NormalTerm guifg=#c6c8d1 guibg=#0a2132
-  highlight NormalFloatTerm guifg=#c6c8d1 guibg=#0a2122
-  highlight link NormalFloatGrep Pmenu
+  highlight link NormalFloatTerm Normal
+  highlight NormalFloatTermBorder guifg=#b4be82 guibg=#161821
   highlight String gui=italic
   call MyCustomColours()
 endfunction
@@ -2185,6 +2237,14 @@ function! ColorschemePlain()
   highlight link fugitiveUnstagedHeading Statement
   highlight link fugitiveUnstagedModifier diffRemoved
   highlight link fugitiveUntrackedHeading Statement
+  highlight clojureVariable gui=bold
+  highlight clojureKeyword gui=NONE guifg=#b6d6fd
+  highlight link clojureSpecial Statement
+  highlight link clojureDefine Statement
+  highlight link clojureDispatch DiffAdd
+  highlight janetKeyword gui=NONE guifg=#b6d6fd
+  highlight link janetCoreValue Normal
+
   call MyCustomColours()
 endfunction
 
