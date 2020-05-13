@@ -310,6 +310,7 @@ endif
 
 " Key Mappings: {{{
 let mapleader = "\<space>"
+" let maplocalleader = "\\"
 
 nnoremap <leader><leader> :
 xnoremap <leader><leader> :
@@ -877,17 +878,43 @@ endfunction
 " Terminal Toggle: {{{
 
 function! ResetToggleTerminal(...)
-  let s:term_win = 0
-  let s:term_buf = 0
+  let t:term_win = 0
+  let t:term_buf = 0
 endfunction
 
 function! ToggleTerminal(height, width)
-  if win_getid() == s:term_win
-    call nvim_win_close(s:term_win, 1)
-    let s:term_win = 0
+  let t:term_win = get(t:, 'term_win', 0)
+  let t:term_buf = get(t:, 'term_buf', 0)
+  if win_getid() == t:term_win
+    call nvim_win_close(t:term_win, 1)
+    let t:term_win = 0
   else
     call s:openTermFloating(a:height, a:width)
-    let s:term_win = win_getid()
+    let t:term_win = win_getid()
+  endif
+endfunction
+
+function! ToggleTerminal2()
+  let t:term_buf = get(t:, 'term_buf', 0)
+  if bufnr() == t:term_buf
+    execute 'buffer' b:previous_buffer
+  elseif t:term_buf != 0
+    let wnr = bufwinnr(t:term_buf)
+    if wnr > 0
+      execute wnr 'wincmd w'
+      execute 'buffer' b:previous_buffer
+      wincmd w
+    endif
+    let previous_buffer = bufnr()
+    execute 'buffer' t:term_buf
+    let b:previous_buffer = previous_buffer
+    startinsert
+  else
+    let previous_buffer = bufnr()
+    terminal
+    let t:term_buf = bufnr()
+    let b:previous_buffer = previous_buffer
+    call TermBufferSettings()
   endif
 endfunction
 
@@ -906,14 +933,14 @@ function! s:openTermFloating(height, width) abort
         \ 'style': 'minimal'
         \ }
 
-  if s:term_buf != 0
+  if t:term_buf != 0
     " switch to existing term buffer
-    call OpenWindowWithBorder(s:term_buf, opts, 'NormalFloatTermBorder')
+    call OpenWindowWithBorder(t:term_buf, opts, 'NormalFloatTermBorder')
     startinsert
   else
     " create new term buffer
-    let s:term_buf = nvim_create_buf(v:false, v:true)
-    call OpenWindowWithBorder(s:term_buf, opts, 'NormalFloatTermBorder')
+    let t:term_buf = nvim_create_buf(v:false, v:true)
+    call OpenWindowWithBorder(t:term_buf, opts, 'NormalFloatTermBorder')
     call termopen(executable('fish') ? 'fish' : 'pwsh', {'on_exit': function('ResetToggleTerminal')})
     call TermBufferSettings()
     setlocal winhighlight=Normal:NormalFloatTerm
@@ -926,6 +953,8 @@ endif
 
 nnoremap <silent> <C-a>t :call ToggleTerminal(&lines-8,&columns-20)<CR>
 tnoremap <silent> <C-a>t <C-\><C-n>:call ToggleTerminal(&lines-8,&columns-20)<CR>
+nnoremap <silent> <C-a>x :call ToggleTerminal2()<CR>
+tnoremap <silent> <C-a>x <C-\><C-n>:call ToggleTerminal2()<CR>
 
 " }}}
 
@@ -1646,15 +1675,15 @@ function! EnableSendTerm(cmd, linesep, endsep)
   nnoremap <silent> <buffer> <leader>ee :SendTerm<CR>
   xnoremap <silent> <buffer> <leader>e :<C-U>call SendTerm(visualmode(), "'<", "'>")<CR>
   nnoremap <silent> <buffer> <leader>e :set opfunc=Sendterm_op<CR>g@
+endfunction
 
-  function! Sendterm_op(type, ...)
-    let sel_save = &selection
-    let &selection = "inclusive"
+function! Sendterm_op(type, ...)
+  let sel_save = &selection
+  let &selection = "inclusive"
 
-    call SendTerm(a:type, "'[", "']")
+  call SendTerm(a:type, "'[", "']")
 
-    let &selection = sel_save
-  endfunction
+  let &selection = sel_save
 endfunction
 
 function! s:get_text(mode, linesep, endsep, start, end)
@@ -1790,13 +1819,21 @@ function! StatusLineDiffMerge()
   return ''
 endfunction
 
+function! s:Segmented(s)
+  return substitute(a:s, '\d', '\=nr2char(0x1FBF0+submatch(0))', 'g')
+endfunction
+
 function! StatusLineWinNum()
   if winnr('$')==1
     return ''
   endif
   let n = winnr()
   if n <= 10
-    return nr2char(0x2776 + n - 1)
+    " return nr2char(0x278A + n - 1)
+    " return nr2char(0xFF11 + n - 1)
+    " return nr2char(0x1D7CF + n - 1)
+    " return nr2char(0x1D7ED + n - 1)
+    return nr2char(0x1FBF0 + n)
   endif
 endfunction
 
@@ -2004,7 +2041,7 @@ function! TabLine()
   endif
   let s.= ' '.cwd.' '
   let s.= '%#'.grp3.'#'
-  let s.= ' '.strftime("%H:%M").' '
+  let s.= ' '.s:Segmented(strftime("%H:%M")).' '
   return s
 endfunction
 
