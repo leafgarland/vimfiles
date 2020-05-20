@@ -1,12 +1,13 @@
 [core]
-	pager = less -x1,5
-	safecrlf = warn
+    pager = less -x1,5
+    safecrlf = warn
+    editor = nvr --remote-wait-silent
 [difftool]
-	prompt = false
+    prompt = false
 [difftool "vscode"]
-	cmd = code-insiders --wait --diff $LOCAL $REMOTE
+    cmd = code-insiders --wait --diff $LOCAL $REMOTE
 [difftool "nvim"]
-    cmd = nvim.exe -d $BASE $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
+    cmd = nvim -d $BASE $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
 [pretty]
     one=%C(auto)%h %s %Cblue%an %Cgreen%cd
     onebody=%C(auto)%h %Cblue%<(15,trunc)%an%Creset%w(100,0,27)%s%n%w(100,2,2)%-b
