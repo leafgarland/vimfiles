@@ -190,11 +190,15 @@ set sidescroll=1
 set sidescrolloff=5
 set scrolloff=5
 
-set diffopt+=vertical,algorithm:histogram,indent-heuristic
+if has('nvim')
+  set diffopt+=vertical,algorithm:histogram,indent-heuristic
+endif
 
 set wildmode=longest:full,full
 set wildignorecase
-set wildoptions=tagfile,pum
+if has('nvim')
+  set wildoptions=tagfile,pum
+endif
 set wildcharm=<C-z>
 set number
 set winminheight=0
@@ -1821,7 +1825,9 @@ function! Status(active)
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
     let sl.= '%2*'
-    let sl.= '%( %{LspStatus()} %)'
+    if has('nvim')
+      let sl.= '%( %{LspStatus()} %)'
+    endif
     let sl.= '%0*'
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
@@ -1932,7 +1938,7 @@ let g:conjure_config = {
 
 " we can't require nvim_lsp until the packs have been added, which happens
 " after vimrc is executed so we delay the code until then.
-if has('vim_starting')
+if has('vim_starting') && has('nvim')
   autocmd vimrc VimEnter * ++once call LspStart()
 endif
 
