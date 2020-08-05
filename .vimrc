@@ -30,7 +30,7 @@ if has('vim_starting')
   endif
 endif
 
-let g:vimsyn_embed = 'lP'
+let g:vimsyn_embed = 'l'
 "}}}
 
 " Plugins: {{{
@@ -53,10 +53,10 @@ function! PackInit()
   Pack 'kana/vim-textobj-user'
 
   " Colour schemes and pretty things
-  Pack 'leafgarland/gruvbox', {'type': 'opt'}
   Pack 'leafgarland/iceberg.vim', {'type': 'opt'}
-  Pack 'leafgarland/flatwhite-vim', {'type': 'opt'}
-  Pack 'andreypopp/vim-colors-plain', {'type': 'opt'}
+  Pack 'olivertaylor/vacme' 
+  Pack 'KKPMW/distilled-vim'
+  Pack 'cideM/yui'
 
   " Motions and actions
   Pack 'kana/vim-textobj-indent'
@@ -82,13 +82,13 @@ function! PackInit()
   Pack 'chrisbra/unicode.vim'
   Pack 'romainl/vim-cool'
   Pack 'sgur/vim-editorconfig'
-  " Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
-  Pack 'pyrmont/parinfer-rust', {'branch': 'janet-support', 'do': '!cargo build --release'}
-  Pack 'neovim/nvim-lsp'
+  Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
   Pack 'sakhnik/nvim-gdb'
   Pack 'Olical/conjure', {'branch': 'develop'}
   Pack 'Olical/aniseed'
   Pack 'norcalli/nvim-colorizer.lua'
+  Pack 'neovim/nvim-lsp'
+  Pack 'nvim-treesitter/nvim-treesitter'
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -269,6 +269,7 @@ if has('nvim')
   set inccommand=split
   set fillchars+=msgsep:━
   highlight link MsgSeparator Title
+  autocmd vimrc TextYankPost * silent! lua require'vim.highlight'.on_yank()
 endif
 "}}}
 
@@ -731,16 +732,27 @@ function! s:ft_fennel()
     call EnableSendTerm('lua fennel', '', '')
     nmap <buffer> <leader>ee <leader>eaF
   endif
+  ParinferOff
+  autocmd TextChanged,TextChangedI,TextChangedP <buffer> ++once ParinferOn
 endfunction
 "}}}
 
 " janet: {{{
 function! s:ft_janet()
-  call EnableSendTerm(get(b:, 'janet_cmd', 'janet'), " ", "\<CR>")
-  nmap <buffer> <leader>ee <leader>eaF
+  " call EnableSendTerm(get(b:, 'janet_cmd', 'janet'), " ", "\<CR>")
+  " nmap <buffer> <leader>ee <leader>eaF
   setlocal suffixesadd=.janet
   setlocal includeexpr=trim(system(\"janet\ -e\ '(print\ (first\ (module/find\ \\\"\".v:fname.\"\\\")))'\"))
   setlocal equalprg=janet\ -e\ '(import\ spork/fmt)(fmt/format-print\ (:read\ stdin\ :all))'
+
+  nnoremap <buffer> <leader>dq :ConjureEval (quit)<CR>
+  nnoremap <buffer> <leader>ds :ConjureEval (.step)(.ppasm)<CR>
+  nnoremap <buffer> <leader>df eConjureEval (.frame)<CR>
+
+  let b:parinfer_comment_char = "#"
+  let b:parinfer_janet_long_strings = 1
+  ParinferOff
+  autocmd TextChanged,TextChangedI,TextChangedP <buffer> ++once ParinferOn
 endfunction
 "}}}
 
@@ -750,39 +762,14 @@ function! s:ft_clojure()
     call EnableSendTerm('clj', " ", "\<CR>")
     nmap <buffer> <leader>ee <leader>eaF
   endif
+  ParinferOff
+  autocmd TextChanged,TextChangedI,TextChangedP <buffer> ++once ParinferOn
 endfunction
 "}}}
 
 "}}}
 
 " Commands & Functions: {{{
-
-" Highlight yank: {{{
-function! s:hlyank(operator, regtype, inclusive) abort
-  if a:operator !=# 'y' || a:regtype ==# ''
-    return
-  endif
-
-  let bnr = bufnr('%')
-  let ns = nvim_create_namespace('')
-  call nvim_buf_clear_namespace(bnr, ns, 0, -1)
-
-  let [_, lin1, col1, off1] = getpos("'[")
-  let [lin1, col1] = [lin1 - 1, col1 - 1]
-  let [_, lin2, col2, off2] = getpos("']")
-  let [lin2, col2] = [lin2 - 1, col2 - (a:inclusive ? 0 : 1)]
-  for l in range(lin1, lin1 + (lin2 - lin1))
-    let is_first = (l == lin1)
-    let is_last = (l == lin2)
-    let c1 = is_first || a:regtype[0] ==# "\<C-v>" ? (col1 + off1) : 0
-    let c2 = is_last || a:regtype[0] ==# "\<C-v>" ? (col2 + off2) : -1
-    call nvim_buf_add_highlight(bnr, ns, 'TextYank', l, c1, c2)
-  endfor
-  call timer_start(500, {-> nvim_buf_is_valid(bnr) && nvim_buf_clear_namespace(bnr, ns, 0, -1)})
-endfunc
-highlight default link TextYank IncSearch
-autocmd vimrc TextYankPost * call s:hlyank(v:event.operator, v:event.regtype, v:event.inclusive)
-" }}}
 
 " Window Swap: {{{
 nnoremap <C-w>x :<C-U>call <sid>SwapWindowBuffer(v:count)<CR>
@@ -837,13 +824,16 @@ function! HexBin()
   vnew
   0put
   %!xxd -b
-  setf xxd
+  setfiletype xxd
+  set nonumber
   wincmd p
-  %!xxd -c 6
-  setf xxd
-  37wincmd |
+  %!xxd -c 6 -g 1
+  setfiletype xxd
+  set nonumber
+  35wincmd |
 endfunction
-"}}}
+command! HexBin call HexBin()
+" }}}
 
 " Float with border: {{{
 
@@ -857,7 +847,7 @@ function! OpenWindowWithBorder(buf, options, borderHilight)
   let height = a:options.height + 2
   let col = a:options.col - 1
   let width = a:options.width + 2
-  let opts = {'relative': a:options.relative, 'row': row, 'col': col, 'width': width, 'height': height, 'style': 'minimal'}
+  let opts = {'relative': a:options.relative, 'row': row, 'col': col, 'width': width, 'height': height, 'style': 'minimal', 'focusable': v:false}
 
   if s:border_buf == 0
     let s:border_buf = nvim_create_buf(v:false, v:true)
@@ -1188,33 +1178,6 @@ endfunction
 endif
 "}}}
 
-" WinZoom cmd {{{
-function! WinZoom() abort
-  if 1 == winnr('$')
-    return
-  endif
-  let restore_cmd = winrestcmd()
-  wincmd |
-  wincmd _
-  if restore_cmd ==# winrestcmd()
-    exe t:zoom_restore
-  else
-    let t:zoom_restore = restore_cmd
-  endif
-  return '<Nop>'
-endfunc
-
-function! s:zoom_or_goto_column(cnt) abort
-  if a:cnt
-    exe 'norm! '.v:count.'|'
-  else
-    call WinZoom()
-  endif
-endfunction
-
-nnoremap <Bar> :<C-U>call <SID>zoom_or_goto_column(v:count)<CR>
-" }}}
-
 " DevDocs cmd {{{
 function! DevDocs(query)
   let q = 'https://devdocs.io/#q=' . substitute(a:query, ' ', '%20', 'g')
@@ -1251,35 +1214,7 @@ command! -nargs=0 UnScratch :call UnScratch()
 " }}}
 
 " Delete current buffer without closing window {{{
-
-function! BClose(force) abort
-  if !a:force && &modified
-    echohl ErrorMsg | echo 'buffer has unsaved changes (use BClose! to discard changes)' | echohl None
-    return
-  endif
-
-  let bnr = bufnr('%')
-  for id in win_findbuf(bnr)
-    if !win_gotoid(id)
-      continue
-    endif
-
-    b#
-
-    if bnr == bufnr('%')
-      Scratch
-    endif
-  endfor
-  
-  if bufexists(bnr) && getbufvar(bnr, '&buflisted') && bnr != bufnr('%')
-    if a:force
-      execute 'bdelete!' bnr
-    else
-      execute 'bdelete' bnr
-    endif
-  endif
-endfunction
-command! -bang -nargs=0 BClose :call BClose(<bang>0)
+command! -bang -nargs=0 BClose setlocal bufhidden=delete<bar>bdelete
 " }}}
 
 " Diff against last saved {{{
@@ -1356,82 +1291,7 @@ endfunction
 " }}}
 
 " Highlights: {{{
-function! Highlight(...) abort
-  let lines = split(execute('highlight'), "\n")
-  let groups = []
-  for line in lines
-    if match(line, '^\s\+')> -1
-      let groups[-1] .= substitute(line, '^\s\+', ' ', '')
-      continue
-    else
-      call add(groups, line)
-    endif
-  endfor
-
-  if a:0 == 1
-    let groups = filter(groups, 'match(v:val, a:1) > -1')
-  endif
-
-  let matchGroups = []
-  for grp in groups
-    let grpName = ''
-    let grpAttrs = ''
-    let grpLink = ''
-    let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+\(\(\S\+=\S\+\s*\)\+\)')
-    if !empty(ms)
-      let [grpName, grpAttrs] = ms[1:2]
-    endif
-    let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+.*links to \(\S\+\)')
-    if !empty(ms)
-      let [grpName, grpLink] = ms[1:2]
-    endif
-    let ms = matchlist(grp, '\(\S\+\)\s\+xxx\s\+cleared')
-    if !empty(ms)
-      let grpName = ms[1]
-    endif
-    call add(matchGroups, [grpName, grpAttrs, grpLink])
-  endfor
-
-  let maxWidth = 0
-  for group in matchGroups
-    let l = strlen(group[0])
-    if l > maxWidth
-      let maxWidth = l
-    endif
-  endfor
-
-  for group in matchGroups
-    let [grpName, grpAttrs, grpLink] = group
-    let fmt = '%-'.maxWidth.'s'
-    let grpName = printf(fmt, grpName)
-    if !empty(grpAttrs)
-      echon grpName " "
-      execute 'echohl' grpName | echon "xxx" | echohl None
-      let s = 0
-      let pattern = '\(\S\+\)=\(\S\+\)'
-      let ms = matchlist(grpAttrs, pattern, s)
-      while !empty(ms)
-        let s+= strlen(ms[0])
-        echohl Identifier | echon " " ms[1] | echohl None
-        echon "=" ms[2]
-        let ms = matchlist(grpAttrs, pattern, s)
-      endwhile
-      if !empty(grpLink)
-        echon " links to " grpLink "\n"
-      else
-        echon "\n"
-      endif
-    elseif !empty(grpLink)
-      echon grpName " "
-      execute 'echohl' grpName | echon "xxx" | echohl None
-      echon " links to " grpLink "\n"
-    else
-      echo grpName "xxx cleared\n"
-    endif
-  endfor
-endfunction
-
-command! -complete=highlight -nargs=? Highlight :call Highlight(<f-args>)
+command! -complete=highlight -nargs=? Highlight :filter/<args>/ highlight
 " }}}
 
 " Recent files etc: {{{
@@ -1445,7 +1305,12 @@ function! s:MRUDComplete(ArgLead, CmdLine, CursorPos)
 endfunction
 
 function! s:MRUFComplete(ArgLead, CmdLine, CursorPos)
-  return systemlist('fzy -e '.a:ArgLead, v:oldfiles)
+  let files = uniq(sort(filter(copy(v:oldfiles), {_,x->filereadable(x)})))
+  if empty(a:ArgLead)
+    return files
+  else
+    return systemlist('fzy -e '.a:ArgLead, files)
+  endif
 endfunction
 
 function! s:FdFilesComplete(ArgLead, CmdLine, CursorPos)
@@ -1462,7 +1327,6 @@ endfunction
 command! -nargs=1 -complete=customlist,<sid>MRUDComplete OldDirs call <sid>Run('tcd', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>MRUFComplete OldFiles call <sid>Run('edit', <q-args>, <q-mods>)
 command! -nargs=1 -complete=customlist,<sid>FdFilesComplete FdFiles call <sid>Run('edit', <q-args>, <q-mods>)
-command! -nargs=1 -complete=customlist,<sid>BuffersComplete Buf call <sid>Run('buffer', <q-args>, <q-mods>)
 nnoremap <leader>pr :OldDirs 
 nnoremap <leader>fr :OldFiles 
 nnoremap <leader>fR :OldFiles <C-r>=expand('%:p:.:~:h')<CR>
@@ -1481,47 +1345,6 @@ endfunction
 xnoremap * :<C-u>call <SID>VSetSearch('/')<CR>/<C-R>=@/<CR><CR>
 xnoremap # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R>=@/<CR><CR>
 "}}}
-
-" Zoom font size {{{
-if exists('+guifont') && !empty(&gfn)
-  let s:zoom_level=split(split(&gfn, ',')[0], ':')[1][1:]
-  function! s:ChangeZoom(zoomInc)
-    let s:zoom_level = min([max([4, (s:zoom_level + a:zoomInc)]), 28])
-    let &gfn=substitute(&gfn, ':h\d\+', ':h' . s:zoom_level, '')
-    if s:maximised
-      let &lines=999
-      if s:maximised == 1
-        let &columns=999
-      endif
-    endif
-  endfunction
-
-  nnoremap coz :<C-U>call <sid>ChangeZoom(-1 * (v:count == 0 ? 1 : v:count))<CR>
-  nnoremap coZ :<C-U>call <sid>ChangeZoom(1 * (v:count == 0 ? 1 : v:count))<CR>
-
-  let s:maximised=0
-  let s:restoreLines=0
-  let s:restoreCols=0
-  function! s:ToggleMaximise(vertical)
-    if s:maximised
-      let s:maximised=0
-      let &lines=s:restoreLines
-      let &columns=s:restoreCols
-    else
-      let s:maximised=1 + a:vertical
-      let s:restoreLines=&lines
-      let s:restoreCols=&columns
-      let &lines=999
-      if !a:vertical
-        let &columns=999
-      endif
-    endif
-  endfunction
-
-  nnoremap com :<C-U>call <sid>ToggleMaximise(0)<CR>
-  nnoremap coM :<C-U>call <sid>ToggleMaximise(1)<CR>
-endif
-" }}}
 
 " copy to html {{{
 function! s:CpHtml(line1, line2)
@@ -1829,11 +1652,20 @@ function! StatusLineWinNum()
   endif
   let n = winnr()
   if n <= 10
-    " return nr2char(0x278A + n - 1)
-    " return nr2char(0xFF11 + n - 1)
-    " return nr2char(0x1D7CF + n - 1)
-    " return nr2char(0x1D7ED + n - 1)
-    return nr2char(0x1FBF0 + n)
+    return nr2char(0x2789 + n)
+    " return nr2char(0x1D7CE + n)
+    " return nr2char(0x1D7EC + n)
+    " return nr2char(0x1FBF0 + n)
+  endif
+endfunction
+
+function! StatusLineWinNumNA()
+  if winnr('$')==1
+    return ''
+  endif
+  let n = winnr()
+  if n <= 10
+    return nr2char(0xFF10 + n)
   endif
 endfunction
 
@@ -2011,8 +1843,8 @@ function! Status(active)
     let sl.= '%( %{StatusLineBufType()} %)'
     let sl.= '%='
     let sl.= '%( %{StatusLineDiffMerge()} %)'
-    let sl.= '%0*'
-    let sl.= '%(%{StatusLineWinNum()} %)'
+    let sl.= '%2*'
+    let sl.= '%(%{StatusLineWinNumNA()}%)'
     return sl
   endif
 endfunction
@@ -2029,9 +1861,10 @@ function! TabLine()
   let grp1 = 'CustomTab'.colour
   let grp2 = 'CustomTab2'.colour
   let grp3 = 'CustomTab3'.colour
+  let prettytabnr = nr2char(0x2789 + tabnr)
 
   let s = '%#'.grp1.'#'
-  let s.= ' ['.tabnr.'] '
+  let s.= ' '.prettytabnr.' '
   let s.= '%='
   let s.= '%( '.gitHead.' %)'
   if isLocalCwd
@@ -2105,9 +1938,10 @@ endif
 
 function! LspStart()
 lua << EOF
+  vim.lsp.set_log_level('error')
   local lsp = require'nvim_lsp'
   lsp.rls.setup{} 
-  lsp.clangd.setup{ cmd = {'/usr/local/opt/llvm/bin/clangd', '--background-index', '--clang-tidy'} }
+  lsp.clangd.setup{ cmd = {'/usr/local/opt/llvm/bin/clangd'} }
 EOF
 endfunction
 
@@ -2231,12 +2065,19 @@ let g:sexp_enable_insert_mode_mappings=0
 function! ColorschemeIceberg()
   colorscheme iceberg
 
-  highlight link NormalFloat Normal
-  highlight NormalFloatBorder guibg=#161821 guifg=#e27878
-  highlight NormalTerm guifg=#c6c8d1 guibg=#0a2132
+  highlight NormalFloat guibg=#1e2132 guifg=fg
+  highlight NormalFloatBorder guibg=#1e2132 guifg=#e27878
+  highlight NormalTerm guifg=#c6c8d1 guibg=#000000
   highlight link NormalFloatTerm Normal
   highlight NormalFloatTermBorder guifg=#b4be82 guibg=#161821
   highlight String gui=italic
+  highlight Pmenu guibg=#1e2132
+
+  highlight link JanetFunction JanetSymbol
+  highlight link JanetMacro JanetSymbol
+  highlight link JanetSpecial JanetSymbol
+  highlight link JanetError Error
+
   call MyCustomColours()
 endfunction
 
@@ -2244,8 +2085,9 @@ function! ColorschemePlain()
   colorscheme plain
 
   highlight link NormalFloat Pmenu
-  highlight NormalTerm guifg=#c6c8d1 guibg=#0a2132
-  highlight NormalFloatTerm guifg=fg guibg=#0a2122
+  highlight NormalTerm guifg=#c6c8d1 guibg=#000
+  highlight NormalFloatTerm guifg=fg guibg=#000
+  highlight NormalFloatTermBorder guifg=#b4be82 guibg=NONE
   highlight link NormalFloatGrep Pmenu
   highlight Comment guifg=#888888 gui=italic
   highlight Folded guibg=#222222 guifg=#888888 gui=italic
@@ -2283,6 +2125,17 @@ function! ColorschemePlain()
   highlight link janetCoreValue Normal
 
   call MyCustomColours()
+endfunction
+
+function! ColorschemeVacme()
+  colorscheme vacme
+  highlight! StatusLine gui=bold
+  highlight! link User1 StatusLine
+  highlight! link User2 StatusLine
+  highlight! link User3 StatusLine
+  highlight erlangStringModifier gui=bold,italic
+  highlight String gui=italic
+  highlight Comment gui=bold
 endfunction
 
 if has('vim_starting')
