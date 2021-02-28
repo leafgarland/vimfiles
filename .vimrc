@@ -53,10 +53,10 @@ function! PackInit()
   Pack 'kana/vim-textobj-user'
 
   " Colour schemes and pretty things
-  Pack 'leafgarland/iceberg.vim', {'type': 'opt'}
-  Pack 'olivertaylor/vacme' 
+  Pack 'cocopon/iceberg.vim', {'type': 'opt'}
   Pack 'KKPMW/distilled-vim'
   Pack 'cideM/yui'
+  Pack 'danishprakash/vim-yami'
 
   " Motions and actions
   Pack 'kana/vim-textobj-indent'
@@ -70,9 +70,6 @@ function! PackInit()
   Pack 'machakann/vim-sandwich'
 
   " Tools
-  if has('nvim')
-    Pack 'neovim/nvim.net'
-  endif
   Pack 'samoshkin/vim-mergetool'
   Pack 'tpope/vim-fugitive'
   Pack 'tpope/vim-rhubarb'
@@ -83,20 +80,18 @@ function! PackInit()
   Pack 'romainl/vim-cool'
   Pack 'sgur/vim-editorconfig'
   Pack 'eraserhd/parinfer-rust', {'do': '!cargo build --release'}
-  Pack 'sakhnik/nvim-gdb'
   Pack 'Olical/conjure', {'branch': 'develop'}
   Pack 'Olical/aniseed'
   Pack 'norcalli/nvim-colorizer.lua'
-  Pack 'neovim/nvim-lsp'
+  Pack 'neovim/nvim-lspconfig'
   Pack 'nvim-treesitter/nvim-treesitter'
+  Pack 'nvim-lua/completion-nvim'
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
   Pack 'othree/html5.vim'
   Pack 'elzr/vim-json'
   Pack 'tpope/vim-jdaddy'
-  Pack 'vim-pandoc/vim-pandoc-syntax'
-  Pack 'vim-pandoc/vim-pandoc'
   Pack 'PProvost/vim-ps1'
   Pack 'guns/vim-clojure-static'
   Pack 'guns/vim-sexp'
@@ -109,28 +104,22 @@ function! PackInit()
   Pack 'elixir-lang/vim-elixir'
   Pack 'pangloss/vim-javascript'
   Pack 'mxw/vim-jsx'
+  Pack 'leafOfTree/vim-svelte-plugin'
     " Pack 'ianks/vim-tsx'
     " Pack 'leafgarland/typescript-vim'
   Pack 'HerringtonDarkholme/yats.vim'
   Pack 'elmcast/elm-vim'
   Pack 'rust-lang/rust.vim'
-  Pack 'raichoo/purescript-vim'
   Pack 'wlangstroth/vim-racket'
   Pack 'beyondmarc/glsl.vim'
   Pack 'cespare/vim-toml'
-  Pack 'dleonard0/pony-vim-syntax'
   Pack 'OrangeT/vim-csharp'
-  Pack 'idris-hackers/idris-vim'
   Pack 'hashivim/vim-terraform'
   Pack 'aklt/plantuml-syntax'
   Pack 'ziglang/zig.vim'
   Pack 'janet-lang/janet.vim'
   Pack 'dag/vim-fish'
   Pack 'bakpakin/fennel.vim'
-
-  if has('nvim') && executable('fzy')
-    Pack 'cloudhead/neovim-fuzzy'
-  endif
 endfunction
 
 "}}}
@@ -308,7 +297,8 @@ if has('vim_starting')
   set showbreak=↪
   set autoindent
   set expandtab
-  set shiftwidth=4
+  set shiftwidth=2
+  set shiftround
   set softtabstop=-1
 endif
 "}}}
@@ -334,8 +324,8 @@ xnoremap . :normal .<CR>
 nnoremap g<C-P> :pwd<CR>
 
 " buffer text object
-onoremap <silent> A :<C-u>keepjumps normal! ggVG<CR>
-xnoremap <silent> A :<C-u>keepjumps normal! ggVG<CR>
+onoremap <silent> B :<C-u>keepjumps normal! ggVG<CR>
+xnoremap <silent> B :<C-u>keepjumps normal! ggVG<CR>
 
 " inner line text object
 onoremap <silent> il :<c-u>keepjumps lockmarks normal! g_v^<cr>
@@ -349,31 +339,27 @@ nmap gQ <Nop>
 if has('nvim')
   let g:tshell = 'term://' . (executable('fish') ? 'fish' : executable('pwsh') ? 'pwsh' : '')
   tnoremap <C-a> <C-\><C-n>
-  " <C-Space> is <C-@>
-  tnoremap <C-Space> <C-\><C-n>:
-  " <C-Space> doesn't work in Windows console
+  tnoremap <esc><esc> <C-\><C-n>
   tnoremap <M-;> <C-\><C-n>:
   tnoremap <C-w> <C-\><C-n><C-w>
 
-  if empty($TMUX)
-    tnoremap <C-a>: <C-\><C-n>:
-    tnoremap <C-a>n <C-\><C-n>:bnext<CR>
-    nnoremap <C-a>n :bnext<CR>
-    tnoremap <C-a>p <C-\><C-n>:bprevious<CR>
-    nnoremap <C-a>p :bprevious<CR>
-    tnoremap <C-a>c <C-\><C-n>:Term<CR>
-    nnoremap <C-a>c :Term<CR>
-    tnoremap <C-a>s <C-\><C-n>:aboveleft Term<CR>
-    nnoremap <C-a>s :aboveleft Term<CR>
-    tnoremap <C-a>v <C-\><C-n>:vertical Term<CR>
-    nnoremap <C-a>v :vertical Term<CR>
-    tnoremap <C-a><C-l> <C-l>
-    tnoremap <C-a><C-a> <C-a>
-    tnoremap <A-h> <C-\><C-n><C-w>h
-    tnoremap <A-l> <C-\><C-n><C-w>l
-    tnoremap <A-j> <C-\><C-n><C-w>j
-    tnoremap <A-k> <C-\><C-n><C-w>k
-  endif
+  tnoremap <C-a>: <C-\><C-n>:
+  tnoremap <C-a>n <C-\><C-n>:bnext<CR>
+  nnoremap <C-a>n :bnext<CR>
+  tnoremap <C-a>p <C-\><C-n>:bprevious<CR>
+  nnoremap <C-a>p :bprevious<CR>
+  tnoremap <C-a>c <C-\><C-n>:Term<CR>
+  nnoremap <C-a>c :Term<CR>
+  tnoremap <C-a>s <C-\><C-n>:aboveleft Term<CR>
+  nnoremap <C-a>s :aboveleft Term<CR>
+  tnoremap <C-a>v <C-\><C-n>:vertical Term<CR>
+  nnoremap <C-a>v :vertical Term<CR>
+  tnoremap <C-a><C-l> <C-l>
+  tnoremap <C-a><C-a> <C-a>
+  tnoremap <A-h> <C-\><C-n><C-w>h
+  tnoremap <A-l> <C-\><C-n><C-w>l
+  tnoremap <A-j> <C-\><C-n><C-w>j
+  tnoremap <A-k> <C-\><C-n><C-w>k
 endif
 
 " run last make cmd
@@ -577,23 +563,18 @@ function! s:ft_load(ftype)
   endif
 endfunction
 
-function! s:ft_start()
-  autocmd vimrc FileType,BufAdd * call <SID>ft_load(&filetype)
-endfunction
-
-" I want my filetype handlers to fire after filetype plugins but this vimrc is
-" run before the filetype handlers are attached, so we need to delay attaching
-" the handler until vim has started. Unfortunately this means that files
-" from command line arguments are loaded before this code is ready
-if has('vim_starting')
-  autocmd vimrc VimEnter * ++once call <SID>ft_start()
-endif
-call s:ft_start()
+autocmd vimrc VimEnter,FileType * call <SID>ft_load(&filetype)
 
 function! SpellIgnoreSomeWords()
   syntax match spellIgnoreAcronyms '\<\u\(\u\|\d\)\+s\?\>' contains=@NoSpell contained containedin=@Spell
   syntax match spellIgnoreUrl '\w\+:\/\/[^[:space:]]\+' contains=@NoSpell contained containedin=@Spell
 endfunction
+
+" elixir: {{{
+function! s:ft_elixir()
+  call SetLspDefaults()
+endfunction
+" }}}
 
 " json: {{{
 function! s:ft_json()
@@ -677,13 +658,6 @@ endfunction
 
 " quickfix {{{
 function! s:ft_qf()
-  " syntax clear
-  " syn match	qfDirName "^[^|]+[\\/]\ze[^|\\/]+" nextgroup=qfJustFileName conceal cchar=•
-  " syntax match	qfDirName "^[^|]*[\\/][^\\/|]+" nextgroup=qfSeparator conceal cchar=•
-  " syntax match	qfDirName "^[^|]\+[\\/][^|\\/]\+" nextgroup=qfSeparator
-  " syntax match	qfSeparator "/|/" contained
-  " syn match	qfJustFileName "[^|\\/]+" nextgroup=qfSeparator
-
   syntax match qfNoLineCol "||" conceal cchar=|
 
   syntax match qfFugitive "^fugitive:\/\/.\+\/\/" conceal cchar=| nextgroup=qfFugitiveHash
@@ -953,8 +927,8 @@ tnoremap <silent> <C-a>x <C-\><C-n>:call ToggleTerminal2()<CR>
 " }}}
 
 " Floating grep {{{
-command! -count=0 -nargs=+ FGrep call FloatGrep(<count>, <q-args>)
-function! FloatGrep(context, pattern)
+command! -count=0 -nargs=+ FGrep call FloatGrep(<count>, <f-args>)
+function! FloatGrep(context, ...)
   let width = &columns-20
   let height = &lines-20
   let col=(&columns-width)/2
@@ -971,7 +945,8 @@ function! FloatGrep(context, pattern)
 
   let term_buf = nvim_create_buf(v:false, v:true)
   call OpenWindowWithBorder(term_buf, opts, 'NormalFloatBorder')
-  call termopen(['rg', '-C'.a:context, a:pattern])
+  let args = ['rg', '-C'.a:context] + a:000
+  call termopen(args)
 
   setlocal cursorline
   setlocal winhighlight=EndOfBuffer:,Normal:NormalFloat
@@ -1218,7 +1193,7 @@ command! -nargs=0 UnScratch :call UnScratch()
 " }}}
 
 " Delete current buffer without closing window {{{
-command! -bang -nargs=0 BClose setlocal bufhidden=delete<bar>bdelete
+command! -bang -nargs=0 BClose setlocal bufhidden=delete<bar>bnext
 " }}}
 
 " Diff against last saved {{{
@@ -1319,9 +1294,9 @@ endfunction
 
 function! s:FdFilesComplete(ArgLead, CmdLine, CursorPos)
   if empty(a:ArgLead)
-    return systemlist(['fd', '--max-results', '100'])
+    return systemlist(['fd -tf', '--max-results', '100'])
   endif
-  return systemlist('fd | fzy -e ' . a:ArgLead)
+  return systemlist('fd -tf | fzy -e ' . a:ArgLead)
 endfunction
 
 function! s:Run(command, arg, mods)
@@ -1654,13 +1629,7 @@ function! StatusLineWinNum()
   if winnr('$')==1
     return ''
   endif
-  let n = winnr()
-  if n <= 10
-    return nr2char(0x2789 + n)
-    " return nr2char(0x1D7CE + n)
-    " return nr2char(0x1D7EC + n)
-    " return nr2char(0x1FBF0 + n)
-  endif
+  return winnr()
 endfunction
 
 function! StatusLineWinNumNA()
@@ -1669,7 +1638,10 @@ function! StatusLineWinNumNA()
   endif
   let n = winnr()
   if n <= 10
-    return nr2char(0xFF10 + n)
+    return nr2char(0x2775 + n)
+    " return nr2char(0x1D7CE + n)
+    " return nr2char(0x1D7EC + n)
+    " return nr2char(0x1FBF0 + n)
   endif
 endfunction
 
@@ -1777,27 +1749,10 @@ function! StatusLineBufType()
   return join(bt)
 endfunction
 
-function! StatusLineMode(...)
-  if get(a:, 1, 0) == 1
-    if &ft == 'term' && mode() == 't'
-      return &ft
-    else
-      return ''
-    endif
-  endif
-  if &ft == 'term' && mode() == 't'
-    return ''
-  endif
-  if get(g:, 'use_nerd_font', 0)
-    let m = &ft == 'dirvish' ? "\U24B9" :
-        \ &ft == 'qf' ? (empty(getloclist(0)) ? "\U24C6" : "\U24C1") :
-        \ &ft == 'grepr' ? "\U24BC" :
-        \ &ft
-  else
-    let m = &ft == 'dirvish' ? "dir" :
-        \ &ft == 'qf' ? (empty(getloclist(0)) ? 'qf' : 'loc') :
-        \ &ft
-  endif
+function! StatusLineMode()
+  let m = &ft == 'dirvish' ? "dir" :
+      \ &ft == 'qf' ? (empty(getloclist(0)) ? 'qf' : 'loc') :
+      \ &ft
   return !empty(m) ? m : 'none'
 endfunction
 
@@ -1813,8 +1768,6 @@ function! Status(active)
   if a:active
     let sl = '%0*'
     let sl.= '%( %{StatusLineMode()} %)'
-    let sl.= '%3*'
-    let sl.= '%( %{StatusLineMode(1)} %)'
     let sl.= '%0*'
     let sl.= '%( %{StatusLinePath()}%1*%{StatusLineFilename()} %)'
     let sl.= '%<'
@@ -1838,7 +1791,7 @@ function! Status(active)
     let sl.= '%0*'
     let sl.= '%( %4l:%-3c %3p%% %)'
     let sl.= '%2*'
-    let sl.= '%(%{StatusLineWinNum()} %)'
+    let sl.= '%2*%( %{StatusLineWinNum()} %)'
     return sl
   else
     let sl = '%0*'
@@ -1850,7 +1803,7 @@ function! Status(active)
     let sl.= '%='
     let sl.= '%( %{StatusLineDiffMerge()} %)'
     let sl.= '%2*'
-    let sl.= '%(%{StatusLineWinNumNA()}%)'
+    let sl.= '%( %{StatusLineWinNum()} %)'
     return sl
   endif
 endfunction
@@ -1921,40 +1874,46 @@ call PrettyLittleStatus()
 
 " Plugins config: {{{
 
+" Complete: {{{
+
+set completeopt=menuone,noinsert,noselect
+set shortmess+=c
+let g:completion_enable_auto_popup = 0
+let g:completion_auto_change_source = 1
+imap <tab> <Plug>(completion_smart_tab)
+imap <s-tab> <Plug>(completion_smart_s_tab)
+autocmd BufEnter * lua require'completion'.on_attach()
+
+" }}}
+
 " Conjure: {{{
-let g:conjure_config = {
-      \ "mappings.eval-root-form": ["<leader>ee"],
-      \ "mappings.eval-buf": ["<leader>eb"],
-      \ "mappings.eval-current-form": ["<leader>ec"],
-      \ "mappings.eval-file": ["<leader>ef"],
-      \ "mappings.eval-marked-form": ["<leader>em"],
-      \ "mappings.eval-motion": ["<leader>e"],
-      \ "mappings.eval-visual": ["<leader>e"],
-      \ "mappings.eval-word": ["<leader>ew"],
-      \ }
+let g:conjure#mapping#eval_root_form = ["\<leader>ee"]
+let g:conjure#mapping#eval_buf = ["<leader>eb"]
+let g:conjure#mapping#eval_current_form = ["<leader>ec"]
+let g:conjure#mapping#eval_file = ["<leader>ef"]
+let g:conjure#mapping#eval_marked_form = ["<leader>em"]
+let g:conjure#mapping#eval_motion = ["<leader>e"]
+let g:conjure#mapping#eval_visual = ["<leader>e"]
+let g:conjure#mapping#eval_word = ["<leader>ew"]
 " }}}
 
 " LSP: {{{
 
-" we can't require nvim_lsp until the packs have been added, which happens
-" after vimrc is executed so we delay the code until then.
 if has('vim_starting') && has('nvim')
-  autocmd vimrc VimEnter * ++once call LspStart()
-endif
-
-function! LspStart()
 lua << EOF
+  vim.cmd('packadd nvim-lspconfig')
   vim.lsp.set_log_level('error')
-  local lsp = require'nvim_lsp'
+  local lsp = require'lspconfig'
   lsp.rls.setup{} 
-  lsp.clangd.setup{ cmd = {'/usr/local/opt/llvm/bin/clangd'} }
+  lsp.elixirls.setup{ cmd = {'/Users/lg/Dev/erlang/elixir-ls/release/language_server.sh'} } 
+  lsp.clangd.setup{ cmd = {'/usr/local/opt/llvm/bin/clangd', '--background-index'} }
 EOF
-endfunction
+endif
 
 function! SetLspDefaults()
   setlocal omnifunc=v:lua.vim.lsp.omnifunc
-  nnoremap <buffer> <silent> gd    <cmd>lua vim.lsp.buf.declaration()<CR>
-  nnoremap <buffer> <silent> gD    <cmd>lua vim.lsp.buf.definition()<CR>
+  nnoremap <buffer> <silent> gd    <cmd>lua vim.lsp.buf.definition()<CR>
+  nnoremap <buffer> <silent> gD    <cmd>lua vim.lsp.buf.declaration()<CR>
   nnoremap <buffer> <silent> K     <cmd>lua vim.lsp.buf.hover()<CR>
   nnoremap <buffer> <silent> gi    <cmd>lua vim.lsp.buf.implementation()<CR>
   nnoremap <buffer> <silent> <c-k> <cmd>lua vim.lsp.buf.signature_help()<CR>
@@ -1962,6 +1921,30 @@ function! SetLspDefaults()
   nnoremap <buffer> <silent> gr    <cmd>lua vim.lsp.buf.references()<CR>
   nnoremap <buffer> <silent> g0    <cmd>lua vim.lsp.buf.document_symbol()<CR>
 endfunction
+" }}}
+
+" Treesitter: {{{
+
+if has('vim_starting') && has('nvim')
+lua << EOF
+  vim.cmd('packadd nvim-treesitter')
+  require'nvim-treesitter.configs'.setup {
+    incremental_selection = {
+      enable = true,
+    },
+    highlight = {
+      enable = true,
+    },
+    refactor = {
+      highlight_definitions = { enable = true },
+      highlight_current_scope = { enable = true },
+    },
+    navigation = {
+      enable = true,
+    },
+  }
+EOF
+endif
 " }}}
 
 " Fugitive: {{{
@@ -2068,6 +2051,7 @@ let g:sexp_enable_insert_mode_mappings=0
 
 " Colorschemes: {{{
 
+" Iceberg: {{{
 function! ColorschemeIceberg()
   colorscheme iceberg
 
@@ -2077,77 +2061,121 @@ function! ColorschemeIceberg()
   highlight link NormalFloatTerm Normal
   highlight NormalFloatTermBorder guifg=#b4be82 guibg=#161821
   highlight String gui=italic
-  highlight Pmenu guibg=#1e2132
+  highlight Pmenu guibg=#6b7089 guifg=#161821
+  highlight StatusLine guibg=#2a3158 guifg=#cdd1e6 gui=NONE
+  highlight StatusLineTerm guibg=#2a3158 guifg=#cdd1e6 gui=NONE
+  highlight StatusLineNC guibg=#2a3158 guifg=#6b7089 gui=NONE
+  highlight StatusLineTermNC guibg=#2a3158 guifg=#6b7089 gui=NONE
+  highlight User1 guifg=#b4be82 guibg=#2a3158 gui=bold
+  highlight User2 guifg=#e2a478 guibg=#2a3158 gui=bold
+  highlight User3 gui=NONE guibg=#e2a478 guifg=#2a3158
+  highlight VertSplit guifg=#2a3158 guibg=bg gui=NONE
 
   highlight link JanetFunction JanetSymbol
   highlight link JanetMacro JanetSymbol
   highlight link JanetSpecial JanetSymbol
+  highlight link JanetSpecialForm JanetSymbol
   highlight link JanetError Error
 
   call MyCustomColours()
 endfunction
+"}}}
 
-function! ColorschemePlain()
-  colorscheme plain
+" Distilled: {{{
+function! ColorschemeDistilled()
+  colorscheme distilled
 
-  highlight link NormalFloat Pmenu
-  highlight NormalTerm guifg=#c6c8d1 guibg=#000
-  highlight NormalFloatTerm guifg=fg guibg=#000
-  highlight NormalFloatTermBorder guifg=#b4be82 guibg=NONE
-  highlight link NormalFloatGrep Pmenu
-  highlight Comment guifg=#888888 gui=italic
-  highlight Folded guibg=#222222 guifg=#888888 gui=italic
-  highlight LineNr guifg=#555555
-  highlight NonText guifg=#888888 guibg=#222222
-  highlight PmenuSel guibg=#404040
-  highlight StatusLine guibg=#333333 gui=NONE guifg=fg
-  highlight StatusLineNC guibg=#333333 gui=NONE guifg=#888888
-  highlight String gui=italic guifg=#b6d6fd
-  highlight User1 guifg=#5fd7a7 guibg=#333333 gui=bold
-  highlight User2 guifg=fg guibg=#333333 gui=bold
-  highlight User3 guibg=#5fd7a7 guifg=#333333 gui=bold
-  highlight VertSplit guifg=#333333 gui=NONE
-  highlight clear CursorLine
-  highlight helpExample gui=bold guifg=fg
-  highlight helpSpecial gui=italic guifg=fg
-  highlight link CursorLineNr DiffChange
-  highlight link helpOption String 
-  highlight link minpacName DiffAdd
-  highlight link minpacSha Statement
-  highlight link rustAttribute Constant
-  highlight link vimCommentTitle Comment
-  highlight link vimFunction Statement
-  highlight link yamlEscape SpecialKey
-  highlight link fugitiveStagedModifier DiffAdd
-  highlight link fugitiveUnstagedHeading Statement
-  highlight link fugitiveUnstagedModifier diffRemoved
-  highlight link fugitiveUntrackedHeading Statement
-  highlight clojureVariable gui=bold
-  highlight clojureKeyword gui=NONE guifg=#b6d6fd
-  highlight link clojureSpecial Statement
-  highlight link clojureDefine Statement
-  highlight link clojureDispatch DiffAdd
-  highlight janetKeyword gui=NONE guifg=#b6d6fd
-  highlight link janetCoreValue Normal
+  highlight NormalFloat guibg=#1e2132 guifg=fg
+  highlight NormalFloatBorder guibg=#1e2132 guifg=#e27878
+  highlight NormalTerm guifg=fg guibg=#04162b
+  highlight NormalFloatTerm guibg=#14263b
+  highlight NormalFloatTermBorder guifg=#b4be82 guibg=#14263b
+  highlight String guifg=#ecb534
+  highlight PreProc gui=bold
+  highlight Statement gui=italic
+  highlight EndOfBuffer guifg=#6194ba guibg=#14263b
+  highlight NonText guifg=#6194ba guibg=bg
+  highlight SignColumn guibg=bg
+  highlight MatchParen guifg=#88c563 guibg=bg gui=bold
+  highlight clear StatusLine
+  highlight clear StatusLineNC
+  highlight clear User1
+  highlight clear User2
+  highlight clear User3
+  highlight StatusLine guibg=#6194ba guifg=#e4e4dd
+  highlight StatusLineTerm guibg=#41749a guifg=black
+  highlight StatusLineNC gui=NONE guifg=#24364b guibg=#6194ba
+  highlight User1 gui=bold guibg=#6194ba guifg=gold
+  highlight User2 gui=bold guibg=#5184aa guifg=gold
+  highlight ErrorMsg guibg=#e76d6d guifg=black
+
+  highlight link LspDiagnosticsError Error
+  highlight link LspDiagnosticsWarning WarningMsg
+
+  highlight link JanetFunction JanetSymbol
+  highlight link JanetMacro JanetSymbol
+  highlight link JanetSpecial JanetSymbol
+  highlight link JanetSpecialForm JanetSymbol
+  highlight link JanetError Error
+
+  highlight link elixirDocTest SpecialComment
+  highlight link elixirInterpolationDelimiter Comment
+  highlight link elixirOperator SpecialComment
+  highlight link elixirFunctionDeclaration Title
+  highlight link elixirModuleDeclaration Title
+
+  highlight diffRemoved guifg=#e76d6d guibg=bg gui=NONE
+  highlight diffAdded guifg=#88c563 guibg=bg gui=NONE
+  highlight link diffFile String
 
   call MyCustomColours()
 endfunction
+"}}}
 
-function! ColorschemeVacme()
-  colorscheme vacme
-  highlight! StatusLine gui=bold
-  highlight! link User1 StatusLine
-  highlight! link User2 StatusLine
-  highlight! link User3 StatusLine
-  highlight erlangStringModifier gui=bold,italic
-  highlight String gui=italic
-  highlight Comment gui=bold
+" Yami: {{{
+function! ColorschemeYami()
+  colorscheme yami
+
+  highlight User1 gui=bold guibg=#23242a guifg=gold
+  highlight User2 gui=bold guibg=#23242a guifg=#f87070
+  highlight StatusLineNC gui=none guibg=#23242a guifg=#666666
+  highlight Title guifg=fg gui=bold
+  highlight Constant guifg=#d6aba7
+  highlight Pmenu guifg=bg guibg=fg gui=none
+  highlight PmenuSel guibg=#ffe59e
+  highlight PmenuSbar guibg=#666666
+  highlight PmenuThumb guibg=#c4c4c5
+  highlight Comment gui=italic
+  highlight! link vimLineComment Comment
+  highlight vimCommentTitle guifg=fg gui=bold,italic
+  highlight Delimiter guifg=#c4b4e5 gui=none
+  highlight String guifg=#c6ebb7
+  highlight MatchParen guibg=none guifg=gold gui=bold
+
+  highlight link LspDiagnosticsError Error
+  highlight link LspDiagnosticsWarning WarningMsg
+
+  highlight link JanetFunction JanetSymbol
+  highlight link JanetMacro JanetSymbol
+  highlight link JanetSpecial JanetSymbol
+  highlight link JanetSpecialForm JanetSymbol
+  highlight link JanetError Error
+  highlight link JanetParen Delimiter
+
+  highlight link elixirDocTest SpecialComment
+  highlight link elixirInterpolationDelimiter Comment
+  highlight link elixirOperator SpecialComment
+  highlight link elixirFunctionDeclaration Title
+  highlight link elixirModuleDeclaration Title
+
+  call MyCustomColours()
 endfunction
+"}}}
 
 if has('vim_starting')
   " the colorscheme is applied after vim starts up, so my customizations are
   " lost unless we delay setting the colorscheme
-  autocmd vimrc VimEnter * ++once call ColorschemeIceberg()
+  autocmd vimrc VimEnter * ++once call ColorschemeYami()
 endif
 
 "}}}
