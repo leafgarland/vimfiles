@@ -1,4 +1,4 @@
-" vim: foldlevel=0 foldmethod=marker shiftwidth=2
+" vim: foldlevel=0 foldmethod=marker foldmarker={{{,}}} shiftwidth=2
 
 " Environment: {{{
 
@@ -65,7 +65,6 @@ function! PackInit()
   Pack 'tpope/vim-unimpaired'
   Pack 'tommcdo/vim-exchange'
   Pack 'wellle/targets.vim'
-  Pack 'AndrewRadev/splitjoin.vim'
   Pack 'tommcdo/vim-lion'
   Pack 'machakann/vim-sandwich'
 
@@ -85,7 +84,10 @@ function! PackInit()
   Pack 'norcalli/nvim-colorizer.lua'
   Pack 'neovim/nvim-lspconfig'
   Pack 'nvim-treesitter/nvim-treesitter'
-  Pack 'nvim-lua/completion-nvim'
+  " Pack 'nvim-lua/completion-nvim'
+  Pack 'hrsh7th/nvim-compe'
+  Pack 'clojure-vim/vim-jack-in'
+  Pack 'glepnir/lspsaga.nvim'
 
   " Filetypes
   Pack 'hail2u/vim-css3-syntax'
@@ -130,7 +132,7 @@ set nomodeline
 set mouse=a
 
 set belloff=all
-set shortmess+=Im
+set shortmess+=Imc
 set viewoptions=folds,options,cursor,unix,slash
 set history=10000
 set hidden
@@ -240,25 +242,21 @@ function! s:Term(mods, args)
 endfunction
 
 function! TermBufferSettings()
-  setfiletype term
   setlocal nonumber
   setlocal nocursorline
   setlocal signcolumn=no
 
-  nnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('')<CR>
-  xnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('')<CR>
-  nnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
-  xnoremap <silent> <buffer> <C-n> :call SearchNextLine('')<CR>
+  nnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('❯')<CR>
+  xnoremap <silent> <buffer> <C-p> :call SearchPreviousLine('❯')<CR>
+  nnoremap <silent> <buffer> <C-n> :call SearchNextLine('❯')<CR>
+  xnoremap <silent> <buffer> <C-n> :call SearchNextLine('❯')<CR>
 
   autocmd vimrc WinEnter,BufWinEnter <buffer> startinsert
-
-  setlocal winhighlight=Normal:NormalTerm
 
   startinsert
 endfunction
 
 if has('nvim')
-  " autocmd vimrc TermOpen * call TermBufferSettings()
   set inccommand=split
   set fillchars+=msgsep:━
   highlight link MsgSeparator Title
@@ -398,9 +396,9 @@ nnoremap <A-k> <C-W>k
 nnoremap <A-l> <C-W>l
 nnoremap <A-h> <C-W>h
 
-nnoremap <leader>ww <C-w>p
 for key in range(0, 9)
-  execute 'nnoremap <leader>'.key key.'<C-w>w'
+  execute 'nnoremap <C-w>'.key key.'<C-w>w'
+  execute 'tnoremap <C-w>'.key '<C-\><C-n>'.key.'<C-w>w'
 endfor
 
 nnoremap <silent> <C-w>z :wincmd z<Bar>cclose<Bar>lclose<CR>
@@ -820,7 +818,7 @@ if has('vim_starting')
   let s:border_win = 0
 endif
 
-function! OpenWindowWithBorder(buf, options, borderHilight)
+function! OpenWindowWithBorder(buf, options)
   let row = a:options.row - 1
   let height = a:options.height + 2
   let col = a:options.col - 1
@@ -837,7 +835,6 @@ function! OpenWindowWithBorder(buf, options, borderHilight)
   let lines = [top] + repeat([mid], height - 2) + [bot]
   call nvim_buf_set_lines(s:border_buf, 0, -1, v:true, lines)
   let bwin = nvim_open_win(s:border_buf, v:true, opts)
-  execute 'setlocal winhighlight=Normal:'.a:borderHilight
   let win = nvim_open_win(a:buf, v:true, a:options)
   execute 'autocmd vimrc WinClosed' win 'call nvim_win_close('.bwin.', 1)'
 endfunction
@@ -903,15 +900,14 @@ function! s:openTermFloating(height, width) abort
 
   if t:term_buf != 0
     " switch to existing term buffer
-    call OpenWindowWithBorder(t:term_buf, opts, 'NormalFloatTermBorder')
+    call OpenWindowWithBorder(t:term_buf, opts)
     startinsert
   else
     " create new term buffer
     let t:term_buf = nvim_create_buf(v:false, v:true)
-    call OpenWindowWithBorder(t:term_buf, opts, 'NormalFloatTermBorder')
+    call OpenWindowWithBorder(t:term_buf, opts)
     call termopen(executable('fish') ? 'fish' : 'pwsh', {'on_exit': function('ResetToggleTerminal')})
     call TermBufferSettings()
-    setlocal winhighlight=Normal:NormalFloatTerm
   endif
 endfunction
 
@@ -944,13 +940,12 @@ function! FloatGrep(context, ...)
         \ }
 
   let term_buf = nvim_create_buf(v:false, v:true)
-  call OpenWindowWithBorder(term_buf, opts, 'NormalFloatBorder')
+  call OpenWindowWithBorder(term_buf, opts)
   let args = ['rg', '-C'.a:context] + a:000
   call termopen(args)
 
   setlocal cursorline
-  setlocal winhighlight=EndOfBuffer:,Normal:NormalFloat
-  setlocal winblend=5
+  setlocal winhighlight=EndOfBuffer:,Normal:
 
   nnoremap <silent> <buffer> <C-p> :call <SID>SearchNextFile(v:true)<CR>
   nnoremap <silent> <buffer> <C-n> :call <SID>SearchNextFile(v:false)<CR>
@@ -1621,10 +1616,6 @@ function! StatusLineDiffMerge()
   return ''
 endfunction
 
-function! s:Segmented(s)
-  return substitute(a:s, '\d', '\=nr2char(0x1FBF0+submatch(0))', 'g')
-endfunction
-
 function! StatusLineWinNum()
   if winnr('$')==1
     return ''
@@ -1632,25 +1623,10 @@ function! StatusLineWinNum()
   return winnr()
 endfunction
 
-function! StatusLineWinNumNA()
-  if winnr('$')==1
-    return ''
-  endif
-  let n = winnr()
-  if n <= 10
-    return nr2char(0x2775 + n)
-    " return nr2char(0x1D7CE + n)
-    " return nr2char(0x1D7EC + n)
-    " return nr2char(0x1FBF0 + n)
-  endif
-endfunction
-
 function! StatusLineFilename()
   let fname = &buftype == 'nofile' ? expand('%') : expand('%:t')
   return &filetype == 'dirvish' ? s:GetDirvishName() :
-       \ &filetype == 'fuzzy' ? b:fuzzy_status :
        \ &filetype == 'help' ? expand('%:t:r') :
-       \ &filetype == 'peekaboo' ? '' :
        \ &filetype == 'qf' ? get(w:, 'quickfix_title', '') :
        \ &filetype == 'term' ? s:GetTermTitle()[1] :
        \ empty(fname) ? ('['.bufnr('').']') : fname 
@@ -1716,13 +1692,11 @@ function! StatusLineFileEncoding()
 endfunction
 
 function! StatusLineModified()
-  let modified_char = get(g:, 'use_nerd_font', 0) ? "\UE09E" : '+'
-  let readonly_char = get(g:, 'use_nerd_font', 0) ? "\UE0A2" : "\UE0A2"
   if s:is_nofile()
     return ''
   endif
-  let modified = &modified ? modified_char : ''
-  let readonly = &readonly ? readonly_char : ''
+  let modified = &modified ? "+" : ''
+  let readonly = &readonly ? "" : ''
   return modified . readonly
 endfunction
 
@@ -1752,6 +1726,7 @@ endfunction
 function! StatusLineMode()
   let m = &ft == 'dirvish' ? "dir" :
       \ &ft == 'qf' ? (empty(getloclist(0)) ? 'qf' : 'loc') :
+      \ &buftype == 'terminal' ? "term" :
       \ &ft
   return !empty(m) ? m : 'none'
 endfunction
@@ -1778,9 +1753,7 @@ function! Status(active)
     let sl.= '%( %{StatusLineArglist()} %)'
     let sl.= '%='
     let sl.= '%2*'
-    if has('nvim')
-      let sl.= '%( %{LspStatus()} %)'
-    endif
+    let sl.= '%( %{LspStatus()} %)'
     let sl.= '%0*'
     let sl.= '%( %{StatusLineFileEncoding()} %)'
     let sl.= '%( %{StatusLineFileFormat()} %)'
@@ -1809,31 +1782,24 @@ function! Status(active)
 endfunction
 
 function! TabLine()
-  let tabCount = tabpagenr('$')
   let tabnr = tabpagenr()
   let winnr = tabpagewinnr(tabnr)
   let cwd = PathShorten(getcwd(exists(':tcd') ? -1 : winnr, tabnr), &columns - 6)
   let isLocalCwd = haslocaldir(exists(':tcd') ? -1 : winnr, tabnr)
   let gitDir = cwd.'/.git'
   let gitHead =  fugitive#Head(0, gitDir)
-  let colour = g:my_colour_sequence[tabnr % len(g:my_colour_sequence)][0]
-  let grp1 = 'CustomTab'.colour
-  let grp2 = 'CustomTab2'.colour
-  let grp3 = 'CustomTab3'.colour
   let prettytabnr = nr2char(0x2789 + tabnr)
 
-  let s = '%#'.grp1.'#'
+  let s = '%#TabLineFill#'
   let s.= ' '.prettytabnr.' '
   let s.= '%='
   let s.= '%( '.gitHead.' %)'
   if isLocalCwd
-    let s.= '%#'.grp1.'#'
+    let s.= '%#TabLine#'
   else
-    let s.= '%#'.grp2.'#'
+    let s.= '%#TabLineSel#'
   endif
   let s.= ' '.cwd.' '
-  let s.= '%#'.grp3.'#'
-  let s.= ' '.s:Segmented(strftime("%H:%M")).' '
   return s
 endfunction
 
@@ -1843,8 +1809,6 @@ function! s:RefreshStatus()
   endfor
 endfunction
 
-let g:prettylittlestatus_disable=0
-
 function! PrettyLittleStatus()
   augroup PrettyLittleStatus
     autocmd!
@@ -1852,11 +1816,6 @@ function! PrettyLittleStatus()
 
   if get(g:,'prettylittlestatus_timer', 0)
     call timer_stop(g:prettylittlestatus_timer)
-  endif
-
-  if get(g:,'prettylittlestatus_disable', 0)
-    set statusline&
-    return
   endif
 
   set tabline=%!TabLine()
@@ -1874,15 +1833,74 @@ call PrettyLittleStatus()
 
 " Plugins config: {{{
 
+" Colorizer: {{{
+lua << EOF
+  require 'colorizer'.setup {
+    'css';
+    'html';
+    'vim';
+  }
+EOF
+" }}}
+
+" nvim-compe: {{{
+
+set completeopt=menuone,noselect
+
+lua << EOF
+require'compe'.setup {
+  source = {
+    path = true;
+    buffer = true;
+    calc = true;
+    vsnip = false;
+    nvim_lsp = true;
+    nvim_lua = true;
+    spell = true;
+    tags = false;
+    snippets_nvim = false;
+    treesitter = true;
+    omni = true;
+  };
+}
+EOF
+
+inoremap <silent><expr> <C-a> compe#complete()
+inoremap <silent><expr> <CR> compe#confirm('<CR>')
+inoremap <silent><expr> <C-e> compe#close('<C-e>')
+
+" }}}
+
 " Complete: {{{
 
-set completeopt=menuone,noinsert,noselect
-set shortmess+=c
-let g:completion_enable_auto_popup = 0
-let g:completion_auto_change_source = 1
-imap <tab> <Plug>(completion_smart_tab)
-imap <s-tab> <Plug>(completion_smart_s_tab)
-autocmd BufEnter * lua require'completion'.on_attach()
+" set completeopt=menuone,noinsert,noselect
+
+" let g:completion_chain_complete_list = {
+"     \'clojure' : [
+"     \    {'mode': 'omni'},
+"     \    {'complete_items': ['path']},
+"     \    {'mode': '<c-p>'},
+"     \    {'mode': '<c-n>'}
+"     \],
+"     \'vim' : [
+"     \    {'mode': 'cmd'},
+"     \    {'complete_items': ['path']},
+"     \    {'mode': '<c-p>'},
+"     \    {'mode': '<c-n>'}
+"     \],
+"     \'default' : [
+"     \    {'complete_items': ['lsp','path']},
+"     \    {'mode': '<c-p>'},
+"     \    {'mode': '<c-n>'}
+"     \]
+"     \}
+" let g:completion_enable_auto_popup = 0
+" let g:completion_auto_change_source = 1
+
+" imap <tab> <Plug>(completion_smart_tab)
+" imap <s-tab> <Plug>(completion_smart_s_tab)
+
+" autocmd BufEnter * lua require'completion'.on_attach()
 
 " }}}
 
@@ -1911,7 +1929,7 @@ EOF
 endif
 
 function! SetLspDefaults()
-  setlocal omnifunc=v:lua.vim.lsp.omnifunc
+  " setlocal omnifunc=v:lua.vim.lsp.omnifunc
   nnoremap <buffer> <silent> gd    <cmd>lua vim.lsp.buf.definition()<CR>
   nnoremap <buffer> <silent> gD    <cmd>lua vim.lsp.buf.declaration()<CR>
   nnoremap <buffer> <silent> K     <cmd>lua vim.lsp.buf.hover()<CR>
@@ -2056,10 +2074,6 @@ function! ColorschemeIceberg()
   colorscheme iceberg
 
   highlight NormalFloat guibg=#1e2132 guifg=fg
-  highlight NormalFloatBorder guibg=#1e2132 guifg=#e27878
-  highlight NormalTerm guifg=#c6c8d1 guibg=#000000
-  highlight link NormalFloatTerm Normal
-  highlight NormalFloatTermBorder guifg=#b4be82 guibg=#161821
   highlight String gui=italic
   highlight Pmenu guibg=#6b7089 guifg=#161821
   highlight StatusLine guibg=#2a3158 guifg=#cdd1e6 gui=NONE
@@ -2086,10 +2100,6 @@ function! ColorschemeDistilled()
   colorscheme distilled
 
   highlight NormalFloat guibg=#1e2132 guifg=fg
-  highlight NormalFloatBorder guibg=#1e2132 guifg=#e27878
-  highlight NormalTerm guifg=fg guibg=#04162b
-  highlight NormalFloatTerm guibg=#14263b
-  highlight NormalFloatTermBorder guifg=#b4be82 guibg=#14263b
   highlight String guifg=#ecb534
   highlight PreProc gui=bold
   highlight Statement gui=italic
@@ -2136,9 +2146,13 @@ endfunction
 function! ColorschemeYami()
   colorscheme yami
 
+  highlight NormalFloat guibg=#23242a guifg=fg
   highlight User1 gui=bold guibg=#23242a guifg=gold
   highlight User2 gui=bold guibg=#23242a guifg=#f87070
   highlight StatusLineNC gui=none guibg=#23242a guifg=#666666
+  highlight TabLine gui=none guibg=#23242a guifg=#666666
+  highlight TabLineSel gui=bold guibg=#23242a guifg=fg
+  highlight TabLineFill gui=none guibg=#23242a guifg=#f87070
   highlight Title guifg=fg gui=bold
   highlight Constant guifg=#d6aba7
   highlight Pmenu guifg=bg guibg=fg gui=none
@@ -2151,6 +2165,15 @@ function! ColorschemeYami()
   highlight Delimiter guifg=#c4b4e5 gui=none
   highlight String guifg=#c6ebb7
   highlight MatchParen guibg=none guifg=gold gui=bold
+  highlight NormalNC guibg=#1c1920
+  highlight MsgArea guibg=black
+  highlight MsgSeparator guifg=gold guibg=black
+  highlight IncSearch gui=reverse
+  highlight Macro gui=italic
+  highlight Special gui=italic
+  highlight Function gui=bold
+
+  highlight helpHyperTextJump gui=underline
 
   highlight link LspDiagnosticsError Error
   highlight link LspDiagnosticsWarning WarningMsg
@@ -2167,6 +2190,16 @@ function! ColorschemeYami()
   highlight link elixirOperator SpecialComment
   highlight link elixirFunctionDeclaration Title
   highlight link elixirModuleDeclaration Title
+
+  highlight link zigMultilineStringDelimiter Delimiter
+
+  highlight link diffAdded DiffAdd
+  highlight link diffRemoved DiffDelete
+  highlight link diffLine Folded
+  highlight link diffSubname Folded
+  highlight link diffFile WarningMsg
+  highlight link gitKeyword Title
+  highlight link gitIdentityKeyword Title
 
   call MyCustomColours()
 endfunction
